@@ -46,28 +46,6 @@ end)
   	end    
 })
 
-Tab:AddToggle({
-	Name = "Speed",
-	Default = false,
-	Callback = function(Value)
-		if Value == true then
-			print("Тумблер ВКЛЮЧЕН")
-			local player = game.Players.LocalPlayer
-
-RunService.RenderStepped:Connect(function()
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = 30
-		else
-			print("Тумблер ВЫКЛЮЧЕН")
-			local player = game.Players.LocalPlayer
-
-RunService.RenderStepped:Connect(function()
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = 16
-		end
-	end
-})
-
 
 Tab:AddButton({
 	Name = "Infinite Yield",
@@ -76,6 +54,7 @@ Tab:AddButton({
   	end    
 })
 OrionLib:Init()
+
 
 
 
