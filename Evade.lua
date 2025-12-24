@@ -8,7 +8,7 @@ local Tab = Window:MakeTab({
 })
 
 Tab:AddButton({
-	Name = "GBreads🍪 (Use at own rist)",
+	Name = "GBreads🍪 (Use at own risk)",
 	Callback = function()
     local RunService = game:GetService("RunService")
 	local Players = game:GetService("Players")
@@ -21,13 +21,12 @@ local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
 local playersFolder = gameFolder:WaitForChild("Players")
 
 -- Настройки
-local WAIT_AT_ITEM = 1.0   -- Секунда на предмете
-local DANGER_RADIUS = 20   -- Радиус шухера
-local ESCAPE_TIME = 2.0    -- Отсидка в сейф-зоне
+local WAIT_AT_ITEM = 1.0
+local DANGER_RADIUS = 20 
+local ESCAPE_TIME = 2.0 
 
 local isInSafeZone = false 
 
--- Создание платформы
 local platform = Instance.new("Part")
 platform.Name = "SafeZonePlatform"
 platform.Size = Vector3.new(20, 1, 20)
@@ -37,15 +36,12 @@ platform.Transparency = 0.5
 platform.BrickColor = BrickColor.new("Bright blue")
 platform.Parent = workspace
 
--- Функция получения позиции сейф-зоны
 local function getSafeZoneCFrame()
     return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
 end
 
--- Функция проверки игроков рядом
 local function isAnyoneNearby(myPart)
     for _, otherChar in ipairs(playersFolder:GetChildren()) do
-        -- Проверяем, что это модель и это не наш персонаж
         if otherChar:IsA("Model") and otherChar.Name ~= player.Name then
             local otherRoot = otherChar:FindFirstChild("HumanoidRootPart") or otherChar:FindFirstChild("Head")
             if otherRoot then
@@ -59,24 +55,20 @@ local function isAnyoneNearby(myPart)
     return false
 end
 
--- Основной цикл
 task.spawn(function()
     while true do
         local character = player.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         
-        -- Позиция сейф-зоны
         local safeCFrame = getSafeZoneCFrame()
         platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
 
         if rootPart then
-            -- 1. Сначала проверяем, нет ли кого рядом
             if isAnyoneNearby(rootPart) then
                 rootPart.CFrame = safeCFrame
                 isInSafeZone = true
-                task.wait(ESCAPE_TIME) -- Ушли в тень на 2 сек
+                task.wait(ESCAPE_TIME)
             else
-                -- 2. Если чисто, ищем предмет
                 local target = nil
                 for _, child in ipairs(ticketsFolder:GetChildren()) do
                     if child.Name == "Visual" then
@@ -87,10 +79,8 @@ task.spawn(function()
 
                 if target then
                     isInSafeZone = false
-                    -- Телепорт к предмету
                     rootPart.CFrame = target:GetPivot()
                     
-                    -- Ждем 1 сек, но если в процессе ожидания кто-то подойдет — убегаем
                     local start = tick()
                     while tick() - start < WAIT_AT_ITEM do
                         if isAnyoneNearby(rootPart) then 
@@ -99,7 +89,6 @@ task.spawn(function()
                         task.wait(0.1)
                     end
                 else
-                    -- 3. Если предметов нет и мы еще не в сейф-зоне — летим туда
                     if not isInSafeZone then
                         rootPart.CFrame = safeCFrame
                         isInSafeZone = true
@@ -122,16 +111,14 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
--- НАСТРОЙКИ
 local BASE_SPEED = 16 
 local REACH_DISTANCE = 3.5 
-local APPEAR_DELAY = {min = 1, max = 3} -- Задержка перед началом движения (в секундах)
+local APPEAR_DELAY = {min = 1, max = 1.5}
 local isRunning = true
 
 print("--- Легитный автосбор (с задержкой реакции) запущен ---")
 print("Остановка: CTRL или C")
 
--- Остановка на CTRL (согласно вашим настройкам) и C
 UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and (input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.C) then
         isRunning = false
@@ -147,7 +134,7 @@ end
 
 task.spawn(function()
     while isRunning do
-        task.wait(0.1) -- Базовая проверка
+        task.wait(0.1)
         
         local character = player.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
@@ -155,7 +142,6 @@ task.spawn(function()
 
         if not rootPart or not ticketsFolder or not isRunning then continue end
 
-        -- Поиск ближайшего
         local target = nil
         local minDistance = math.huge
         for _, child in ipairs(ticketsFolder:GetChildren()) do
@@ -172,16 +158,13 @@ task.spawn(function()
         end
 
         if target and isRunning then
-            -- ЭФФЕКТ "РЕАКЦИИ": Ждем перед тем, как персонаж "увидит" билет и двинется
             local reactionTime = math.random(APPEAR_DELAY.min * 10, APPEAR_DELAY.max * 10) / 10
             task.wait(reactionTime)
             
-            -- Проверяем, не исчез ли билет, пока мы "тупили"
             if not target.Parent or not isRunning then continue end
 
             local targetPos = target:GetPivot().Position
             
-            -- РАНДОМНОЕ СМЕЩЕНИЕ
             local angle = math.rad(math.random(0, 360))
             local randomDist = math.random(2, 5) 
             local offset = Vector3.new(math.cos(angle) * randomDist, 0, math.sin(angle) * randomDist)
@@ -263,5 +246,6 @@ Tab:AddButton({
   	end    
 })
 OrionLib:Init()
+
 
 
