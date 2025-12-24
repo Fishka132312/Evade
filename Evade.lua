@@ -7,6 +7,10 @@ local Tab = Window:MakeTab({
 	PremiumOnly = false
 })
 
+local Section = Tab:AddSection({
+	Name = "Farm c to turn off"
+})
+
 Tab:AddButton({
 	Name = "GBreads🍪 (Use at own risk)",
 	Callback = function()
@@ -246,6 +250,7 @@ Tab:AddButton({
   	end    
 })
 OrionLib:Init()
+
 
 
 
