@@ -8,10 +8,108 @@ local Tab = Window:MakeTab({
 })
 
 Tab:AddButton({
-	Name = "GBreads🍪",
+	Name = "GBreads🍪 (Use at own rist)",
 	Callback = function()
     local RunService = game:GetService("RunService")
-	print("123")
+	local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- Ссылки на объекты
+local gameFolder = workspace:WaitForChild("Game")
+local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
+local playersFolder = gameFolder:WaitForChild("Players")
+
+-- Настройки
+local WAIT_AT_ITEM = 1.0   -- Секунда на предмете
+local DANGER_RADIUS = 20   -- Радиус шухера
+local ESCAPE_TIME = 2.0    -- Отсидка в сейф-зоне
+
+local isInSafeZone = false 
+
+-- Создание платформы
+local platform = Instance.new("Part")
+platform.Name = "SafeZonePlatform"
+platform.Size = Vector3.new(20, 1, 20)
+platform.Anchored = true
+platform.CanCollide = true
+platform.Transparency = 0.5 
+platform.BrickColor = BrickColor.new("Bright blue")
+platform.Parent = workspace
+
+-- Функция получения позиции сейф-зоны
+local function getSafeZoneCFrame()
+    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
+end
+
+-- Функция проверки игроков рядом
+local function isAnyoneNearby(myPart)
+    for _, otherChar in ipairs(playersFolder:GetChildren()) do
+        -- Проверяем, что это модель и это не наш персонаж
+        if otherChar:IsA("Model") and otherChar.Name ~= player.Name then
+            local otherRoot = otherChar:FindFirstChild("HumanoidRootPart") or otherChar:FindFirstChild("Head")
+            if otherRoot then
+                local dist = (myPart.Position - otherRoot.Position).Magnitude
+                if dist < DANGER_RADIUS then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+-- Основной цикл
+task.spawn(function()
+    while true do
+        local character = player.Character
+        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+        
+        -- Позиция сейф-зоны
+        local safeCFrame = getSafeZoneCFrame()
+        platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
+
+        if rootPart then
+            -- 1. Сначала проверяем, нет ли кого рядом
+            if isAnyoneNearby(rootPart) then
+                rootPart.CFrame = safeCFrame
+                isInSafeZone = true
+                task.wait(ESCAPE_TIME) -- Ушли в тень на 2 сек
+            else
+                -- 2. Если чисто, ищем предмет
+                local target = nil
+                for _, child in ipairs(ticketsFolder:GetChildren()) do
+                    if child.Name == "Visual" then
+                        target = child
+                        break
+                    end
+                end
+
+                if target then
+                    isInSafeZone = false
+                    -- Телепорт к предмету
+                    rootPart.CFrame = target:GetPivot()
+                    
+                    -- Ждем 1 сек, но если в процессе ожидания кто-то подойдет — убегаем
+                    local start = tick()
+                    while tick() - start < WAIT_AT_ITEM do
+                        if isAnyoneNearby(rootPart) then 
+                            break 
+                        end
+                        task.wait(0.1)
+                    end
+                else
+                    -- 3. Если предметов нет и мы еще не в сейф-зоне — летим туда
+                    if not isInSafeZone then
+                        rootPart.CFrame = safeCFrame
+                        isInSafeZone = true
+                    end
+                end
+            end
+        end
+        task.wait(0.1)
+    end
+end)
   	end    
 })
 
@@ -26,13 +124,14 @@ local player = Players.LocalPlayer
 
 -- НАСТРОЙКИ
 local BASE_SPEED = 16 
-local REACH_DISTANCE = 3.5 -- Чуть увеличил, чтобы он точно подбирал, даже если стоит сбоку
+local REACH_DISTANCE = 3.5 
+local APPEAR_DELAY = {min = 1, max = 3} -- Задержка перед началом движения (в секундах)
 local isRunning = true
 
-print("--- Легитный 'Пробегающий' автосбор запущен ---")
+print("--- Легитный автосбор (с задержкой реакции) запущен ---")
 print("Остановка: CTRL или C")
 
--- Остановка на CTRL и C
+-- Остановка на CTRL (согласно вашим настройкам) и C
 UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and (input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.C) then
         isRunning = false
@@ -48,7 +147,7 @@ end
 
 task.spawn(function()
     while isRunning do
-        task.wait(0.05)
+        task.wait(0.1) -- Базовая проверка
         
         local character = player.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
@@ -73,26 +172,29 @@ task.spawn(function()
         end
 
         if target and isRunning then
+            -- ЭФФЕКТ "РЕАКЦИИ": Ждем перед тем, как персонаж "увидит" билет и двинется
+            local reactionTime = math.random(APPEAR_DELAY.min * 10, APPEAR_DELAY.max * 10) / 10
+            task.wait(reactionTime)
+            
+            -- Проверяем, не исчез ли билет, пока мы "тупили"
+            if not target.Parent or not isRunning then continue end
+
             local targetPos = target:GetPivot().Position
             
-            -- РАНДОМНОЕ СМЕЩЕНИЕ (от 2 до 5 студов)
-            -- Выбираем случайный угол и случайную дистанцию
+            -- РАНДОМНОЕ СМЕЩЕНИЕ
             local angle = math.rad(math.random(0, 360))
             local randomDist = math.random(2, 5) 
             local offset = Vector3.new(math.cos(angle) * randomDist, 0, math.sin(angle) * randomDist)
-            
             local finalGoal = targetPos + offset
             
             local distance = (rootPart.Position - finalGoal).Magnitude
             local currentSpeed = BASE_SPEED + (math.random(-15, 15) / 10)
             local duration = distance / currentSpeed
             
-            -- Используем Sine для мягкости
             local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
             
-            -- Летим не в сам Visual, а в точку рядом
             local tween = TweenService:Create(rootPart, tweenInfo, {
-                CFrame = CFrame.new(finalGoal, targetPos) -- Летит в бок, но смотрит на билет
+                CFrame = CFrame.new(finalGoal, targetPos)
             })
             
             tween:Play()
@@ -100,7 +202,6 @@ task.spawn(function()
             local startWait = tick()
             repeat 
                 task.wait(0.05)
-                -- Условие подбора: если МЫ подошли к билету ближе чем на REACH_DISTANCE
             until not target.Parent or not isRunning or (tick() - startWait) > duration or (rootPart.Position - targetPos).Magnitude < REACH_DISTANCE
             
             tween:Cancel()
@@ -162,4 +263,5 @@ Tab:AddButton({
   	end    
 })
 OrionLib:Init()
+
 
