@@ -201,30 +201,6 @@ local Tab = Window:MakeTab({
 	PremiumOnly = false
 })
 
-local UserInputService = game:GetService("UserInputService")
-
-Tab:AddSlider({
-    Name = "Field of View",
-    Min = 30,
-    Max = 120,
-    Default = 70,
-    Color = Color3.fromRGB(255, 255, 255),
-    Increment = 1,
-    ValueName = "FOV",
-    Callback = function(Value)
-        -- Твоя настройка: если нажат Ctrl, скрипт стопается
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl) then
-            return
-        end
-
-        -- Находим камеру напрямую через workspace
-        local camera = game:GetService("Workspace").CurrentCamera
-        if camera then
-            camera.FieldOfView = Value
-        end
-    end    
-})
-
 Tab:AddButton({
 	Name = "Fps boost",
 	Callback = function()
@@ -270,6 +246,7 @@ Tab:AddButton({
   	end    
 })
 OrionLib:Init()
+
 
 
 
