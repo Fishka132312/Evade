@@ -422,11 +422,43 @@ end)
 Tab:AddButton({
 	Name = "AntiAfk",
 	Callback = function()
-			local VirtualUser = game:GetService("VirtualUser")
+			local VirtualInputManager = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
-game:GetService("Players").LocalPlayer.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:TypeKey(Enum.KeyCode.Space.Value)
+local active = true
+local waitTime = 30 -- Интервал между прыжками в секундах
+
+-- Функция для имитации прыжка
+local function performJump()
+    if not active then return end
+    
+    -- Имитируем нажатие Пробела (Space)
+    -- Это сработает и на ПК, и заставит персонажа прыгнуть на мобилках
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+    task.wait(0.1)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+    
+    print("Anti-AFK: Прыжок выполнен")
+end
+
+-- Отслеживание нажатия Ctrl для остановки
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
+        active = false
+        print("Anti-AFK: Выключен (нажат Ctrl)")
+    end
+end)
+
+-- Основной цикл
+task.spawn(function()
+    print("Anti-AFK запущен. Нажми Ctrl, чтобы остановить.")
+    while active do
+        task.wait(waitTime)
+        if active then
+            performJump()
+        end
+    end
 end)
   	end    
 })
@@ -451,6 +483,7 @@ local a,b,c,d,e=loadstring,request or http_request or (http and http.request) or
   	end  
 })
 OrionLib:Init()
+
 
 
 
