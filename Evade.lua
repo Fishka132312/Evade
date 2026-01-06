@@ -134,11 +134,92 @@ shutdownServer()
   	end    
 })
 
+----------------------------LVL---------------------------------
+local Tab = Window:MakeTab({
+	Name = "LVL Farm",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+Tab:AddButton({
+	Name = "Go outside map",
+	Callback = function()
+			local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local itemSpawns = workspace.Game.Map.ItemSpawns
+
+local function checkAndExitZone()
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local hrp = character.HumanoidRootPart
+    local charPos = hrp.Position
+    
+    local modelCFrame, modelSize = itemSpawns:GetBoundingBox()
+    
+    local relativePos = modelCFrame:PointToObjectSpace(charPos)
+    
+    local isInside = math.abs(relativePos.X) <= modelSize.X / 2
+                 and math.abs(relativePos.Y) <= modelSize.Y / 2
+                 and math.abs(relativePos.Z) <= modelSize.Z / 2
+
+    if isInside then
+        print("Игрок внутри ItemSpawns. Выводим за пределы...")
+        
+        local offsetX = (modelSize.X / 2) + 5
+        if relativePos.X < 0 then offsetX = -offsetX end
+        
+        local newRelativePos = Vector3.new(offsetX, relativePos.Y, relativePos.Z)
+        local targetWorldPos = modelCFrame:PointToWorldSpace(newRelativePos)
+        
+        hrp.CFrame = CFrame.new(targetWorldPos)
+        print("Персонаж выведен из зоны.")
+    else
+        print("Игрок уже вне зоны или на безопасном расстоянии.")
+    end
+end
+
+checkAndExitZone()
+  	end    
+})
+
 --------------------------------MISC-----------------------------
 local Tab = Window:MakeTab({
 	Name = "Misc",
 	Icon = "rbxassetid://4483345998",
 	PremiumOnly = false
+})
+
+Tab:AddButton({
+	Name = "Remove invis parts",
+	Callback = function()
+			local folder = workspace.Game.Map.InvisParts
+
+local function monitorPart(part)
+	if part:IsA("BasePart") then
+		part.CanCollide = false
+		
+		part:GetPropertyChangedSignal("CanCollide"):Connect(function()
+			if part.CanCollide == true then
+				part.CanCollide = false
+			end
+		end)
+	end
+end
+
+local function processAll(parent)
+	for _, child in ipairs(parent:GetChildren()) do
+		monitorPart(child) 
+		processAll(child)
+	end
+end
+
+processAll(folder)
+
+folder.DescendantAdded:Connect(function(descendant)
+	monitorPart(descendant)
+end)
+  	end    
 })
 
 Tab:AddButton({
@@ -504,6 +585,7 @@ else
 end
   	end    
 })
+
 
 
 
