@@ -142,6 +142,68 @@ local Tab = Window:MakeTab({
 })
 
 Tab:AddButton({
+	Name = "Test",
+	Callback = function()
+			local Players = game:GetService("Players")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local itemSpawns = workspace.Game.Map.ItemSpawns
+
+local function getExitDirection()
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+    
+    local hrp = character.HumanoidRootPart
+    local modelCFrame, modelSize = itemSpawns:GetBoundingBox()
+    
+    -- Переводим позицию игрока в локальное пространство зоны
+    local relativePos = modelCFrame:PointToObjectSpace(hrp.Position)
+    
+    -- Проверяем, внутри ли мы
+    local isInside = math.abs(relativePos.X) <= modelSize.X / 2
+                 and math.abs(relativePos.Y) <= modelSize.Y / 2
+                 and math.abs(relativePos.Z) <= modelSize.Z / 2
+
+    if not isInside then return nil end
+
+    -- Определяем, в какую сторону ближе бежать (по оси X)
+    -- Можно усложнить и выбрать кратчайший путь из X, Y, Z, но для примера возьмем X
+    if relativePos.X > 0 then
+        return "D" -- Бежать вправо (относительно центра зоны)
+    else
+        return "A" -- Бежать влево
+    end
+end
+
+local function smoothExit()
+    local directionKey = getExitDirection()
+    
+    if directionKey then
+        print("Зона обнаружена! Начинаем выход через клавишу: " .. directionKey)
+        
+        -- Имитируем зажатие клавиши
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode[directionKey], false, game)
+        
+        -- Ждем, пока игрок не покинет зону
+        while getExitDirection() == directionKey do
+            RunService.Heartbeat:Wait()
+        end
+        
+        -- Отпускаем клавишу
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode[directionKey], false, game)
+        print("Выход завершен.")
+    else
+        print("Игрок в безопасности.")
+    end
+end
+
+smoothExit()
+  	end    
+})
+
+Tab:AddButton({
 	Name = "Go outside map",
 	Callback = function()
 			local Players = game:GetService("Players")
@@ -183,13 +245,6 @@ checkAndExitZone()
   	end    
 })
 
---------------------------------MISC-----------------------------
-local Tab = Window:MakeTab({
-	Name = "Misc",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
-})
-
 Tab:AddButton({
 	Name = "Remove invis parts",
 	Callback = function()
@@ -220,6 +275,13 @@ folder.DescendantAdded:Connect(function(descendant)
 	monitorPart(descendant)
 end)
   	end    
+})
+
+--------------------------------MISC-----------------------------
+local Tab = Window:MakeTab({
+	Name = "Misc",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
 })
 
 Tab:AddButton({
@@ -286,14 +348,11 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local active = true
-local waitTime = 30 -- Интервал между прыжками в секундах
+local waitTime = 30
 
--- Функция для имитации прыжка
 local function performJump()
     if not active then return end
     
-    -- Имитируем нажатие Пробела (Space)
-    -- Это сработает и на ПК, и заставит персонажа прыгнуть на мобилках
     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
     task.wait(0.1)
     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
@@ -301,7 +360,6 @@ local function performJump()
     print("Anti-AFK: Прыжок выполнен")
 end
 
--- Отслеживание нажатия Ctrl для остановки
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
         active = false
@@ -650,6 +708,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
