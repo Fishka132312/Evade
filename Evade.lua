@@ -485,6 +485,28 @@ end
 })
 
 
+Tab:AddButton({
+	Name = "Copy Cordinates",
+	Callback = function()
+			local player = game.Players.LocalPlayer
+local pos = player.Character.HumanoidRootPart.Position
+
+local x, y, z = math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z)
+local message = x .. ", " .. y .. ", " .. z
+
+game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync("My cord: " .. message)
+
+if setclipboard then
+    setclipboard(message)
+    print("Copied")
+else
+    print("Executor doesnt suppord copy")
+end
+  	end    
+})
+
+
+
 
 
 
