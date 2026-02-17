@@ -217,15 +217,24 @@ sendMessage(message)
 })
 
 Tab:AddButton({
-	Name = "XP FARM!!!!",
+	Name = "XP FARM",
 	Callback = function()
 			local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
 
 local player = Players.LocalPlayer
-local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitForChild("Rewards")
-
 _G.AutoFarmActive = true
+
+local function getRewardsGui()
+    local pg = player:FindFirstChild("PlayerGui")
+    if pg then
+        local global = pg:FindFirstChild("Global")
+        if global then
+            return global:FindFirstChild("Rewards")
+        end
+    end
+    return nil
+end
 
 local function sendMessage(msg)
     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
@@ -239,30 +248,10 @@ local function sendMessage(msg)
     end
 end
 
--- Функция для безопасного ресета и ожидания возрождения
-local function resetAndRespawn()
-    print("Ресетаю персонажа...")
-    local char = player.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    
-    if hum then
-        hum.Health = 0
-    end
-
-    -- Ждем, пока старый персонаж уйдет (Health <= 0)
-    task.wait(1) 
-    
-    -- Ждем появления нового персонажа и его полной загрузки
-    print("Ожидаю возрождения...")
-    player.CharacterAppearanceLoaded:Wait() 
-    task.wait(2) -- Небольшая пауза для прогрузки интерфейсов
-    print("Персонаж полностью готов.")
-end
-
-local function runCommands()
-    print("Выполняю цепочку команд...")
-    task.wait(3)
-    rewardsGui.Visible = false
+local function runCommands(rewardsGui)
+    print("Награда обнаружена! Выполняю цепочку команд...")
+    task.wait(5)
+    if rewardsGui then rewardsGui.Visible = false end
     task.wait(2)
     sendMessage("!map Maze")
     task.wait(22)
@@ -271,43 +260,22 @@ local function runCommands()
     sendMessage("!Timer 1")
     task.wait(5)
     sendMessage("!Timer 9999999")
-    print("Цикл завершен, начинаю новое ожидание.")
+    print("Цикл завершен. Снова жду появления окна Rewards.")
 end
 
 task.spawn(function()
+    print("Автофарм (защищенный) запущен. Жду Rewards...")
+    
     while _G.AutoFarmActive do
-        print("Начинаю цикл ожидания (3 минуты)...")
-        local startTime = tick()
-        local rewardFound = false
-
-        -- Цикл ожидания окна наград
-        while (tick() - startTime < 180) do
-            if rewardsGui.Visible == true then
-                rewardFound = true
-                break
-            end
-            task.wait(0.5)
+        local rewardsGui = getRewardsGui()
+        
+        if rewardsGui and rewardsGui.Visible == true then
+            runCommands(rewardsGui)
         end
-
-        if not rewardFound then
-            print("Время вышло! Инициирую процедуру ресета...")
-            resetAndRespawn() -- Вызываем новую функцию
-
-            print("Жду появления Rewards после респауна...")
-            while rewardsGui.Visible == false and _G.AutoFarmActive do
-                task.wait(0.5)
-            end
-            print("Окно появилось.")
-        else
-            print("Окно появилось само (до истечения таймера).")
-        end
-
-        runCommands()
-        task.wait(1)
+        
+        task.wait(2)
     end
 end)
-
-print("Автофарм запущен с проверкой респауна.")
   	end    
 })
 
@@ -928,6 +896,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
