@@ -208,6 +208,35 @@ print("---")
 })
 
 Tab:AddButton({
+	Name = "Lol",
+	Callback = function()
+			local TextChatService = game:GetService("TextChatService")
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then channel:SendAsync(msg) end
+    else
+        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+sendMessage("!map Maze")
+task.wait(17)
+
+sendMessage("!specialround Mimic")
+task.wait(1)
+
+sendMessage("!Timer 1")
+
+print("Down")
+  	end    
+})
+
+Tab:AddButton({
 	Name = "Shutdown Game if dev join",
 	Callback = function()
 			local Players = game:GetService("Players")
@@ -824,6 +853,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
