@@ -217,40 +217,15 @@ sendMessage(message)
 })
 
 Tab:AddButton({
-	Name = "XP FARM!!",
+	Name = "XP FARM!!!",
 	Callback = function()
 			local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
-local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitForChild("Rewards")
 
 _G.AutoFarmActive = true
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AutoFarmTimerGui"
-screenGui.Parent = player:WaitForChild("PlayerGui")
-screenGui.ResetOnSpawn = false
-
-local timerLabel = Instance.new("TextLabel")
-timerLabel.Name = "TimerLabel"
-timerLabel.Parent = screenGui
-timerLabel.Size = UDim2.new(0, 200, 0, 50)
-timerLabel.Position = UDim2.new(0, 50, 0.5, -25)
-timerLabel.BackgroundTransparency = 1
-timerLabel.TextColor3 = Color3.new(1, 1, 1)
-timerLabel.TextStrokeTransparency = 0 
-timerLabel.TextSize = 25
-timerLabel.Font = Enum.Font.GothamBold
-timerLabel.TextXAlignment = Enum.TextXAlignment.Left
-timerLabel.Text = "Загрузка..."
-
-local function formatTime(seconds)
-    local mins = math.floor(seconds / 60)
-    local secs = seconds % 60
-    return string.format("%02d:%02d", mins, secs)
-end
 
 local function sendMessage(msg)
     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
@@ -265,9 +240,8 @@ local function sendMessage(msg)
 end
 
 local function runCommands()
-    timerLabel.Text = "Выполнение команд..."
     print("Выполняю цепочку команд...")
-    task.wait(5)
+	task.wait(5)
     rewardsGui.Visible = false
     task.wait(2)
     sendMessage("!map Maze")
@@ -283,47 +257,43 @@ end
 task.spawn(function()
     while _G.AutoFarmActive do
         print("Начинаю цикл ожидания (3 минуты)...")
-        local duration = 180
         local startTime = tick()
         local rewardFound = false
 
-        while (tick() - startTime < duration) do
-            local timeLeft = math.max(0, duration - math.floor(tick() - startTime))
-            timerLabel.Text = "До сброса: " .. formatTime(timeLeft)
-            timerLabel.TextColor3 = Color3.new(1, 1, 1)
-
+        while (tick() - startTime < 180) do
             if rewardsGui.Visible == true then
                 rewardFound = true
                 break
             end
-            task.wait(0.1)
+            task.wait(0.5)
         end
 
         if not rewardFound then
-            timerLabel.Text = "СБРОС..."
-            timerLabel.TextColor3 = Color3.new(1, 0, 0)
             print("Время вышло! Ресетаю персонажа...")
             
             local char = player.Character
             local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if hum then hum.Health = 0 end
+            
+            if hum then
+                hum.Health = 0
+            end
 
             print("Жду появления Rewards после смерти...")
             while rewardsGui.Visible == false and _G.AutoFarmActive do
-                timerLabel.Text = "Ожидание Rewards..."
                 task.wait(0.5)
             end
             print("Окно появилось после ресета.")
         else
-            print("Окно появилось само.")
+            print("Окно появилось само (до истечения таймера).")
         end
 
         runCommands()
+        
         task.wait(1)
     end
 end)
 
-print("Автофарм запущен: Таймер добавлен на экран")
+print("Автофарм запущен: Ожидание 180с или Rewards")
   	end    
 })
 
@@ -944,6 +914,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
