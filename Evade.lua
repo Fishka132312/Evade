@@ -218,7 +218,7 @@ sendMessage(message)
 })
 
 Tab:AddButton({
-	Name = "XP FARM",
+	Name = "XP FARM!",
 	Callback = function()
 			local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
@@ -228,7 +228,6 @@ local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitF
 
 _G.AutoFarmActive = true
 
--- Функция отправки сообщений
 local function sendMessage(msg)
     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
         local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
@@ -241,17 +240,17 @@ local function sendMessage(msg)
     end
 end
 
--- Основная логика после появления Rewards
 local function onGameEnd()
     print("Игра завершена (Rewards найден). Выполняю цепочку команд...")
     
-    rewardsGui.Visible = false -- Закрываем окно
+    rewardsGui.Visible = false
     task.wait(2)
     
     sendMessage("!map Maze")
-    task.wait(15)
+    task.wait(22)
     
     sendMessage("!specialround Mimic")
+	wait(3)
     sendMessage("!Timer 1")
     task.wait(5)
     
@@ -259,19 +258,17 @@ local function onGameEnd()
     print("Цикл перезапущен, ждем 3 минуты или появления окна.")
 end
 
--- Главный цикл
 task.spawn(function()
     while _G.AutoFarmActive do
         local rewardFound = false
         local startTime = tick()
         
-        -- Цикл ожидания окна (максимум 180 секунд)
         while tick() - startTime < 180 do
             if rewardsGui.Visible == true then
                 rewardFound = true
                 break
             end
-            task.wait(1) -- Проверяем каждую секунду
+            task.wait(1)
         end
         
         if not rewardFound then
@@ -281,13 +278,11 @@ task.spawn(function()
                 character.Humanoid.Health = 0
             end
             
-            -- Ждем появления окна после ресета
             while rewardsGui.Visible == false do
                 task.wait(0.5)
             end
         end
         
-        -- Когда окно точно появилось (само или после ресета)
         onGameEnd()
     end
 end)
@@ -913,6 +908,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
