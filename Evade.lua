@@ -135,7 +135,7 @@ rewardsGui:GetPropertyChangedSignal("Visible"):Connect(function()
     if rewardsGui.Visible == true then
         print("Gui visible")
         
-        task.wait(3)
+        task.wait(5)
         
         sendMessage("!specialround Mimic")
         task.wait(0.5) 
@@ -793,6 +793,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
