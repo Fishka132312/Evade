@@ -189,34 +189,6 @@ sendMessage(message)
 })
 
 Tab:AddButton({
-	Name = "Timer 99999999",
-	Callback = function()
-			local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
-
-local message = "!timer 99999999"
-
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then 
-            channel:SendAsync(msg) 
-        end
-    else
-        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
-        end
-    end
-end
-
-task.wait(1)
-
-sendMessage(message)
-  	end    
-})
-
-Tab:AddButton({
 	Name = "XP FARM",
 	Callback = function()
 			local Players = game:GetService("Players")
@@ -910,6 +882,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
