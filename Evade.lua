@@ -261,10 +261,7 @@ local function runCommands(rewardsGui)
     task.wait(22)
     sendMessage("!specialround Mimic")
     task.wait(3)
-    sendMessage("!Timer 1")
-    task.wait(5)
-    sendMessage("!Timer 9999999")
-    
+    sendMessage("!Timer 1")    
     print("Цикл завершен. Снова жду появления окна Rewards.")
     isProcessing = false
 end
@@ -913,6 +910,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
