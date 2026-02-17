@@ -471,12 +471,14 @@ local Tab = Window:MakeTab({
 })
 
 Tab:AddButton({
-	Name = "better dont click it",
+	Name = "better dont click it!",
 	Callback = function()
-			local Lighting = game:GetService("Lighting")
+local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ContentProvider = game:GetService("ContentProvider")
+local SoundService = game:GetService("SoundService")
 
+-- Константы
 local IMAGE_ID = "rbxassetid://140194623034195"
 local SOUND_ID = "rbxassetid://91054348924048"
 local SKY_ID   = "rbxassetid://140194623034195"
@@ -484,9 +486,11 @@ local SKY_ID   = "rbxassetid://140194623034195"
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Создание GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "IntroGui"
 screenGui.IgnoreGuiInset = true
+screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
 local frame = Instance.new("Frame")
@@ -501,33 +505,49 @@ imageLabel.BackgroundTransparency = 1
 imageLabel.Image = IMAGE_ID
 imageLabel.Parent = frame
 
+-- Создание звука
 local sound = Instance.new("Sound")
 sound.SoundId = SOUND_ID
-sound.Parent = game:GetService("SoundService")
+sound.Volume = 1
+sound.Parent = SoundService
 
 local function changeSky(id)
-    local oldSky = Lighting:FindFirstChildOfClass("Sky")
-    if oldSky then oldSky:Destroy() end
+    for _, obj in ipairs(Lighting:GetChildren()) do
+        if obj:IsA("Sky") then
+            obj:Destroy()
+        end
+    end
 
     local newSky = Instance.new("Sky")
+    newSky.Name = "CustomSky"
     newSky.SkyboxBk = id
     newSky.SkyboxDn = id
     newSky.SkyboxFt = id
     newSky.SkyboxLf = id
     newSky.SkyboxRt = id
     newSky.SkyboxUp = id
+    newSky.SunTextureId = ""
+    newSky.MoonTextureId = ""
     newSky.Parent = Lighting
+    
+    warn("Sky has been changed!")
 end
 
-ContentProvider:PreloadAsync({imageLabel, sound})
+task.spawn(function()
+    ContentProvider:PreloadAsync({imageLabel, sound})
+end)
 
 sound:Play()
 
-sound.Ended:Wait()
+local soundTimer = 0
+repeat 
+    task.wait(0.1)
+    soundTimer = soundTimer + 0.1
+until sound.TimeLength > 0 and (sound.TimePosition >= sound.TimeLength or not sound.IsPlaying) or soundTimer > 10
 
+changeSky(SKY_ID)
 screenGui:Destroy()
 sound:Destroy()
-changeSky(SKY_ID)
   	end    
 })
 
@@ -914,6 +934,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
