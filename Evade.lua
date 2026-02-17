@@ -176,6 +176,20 @@ end)
 })
 
 Tab:AddButton({
+	Name = "XP FARM OFF",
+	Callback = function()
+			_G.AutoFarmActive = false -- Останавливает логику
+
+if _G.RewardConnection then
+    _G.RewardConnection:Disconnect() -- Полностью удаляет слежку за окном
+    _G.RewardConnection = nil
+end
+
+print("Скрипт полностью остановлен и отключен.")
+  	end    
+})
+
+Tab:AddButton({
 	Name = "Maze",
 	Callback = function()
 			local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -848,6 +862,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
