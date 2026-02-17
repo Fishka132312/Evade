@@ -217,6 +217,92 @@ sendMessage(message)
   	end    
 })
 
+Tab:AddButton({
+	Name = "XP FARM",
+	Callback = function()
+			local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
+
+local player = Players.LocalPlayer
+local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitForChild("Rewards")
+
+_G.AutoFarmActive = true
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then channel:SendAsync(msg) end
+    else
+        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+local function onGameEnd()
+    print("Игра завершена (Rewards найден). Выполняю цепочку команд...")
+    
+    rewardsGui.Visible = false
+    task.wait(2)
+    
+    sendMessage("!map Maze")
+    task.wait(15)
+    
+    sendMessage("!specialround Mimic")
+    sendMessage("!Timer 1")
+    task.wait(5)
+    
+    sendMessage("!Timer 9999999")
+    print("Цикл перезапущен, ждем 3 минуты или появления окна.")
+end
+
+task.spawn(function()
+    while _G.AutoFarmActive do
+        local rewardFound = false
+        local startTime = tick()
+        
+        while tick() - startTime < 180 do
+            if rewardsGui.Visible == true then
+                rewardFound = true
+                break
+            end
+            task.wait(1)
+        end
+        
+        if not rewardFound then
+            print("3 минуты прошло, окно не появилось. Ресетаем игрока...")
+            local character = player.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.Health = 0
+            end
+            
+            while rewardsGui.Visible == false do
+                task.wait(0.5)
+            end
+        end
+        
+        onGameEnd()
+    end
+end)
+
+print("Автофарм запущен: Ожидание 180с или Rewards")
+})
+
+	Tab:AddButton({
+	Name = "Stop XP FARM",
+	Callback = function()
+_G.AutoFarmActive = false
+
+if _G.RewardConnection then
+    _G.RewardConnection:Disconnect()
+    _G.RewardConnection = nil
+end
+
+print("Скрипт полностью остановлен и отключен.")
+  	end    
+})
+
 
 Tab:AddButton({
 	Name = "Shutdown Game if dev join",
@@ -251,88 +337,6 @@ local Tab = Window:MakeTab({
 	Name = "TEST LVL Farm",
 	Icon = "rbxassetid://4483345998",
 	PremiumOnly = false
-})
-
-Tab:AddButton({
-	Name = "XP FARM",
-	Callback = function()
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
-
-local player = Players.LocalPlayer
-local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitForChild("Rewards")
-
-_G.AutoFarmActive = true 
-_G.RewardCounter = 0 -- Инициализируем счетчик
-
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then 
-            channel:SendAsync(msg) 
-        end
-    else
-        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
-        end
-    end
-end
-
--- Отключаем старое соединение, если оно было (чтобы не дублировалось при перезапуске)
-if _G.RewardConnection then
-    _G.RewardConnection:Disconnect()
-end
-
-print("Скрипт запущен. Автофарм: " .. tostring(_G.AutoFarmActive))
-
-_G.RewardConnection = rewardsGui:GetPropertyChangedSignal("Visible"):Connect(function()
-    if rewardsGui.Visible == true and _G.AutoFarmActive then
-        _G.RewardCounter = _G.RewardCounter + 1
-        print("Окно появилось. Раз: " .. _G.RewardCounter)
-
-        if _G.RewardCounter % 3 == 0 then
-            task.wait(8)
-            if not _G.AutoFarmActive then return end
-            
-            rewardsGui.Visible = false
-            print("Третий раз: Окно скрыто, выбираем карту...")
-            
-            task.wait(38)
-            if not _G.AutoFarmActive then return end
-            
-            sendMessage("!specialround Mimic")
-            task.wait(0.5) 
-            sendMessage("!Timer 1")
-        else
-            task.wait(7)
-            if not _G.AutoFarmActive then return end
-
-            sendMessage("!specialround Mimic")
-            task.wait(0.5) 
-            sendMessage("!Timer 1")
-            
-            rewardsGui.Visible = false
-            print("Окно закрыто автоматически")
-        end
-    end
-end)
-  	end    
-})
-
-Tab:AddButton({
-	Name = "XP FARM OFF",
-	Callback = function()
-			_G.AutoFarmActive = false -- Останавливает логику
-
-if _G.RewardConnection then
-    _G.RewardConnection:Disconnect() -- Полностью удаляет слежку за окном
-    _G.RewardConnection = nil
-end
-
-print("Скрипт полностью остановлен и отключен.")
-  	end    
 })
 
 Tab:AddButton({
@@ -917,6 +921,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
