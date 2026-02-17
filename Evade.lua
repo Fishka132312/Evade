@@ -280,6 +280,17 @@ end)
 })
 
 Tab:AddButton({
+	Name = "XP FARM STOP",
+	Callback = function()
+			_G.AutoFarmActive = false
+print("---")
+print("Автофарм деактивирован.")
+print("Текущий цикл (если он шел) завершится, и новый не начнется.")
+print("---")
+  	end    
+})
+
+Tab:AddButton({
 	Name = "Shutdown Game if dev join",
 	Callback = function()
 			local Players = game:GetService("Players")
@@ -896,6 +907,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
