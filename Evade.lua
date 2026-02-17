@@ -217,7 +217,7 @@ sendMessage(message)
 })
 
 Tab:AddButton({
-	Name = "XP FARM!!!",
+	Name = "XP FARM!!!!",
 	Callback = function()
 			local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
@@ -239,9 +239,29 @@ local function sendMessage(msg)
     end
 end
 
+-- Функция для безопасного ресета и ожидания возрождения
+local function resetAndRespawn()
+    print("Ресетаю персонажа...")
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    
+    if hum then
+        hum.Health = 0
+    end
+
+    -- Ждем, пока старый персонаж уйдет (Health <= 0)
+    task.wait(1) 
+    
+    -- Ждем появления нового персонажа и его полной загрузки
+    print("Ожидаю возрождения...")
+    player.CharacterAppearanceLoaded:Wait() 
+    task.wait(2) -- Небольшая пауза для прогрузки интерфейсов
+    print("Персонаж полностью готов.")
+end
+
 local function runCommands()
     print("Выполняю цепочку команд...")
-	task.wait(5)
+    task.wait(3)
     rewardsGui.Visible = false
     task.wait(2)
     sendMessage("!map Maze")
@@ -260,6 +280,7 @@ task.spawn(function()
         local startTime = tick()
         local rewardFound = false
 
+        -- Цикл ожидания окна наград
         while (tick() - startTime < 180) do
             if rewardsGui.Visible == true then
                 rewardFound = true
@@ -269,31 +290,24 @@ task.spawn(function()
         end
 
         if not rewardFound then
-            print("Время вышло! Ресетаю персонажа...")
-            
-            local char = player.Character
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            
-            if hum then
-                hum.Health = 0
-            end
+            print("Время вышло! Инициирую процедуру ресета...")
+            resetAndRespawn() -- Вызываем новую функцию
 
-            print("Жду появления Rewards после смерти...")
+            print("Жду появления Rewards после респауна...")
             while rewardsGui.Visible == false and _G.AutoFarmActive do
                 task.wait(0.5)
             end
-            print("Окно появилось после ресета.")
+            print("Окно появилось.")
         else
             print("Окно появилось само (до истечения таймера).")
         end
 
         runCommands()
-        
         task.wait(1)
     end
 end)
 
-print("Автофарм запущен: Ожидание 180с или Rewards")
+print("Автофарм запущен с проверкой респауна.")
   	end    
 })
 
@@ -914,6 +928,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
