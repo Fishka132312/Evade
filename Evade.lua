@@ -287,6 +287,7 @@ task.spawn(function()
 end)
 
 print("Автофарм запущен: Ожидание 180с или Rewards")
+		end
 })
 
 	Tab:AddButton({
@@ -921,6 +922,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
