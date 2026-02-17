@@ -218,7 +218,7 @@ sendMessage(message)
 })
 
 Tab:AddButton({
-	Name = "XP FARM!",
+	Name = "XP FARM!!",
 	Callback = function()
 			local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
@@ -240,50 +240,56 @@ local function sendMessage(msg)
     end
 end
 
-local function onGameEnd()
-    print("Игра завершена (Rewards найден). Выполняю цепочку команд...")
-    
+local function runCommands()
+    print("Выполняю цепочку команд...")
     rewardsGui.Visible = false
     task.wait(2)
-    
     sendMessage("!map Maze")
     task.wait(22)
-    
     sendMessage("!specialround Mimic")
-	wait(3)
+    task.wait(3)
     sendMessage("!Timer 1")
     task.wait(5)
-    
     sendMessage("!Timer 9999999")
-    print("Цикл перезапущен, ждем 3 минуты или появления окна.")
+    print("Цикл завершен, начинаю новое ожидание.")
 end
 
 task.spawn(function()
     while _G.AutoFarmActive do
-        local rewardFound = false
+        print("Начинаю цикл ожидания (3 минуты)...")
         local startTime = tick()
-        
-        while tick() - startTime < 180 do
+        local rewardFound = false
+
+        while (tick() - startTime < 180) do
             if rewardsGui.Visible == true then
                 rewardFound = true
                 break
             end
-            task.wait(1)
+            task.wait(0.5)
         end
-        
+
         if not rewardFound then
-            print("3 минуты прошло, окно не появилось. Ресетаем игрока...")
-            local character = player.Character
-            if character and character:FindFirstChild("Humanoid") then
-                character.Humanoid.Health = 0
-            end
+            print("Время вышло! Ресетаю персонажа...")
             
-            while rewardsGui.Visible == false do
+            local char = player.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            
+            if hum then
+                hum.Health = 0
+            end
+
+            print("Жду появления Rewards после смерти...")
+            while rewardsGui.Visible == false and _G.AutoFarmActive do
                 task.wait(0.5)
             end
+            print("Окно появилось после ресета.")
+        else
+            print("Окно появилось само (до истечения таймера).")
         end
+
+        runCommands()
         
-        onGameEnd()
+        task.wait(1)
     end
 end)
 
@@ -908,6 +914,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
