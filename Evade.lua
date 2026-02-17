@@ -218,7 +218,7 @@ sendMessage(message)
 })
 
 Tab:AddButton({
-	Name = "Shutdown Game if dev join",
+	Name = "XP FARM",
 	Callback = function()
 			local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
@@ -913,6 +913,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
