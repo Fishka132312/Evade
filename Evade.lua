@@ -151,7 +151,7 @@ _G.RewardConnection = rewardsGui:GetPropertyChangedSignal("Visible"):Connect(fun
             rewardsGui.Visible = false
             print("Третий раз: Окно скрыто, выбираем карту...")
             
-            task.wait(30)
+            task.wait(38)
             if not _G.AutoFarmActive then return end
             
             sendMessage("!specialround Mimic")
@@ -860,6 +860,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
