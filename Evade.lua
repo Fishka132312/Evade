@@ -106,6 +106,154 @@ end)
 })
 
 Tab:AddButton({
+	Name = "Maze",
+	Callback = function()
+			local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+
+local message = "!map Maze"
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then 
+            channel:SendAsync(msg) 
+        end
+    else
+        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+task.wait(1)
+
+sendMessage(message)
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Mimic",
+	Callback = function()
+			local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+
+local message = "!specialround Mimic"
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then 
+            channel:SendAsync(msg) 
+        end
+    else
+        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+task.wait(1)
+
+sendMessage(message)
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Timer 1",
+	Callback = function()
+			local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+
+local message = "!timer 1"
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then 
+            channel:SendAsync(msg) 
+        end
+    else
+        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+task.wait(1)
+
+sendMessage(message)
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Timer 99999999",
+	Callback = function()
+			local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+
+local message = "!timer 99999999"
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then 
+            channel:SendAsync(msg) 
+        end
+    else
+        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+task.wait(1)
+
+sendMessage(message)
+  	end    
+})
+
+
+Tab:AddButton({
+	Name = "Shutdown Game if dev join",
+	Callback = function()
+			local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local isScriptActive = true
+
+local function shutdownServer()
+    if isScriptActive and #Players:GetPlayers() > 1 then
+        game:Shutdown() 
+    end
+end
+
+Players.PlayerAdded:Connect(function()
+    shutdownServer()
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
+        isScriptActive = false
+    end
+end)
+
+shutdownServer()
+  	end    
+})
+
+----------------------------LVL---------------------------------
+local Tab = Window:MakeTab({
+	Name = "TEST LVL Farm",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+Tab:AddButton({
 	Name = "XP FARM",
 	Callback = function()
 local Players = game:GetService("Players")
@@ -185,97 +333,6 @@ end
 
 print("Скрипт полностью остановлен и отключен.")
   	end    
-})
-
-Tab:AddButton({
-	Name = "Maze",
-	Callback = function()
-			local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
-
-local message = "!map Maze"
-
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then 
-            channel:SendAsync(msg) 
-        end
-    else
-        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
-        end
-    end
-end
-
-task.wait(1)
-
-sendMessage(message)
-  	end    
-})
-
-Tab:AddButton({
-	Name = "Timer 1",
-	Callback = function()
-			local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
-
-local message = "!timer 1"
-
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then 
-            channel:SendAsync(msg) 
-        end
-    else
-        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
-        end
-    end
-end
-
-task.wait(1)
-
-sendMessage(message)
-  	end    
-})
-
-Tab:AddButton({
-	Name = "Shutdown Game if dev join",
-	Callback = function()
-			local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-
-local isScriptActive = true
-
-local function shutdownServer()
-    if isScriptActive and #Players:GetPlayers() > 1 then
-        game:Shutdown() 
-    end
-end
-
-Players.PlayerAdded:Connect(function()
-    shutdownServer()
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
-        isScriptActive = false
-    end
-end)
-
-shutdownServer()
-  	end    
-})
-
-----------------------------LVL---------------------------------
-local Tab = Window:MakeTab({
-	Name = "TEST LVL Farm",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
 })
 
 Tab:AddButton({
