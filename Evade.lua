@@ -115,6 +115,8 @@ local TextChatService = game:GetService("TextChatService")
 local player = Players.LocalPlayer
 local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitForChild("Rewards")
 
+_G.AutoFarmActive = true 
+
 local function sendMessage(msg)
     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
         local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
@@ -129,22 +131,35 @@ local function sendMessage(msg)
     end
 end
 
-print("Скрипт запущен: ожидание Rewards + задержка 3 сек.")
+print("Скрипт запущен. Статус: " .. tostring(_G.AutoFarmActive))
 
-rewardsGui:GetPropertyChangedSignal("Visible"):Connect(function()
-    if rewardsGui.Visible == true then
-        print("Gui visible")
+_G.RewardConnection = rewardsGui:GetPropertyChangedSignal("Visible"):Connect(function()
+    if rewardsGui.Visible == true and _G.AutoFarmActive then
         
         task.wait(5)
         
+        if not _G.AutoFarmActive then return end
+
         sendMessage("!specialround Mimic")
         task.wait(0.5) 
         sendMessage("!Timer 1")
         
         rewardsGui.Visible = false
-        print("Gui closed")
+        print("Окно закрыто автоматически")
     end
 end)
+  	end    
+})
+
+Tab:AddButton({
+	Name = "XP FARM OFF",
+	Callback = function()
+			_G.AutoFarmActive = false
+
+if _G.RewardConnection then
+    _G.RewardConnection:Disconnect()
+    _G.RewardConnection = nil
+end
   	end    
 })
 
@@ -793,6 +808,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
