@@ -224,6 +224,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local player = Players.LocalPlayer
 _G.AutoFarmActive = true
+local isProcessing = false
 
 local function getRewardsGui()
     local pg = player:FindFirstChild("PlayerGui")
@@ -249,29 +250,36 @@ local function sendMessage(msg)
 end
 
 local function runCommands(rewardsGui)
+    isProcessing = true 
     print("Награда обнаружена! Выполняю цепочку команд...")
+    
     task.wait(5)
-    if rewardsGui then rewardsGui.Visible = false end
+    if rewardsGui then rewardsGui.Visible = false end 
+    
     task.wait(2)
     sendMessage("!map Maze")
     task.wait(22)
     sendMessage("!specialround Mimic")
     task.wait(3)
     sendMessage("!Timer 1")
+    task.wait(5)
+    sendMessage("!Timer 9999999")
+    
     print("Цикл завершен. Снова жду появления окна Rewards.")
+    isProcessing = false
 end
 
 task.spawn(function()
-    print("Автофарм (защищенный) запущен. Жду Rewards...")
+    print("Автофарм исправлен. Дубликатов больше не будет.")
     
     while _G.AutoFarmActive do
         local rewardsGui = getRewardsGui()
         
-        if rewardsGui and rewardsGui.Visible == true then
+        if rewardsGui and rewardsGui.Visible == true and not isProcessing then
             runCommands(rewardsGui)
         end
         
-        task.wait(2)
+        task.wait(1) 
     end
 end)
   	end    
@@ -905,6 +913,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
