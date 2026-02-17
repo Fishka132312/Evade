@@ -116,7 +116,7 @@ local player = Players.LocalPlayer
 local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitForChild("Rewards")
 
 _G.AutoFarmActive = true 
-_G.RewardCounter = 0
+_G.RewardCounter = 0 -- Инициализируем счетчик
 
 local function sendMessage(msg)
     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
@@ -132,21 +132,24 @@ local function sendMessage(msg)
     end
 end
 
-print("Скрипт запущен. Текущий статус: " .. tostring(_G.AutoFarmActive))
-
+-- Отключаем старое соединение, если оно было (чтобы не дублировалось при перезапуске)
 if _G.RewardConnection then
     _G.RewardConnection:Disconnect()
 end
 
+print("Скрипт запущен. Автофарм: " .. tostring(_G.AutoFarmActive))
+
 _G.RewardConnection = rewardsGui:GetPropertyChangedSignal("Visible"):Connect(function()
     if rewardsGui.Visible == true and _G.AutoFarmActive then
         _G.RewardCounter = _G.RewardCounter + 1
-        print("GUI появилось в " .. _G.RewardCounter .. "-й раз")
+        print("Окно появилось. Раз: " .. _G.RewardCounter)
 
         if _G.RewardCounter % 3 == 0 then
-            print("Сработал особый цикл (каждый третий)")
+            task.wait(8)
+            if not _G.AutoFarmActive then return end
             
             rewardsGui.Visible = false
+            print("Третий раз: Окно скрыто, выбираем карту...")
             
             sendMessage("!map Maze")
             
@@ -154,12 +157,10 @@ _G.RewardConnection = rewardsGui:GetPropertyChangedSignal("Visible"):Connect(fun
             if not _G.AutoFarmActive then return end
             
             sendMessage("!specialround Mimic")
-            task.wait(0.5)
+            task.wait(0.5) 
             sendMessage("!Timer 1")
         else
-            print("Обычный цикл")
             task.wait(7)
-            
             if not _G.AutoFarmActive then return end
 
             sendMessage("!specialround Mimic")
@@ -167,21 +168,10 @@ _G.RewardConnection = rewardsGui:GetPropertyChangedSignal("Visible"):Connect(fun
             sendMessage("!Timer 1")
             
             rewardsGui.Visible = false
+            print("Окно закрыто автоматически")
         end
     end
 end)
-  	end    
-})
-
-Tab:AddButton({
-	Name = "XP FARM OFF",
-	Callback = function()
-			_G.AutoFarmActive = false
-
-if _G.RewardConnection then
-    _G.RewardConnection:Disconnect()
-    _G.RewardConnection = nil
-end
   	end    
 })
 
@@ -858,6 +848,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
