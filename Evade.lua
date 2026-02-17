@@ -242,6 +242,7 @@ end
 
 local function runCommands()
     print("Выполняю цепочку команд...")
+	task.wait(5)
     rewardsGui.Visible = false
     task.wait(2)
     sendMessage("!map Maze")
@@ -914,6 +915,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
