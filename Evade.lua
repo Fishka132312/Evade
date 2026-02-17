@@ -133,62 +133,6 @@ sendMessage(message)
 })
 
 Tab:AddButton({
-	Name = "Mimic",
-	Callback = function()
-			local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
-
-local message = "!specialround Mimic"
-
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then 
-            channel:SendAsync(msg) 
-        end
-    else
-        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
-        end
-    end
-end
-
-task.wait(1)
-
-sendMessage(message)
-  	end    
-})
-
-Tab:AddButton({
-	Name = "Timer 1",
-	Callback = function()
-			local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
-
-local message = "!timer 1"
-
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then 
-            channel:SendAsync(msg) 
-        end
-    else
-        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
-        end
-    end
-end
-
-task.wait(1)
-
-sendMessage(message)
-  	end    
-})
-
-Tab:AddButton({
 	Name = "XP FARM",
 	Callback = function()
 			local Players = game:GetService("Players")
@@ -223,23 +167,21 @@ end
 
 local function runCommands(rewardsGui)
     isProcessing = true 
-    print("Награда обнаружена! Выполняю цепочку команд...")
-    
-    task.wait(5)
+    print("End")
     if rewardsGui then rewardsGui.Visible = false end 
     
     task.wait(2)
     sendMessage("!map Maze")
-    task.wait(22)
+    task.wait(17)
     sendMessage("!specialround Mimic")
-    task.wait(3)
+    task.wait(1)
     sendMessage("!Timer 1")    
-    print("Цикл завершен. Снова жду появления окна Rewards.")
+    print("Waiting...")
     isProcessing = false
 end
 
 task.spawn(function()
-    print("Автофарм исправлен. Дубликатов больше не будет.")
+    print("Autofarm turned off")
     
     while _G.AutoFarmActive do
         local rewardsGui = getRewardsGui()
@@ -882,6 +824,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
