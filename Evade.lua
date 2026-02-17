@@ -136,7 +136,7 @@ print("Скрипт запущен. Статус: " .. tostring(_G.AutoFarmActiv
 _G.RewardConnection = rewardsGui:GetPropertyChangedSignal("Visible"):Connect(function()
     if rewardsGui.Visible == true and _G.AutoFarmActive then
         
-        task.wait(5)
+        task.wait(7)
         
         if not _G.AutoFarmActive then return end
 
@@ -836,6 +836,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
