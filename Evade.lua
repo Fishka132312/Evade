@@ -18,13 +18,12 @@ Tab:AddButton({
 	local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
--- Ссылки на объекты
 local gameFolder = workspace:WaitForChild("Game")
 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
 local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
 local playersFolder = gameFolder:WaitForChild("Players")
 
--- Настройки
+-- Settings
 local WAIT_AT_ITEM = 1.0
 local DANGER_RADIUS = 20 
 local ESCAPE_TIME = 2.0 
@@ -107,6 +106,45 @@ end)
 })
 
 Tab:AddButton({
+	Name = "XP FARM",
+	Callback = function()
+		local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+
+local player = Players.LocalPlayer
+local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitForChild("Rewards")
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then channel:SendAsync(msg) end
+    else
+        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+print("Looking for")
+
+rewardsGui:GetPropertyChangedSignal("Visible"):Connect(function()
+    if rewardsGui.Visible == true then
+        print("Menu visible")
+        
+        sendMessage("!specialround Mimic")
+        task.wait(0.5) 
+        sendMessage("!Timer 1")
+        
+        rewardsGui.Visible = false
+        print("Menu visible false")
+    end
+end)	
+  	end    
+})
+
+Tab:AddButton({
 	Name = "Shutdown Game if dev join",
 	Callback = function()
 			local Players = game:GetService("Players")
@@ -136,7 +174,7 @@ shutdownServer()
 
 ----------------------------LVL---------------------------------
 local Tab = Window:MakeTab({
-	Name = "LVL Farm",
+	Name = "TEST LVL Farm",
 	Icon = "rbxassetid://4483345998",
 	PremiumOnly = false
 })
@@ -158,22 +196,19 @@ local function getExitDirection()
     local hrp = character.HumanoidRootPart
     local modelCFrame, modelSize = itemSpawns:GetBoundingBox()
     
-    -- Переводим позицию игрока в локальное пространство зоны
     local relativePos = modelCFrame:PointToObjectSpace(hrp.Position)
     
-    -- Проверяем, внутри ли мы
     local isInside = math.abs(relativePos.X) <= modelSize.X / 2
                  and math.abs(relativePos.Y) <= modelSize.Y / 2
                  and math.abs(relativePos.Z) <= modelSize.Z / 2
 
     if not isInside then return nil end
 
-    -- Определяем, в какую сторону ближе бежать (по оси X)
-    -- Можно усложнить и выбрать кратчайший путь из X, Y, Z, но для примера возьмем X
+
     if relativePos.X > 0 then
-        return "D" -- Бежать вправо (относительно центра зоны)
+        return "D"
     else
-        return "A" -- Бежать влево
+        return "A"
     end
 end
 
@@ -183,15 +218,12 @@ local function smoothExit()
     if directionKey then
         print("Зона обнаружена! Начинаем выход через клавишу: " .. directionKey)
         
-        -- Имитируем зажатие клавиши
         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode[directionKey], false, game)
         
-        -- Ждем, пока игрок не покинет зону
         while getExitDirection() == directionKey do
             RunService.Heartbeat:Wait()
         end
         
-        -- Отпускаем клавишу
         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode[directionKey], false, game)
         print("Выход завершен.")
     else
@@ -235,9 +267,9 @@ local function checkAndExitZone()
         local targetWorldPos = modelCFrame:PointToWorldSpace(newRelativePos)
         
         hrp.CFrame = CFrame.new(targetWorldPos)
-        print("Персонаж выведен из зоны.")
+        print("Out map")
     else
-        print("Игрок уже вне зоны или на безопасном расстоянии.")
+        print("Out map1")
     end
 end
 
@@ -279,7 +311,7 @@ local function checkAndExitZone()
 
     if isInside then
         isTweening = true
-        print("Вылетаем из зоны...")
+        print("out map")
         
         local offsetX = (modelSize.X / 2) + 10 
         if relativePos.X < 0 then offsetX = -offsetX end
@@ -294,7 +326,7 @@ local function checkAndExitZone()
         tween.Completed:Connect(function()
             hrp.Anchored = false
             isTweening = false
-            print("Вылет завершен.")
+            print("out map1")
         end)
     end
 end
@@ -359,7 +391,7 @@ local active = true
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
         active = false
-        print("FPS Boost остановлен.")
+        print("FPS Boost turned")
     end
 end)
 
@@ -403,47 +435,6 @@ end)
 })
 
 Tab:AddButton({
-	Name = "AntiAfk (PC Only)",
-	Callback = function()
-			local VirtualInputManager = game:GetService("VirtualInputManager")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
-local active = true
-local waitTime = 30
-
-local function performJump()
-    if not active then return end
-    
-    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-    task.wait(0.1)
-    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-    
-    print("Anti-AFK: Прыжок выполнен")
-end
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
-        active = false
-        print("Anti-AFK: Выключен (нажат Ctrl)")
-    end
-end)
-
--- Основной цикл
-task.spawn(function()
-    print("Anti-AFK запущен. Нажми Ctrl, чтобы остановить.")
-    while active do
-        task.wait(waitTime)
-        if active then
-            performJump()
-        end
-    end
-end)
-  	end    
-})
-
-
-Tab:AddButton({
 	Name = "Infinite Yield",
 	Callback = function()
     loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/ignore-it/refs/heads/main/infiniteyield'))()
@@ -452,7 +443,7 @@ Tab:AddButton({
 
 
 local Tab = Window:MakeTab({
-	Name = "Test",
+	Name = "Outdated",
 	Icon = "rbxassetid://4483345998",
 	PremiumOnly = false
 })
@@ -770,6 +761,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
