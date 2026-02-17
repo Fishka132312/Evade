@@ -116,6 +116,7 @@ local player = Players.LocalPlayer
 local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitForChild("Rewards")
 
 _G.AutoFarmActive = true 
+_G.RewardCounter = 0
 
 local function sendMessage(msg)
     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
@@ -131,21 +132,42 @@ local function sendMessage(msg)
     end
 end
 
-print("Скрипт запущен. Статус: " .. tostring(_G.AutoFarmActive))
+print("Скрипт запущен. Текущий статус: " .. tostring(_G.AutoFarmActive))
+
+if _G.RewardConnection then
+    _G.RewardConnection:Disconnect()
+end
 
 _G.RewardConnection = rewardsGui:GetPropertyChangedSignal("Visible"):Connect(function()
     if rewardsGui.Visible == true and _G.AutoFarmActive then
-        
-        task.wait(7)
-        
-        if not _G.AutoFarmActive then return end
+        _G.RewardCounter = _G.RewardCounter + 1
+        print("GUI появилось в " .. _G.RewardCounter .. "-й раз")
 
-        sendMessage("!specialround Mimic")
-        task.wait(0.5) 
-        sendMessage("!Timer 1")
-        
-        rewardsGui.Visible = false
-        print("Окно закрыто автоматически")
+        if _G.RewardCounter % 3 == 0 then
+            print("Сработал особый цикл (каждый третий)")
+            
+            rewardsGui.Visible = false
+            
+            sendMessage("!map Maze")
+            
+            task.wait(10)
+            if not _G.AutoFarmActive then return end
+            
+            sendMessage("!specialround Mimic")
+            task.wait(0.5)
+            sendMessage("!Timer 1")
+        else
+            print("Обычный цикл")
+            task.wait(7)
+            
+            if not _G.AutoFarmActive then return end
+
+            sendMessage("!specialround Mimic")
+            task.wait(0.5) 
+            sendMessage("!Timer 1")
+            
+            rewardsGui.Visible = false
+        end
     end
 end)
   	end    
@@ -836,6 +858,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
