@@ -471,6 +471,67 @@ local Tab = Window:MakeTab({
 })
 
 Tab:AddButton({
+	Name = "better dont click it",
+	Callback = function()
+			local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local ContentProvider = game:GetService("ContentProvider")
+
+local IMAGE_ID = "rbxassetid://140194623034195"
+local SOUND_ID = "rbxassetid://91054348924048"
+local SKY_ID   = "rbxassetid://140194623034195"
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "IntroGui"
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(1, 0, 1, 0)
+frame.BackgroundColor3 = Color3.new(0, 0, 0)
+frame.Parent = screenGui
+
+local imageLabel = Instance.new("ImageLabel")
+imageLabel.Size = UDim2.new(0.5, 0, 0.5, 0) 
+imageLabel.Position = UDim2.new(0.25, 0, 0.25, 0)
+imageLabel.BackgroundTransparency = 1
+imageLabel.Image = IMAGE_ID
+imageLabel.Parent = frame
+
+local sound = Instance.new("Sound")
+sound.SoundId = SOUND_ID
+sound.Parent = game:GetService("SoundService")
+
+local function changeSky(id)
+    local oldSky = Lighting:FindFirstChildOfClass("Sky")
+    if oldSky then oldSky:Destroy() end
+
+    local newSky = Instance.new("Sky")
+    newSky.SkyboxBk = id
+    newSky.SkyboxDn = id
+    newSky.SkyboxFt = id
+    newSky.SkyboxLf = id
+    newSky.SkyboxRt = id
+    newSky.SkyboxUp = id
+    newSky.Parent = Lighting
+end
+
+ContentProvider:PreloadAsync({imageLabel, sound})
+
+sound:Play()
+
+sound.Ended:Wait()
+
+screenGui:Destroy()
+sound:Destroy()
+changeSky(SKY_ID)
+  	end    
+})
+
+Tab:AddButton({
 	Name = "Fps boost",
 	Callback = function()
     local RunService = game:GetService("RunService")
@@ -853,6 +914,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
