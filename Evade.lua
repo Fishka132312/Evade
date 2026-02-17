@@ -108,7 +108,7 @@ end)
 Tab:AddButton({
 	Name = "XP FARM",
 	Callback = function()
-		local Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
 
@@ -118,7 +118,9 @@ local rewardsGui = player:WaitForChild("PlayerGui"):WaitForChild("Global"):WaitF
 local function sendMessage(msg)
     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
         local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then channel:SendAsync(msg) end
+        if channel then 
+            channel:SendAsync(msg) 
+        end
     else
         local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
         if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
@@ -127,20 +129,50 @@ local function sendMessage(msg)
     end
 end
 
-print("Looking for")
+print("Скрипт запущен: ожидание Rewards + задержка 3 сек.")
 
 rewardsGui:GetPropertyChangedSignal("Visible"):Connect(function()
     if rewardsGui.Visible == true then
-        print("Menu visible")
+        print("Gui visible")
+        
+        task.wait(3)
         
         sendMessage("!specialround Mimic")
         task.wait(0.5) 
         sendMessage("!Timer 1")
         
         rewardsGui.Visible = false
-        print("Menu visible false")
+        print("Gui closed")
     end
-end)	
+end)
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Maze",
+	Callback = function()
+			local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+
+local message = "!map Maze"
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then 
+            channel:SendAsync(msg) 
+        end
+    else
+        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+task.wait(1)
+
+sendMessage(message)
   	end    
 })
 
@@ -761,6 +793,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
