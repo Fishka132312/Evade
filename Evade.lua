@@ -234,15 +234,11 @@ shutdownServer()
 })
 
 Tab:AddToggle({
-    Name = "Disable 3D Rendering (CPU Saver!)",
+    Name = "Disable 3D Rendering (CPU Saver)",
     Default = false,
     Callback = function(Value)
-        local player = game.Players.LocalPlayer
-        local coinPath = player.PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo.Item.Tickets.Cash
-
         if Value then
             game:GetService("RunService"):Set3dRenderingEnabled(false)
-            print("Монеты сейчас: " .. coinPath.Text)
         else
             game:GetService("RunService"):Set3dRenderingEnabled(true)
         end
@@ -1017,6 +1013,7 @@ else
 end
   	end    
 })
+
 
 
 
