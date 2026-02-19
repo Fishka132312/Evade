@@ -14,7 +14,7 @@ local Section = Tab:AddSection({
 local toggled = false
 
 Tab:AddToggle({
-    Name = "Ticket (Use at own risk)",
+    Name = "Ticket Farm 1",
     Default = false,
     Callback = function(Value)
         toggled = Value
@@ -95,6 +95,111 @@ Tab:AddToggle({
                                     task.wait(0.1)
                                 end
                             else
+                                if (rootPart.Position - safeCFrame.Position).Magnitude > 10 then
+                                    rootPart.CFrame = safeCFrame
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.1)
+                end
+
+                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end 
+            end)
+        end
+    end    
+})
+
+Tab:AddToggle({
+    Name = "Ticket Farm 2",
+    Default = false,
+    Callback = function(Value)
+        toggled = Value
+
+        if toggled then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+
+                local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+                local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
+                local playersFolder = gameFolder:WaitForChild("Players")
+
+                local WAIT_AT_ITEM = 1.0
+                local DANGER_RADIUS = 20 
+                local ESCAPE_TIME = 2.0 
+                local OFFSET_Y = -8
+
+                local platform = workspace:FindFirstChild("SafeZonePlatform") or Instance.new("Part")
+                platform.Name = "SafeZonePlatform"
+                platform.Size = Vector3.new(15, 1, 15)
+                platform.Anchored = true
+                platform.CanCollide = true
+                platform.Transparency = 0.5 
+                platform.BrickColor = BrickColor.new("Bright blue")
+                platform.Parent = workspace
+
+                local function getSafeZoneCFrame()
+                    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
+                end
+
+                local function isAnyoneNearby(myPart)
+                    for _, otherChar in ipairs(playersFolder:GetChildren()) do
+                        if otherChar:IsA("Model") and otherChar.Name ~= player.Name then
+                            local healthcare = otherChar:FindFirstChild("Humanoid")
+                            if healthcare and healthcare.Health > 0 then
+                                local otherRoot = otherChar:FindFirstChild("HumanoidRootPart") or healthcare.RootPart
+                                if otherRoot then
+                                    local dist = (myPart.Position - otherRoot.Position).Magnitude
+                                    if dist < DANGER_RADIUS then
+                                        return true
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    return false
+                end
+
+                while toggled do 
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChild("Humanoid")
+                    
+                    local safeCFrame = getSafeZoneCFrame()
+
+                    if rootPart and humanoid and humanoid.Health > 0 then
+                        if isAnyoneNearby(rootPart) then
+                            platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
+                            rootPart.CFrame = safeCFrame
+                            task.wait(ESCAPE_TIME)
+                        else
+                            local target = nil
+                            for _, child in ipairs(ticketsFolder:GetChildren()) do
+                                if child.Name == "Visual" then
+                                    target = child
+                                    break
+                                end
+                            end
+
+                            if target then
+                                local targetPos = target:GetPivot() * CFrame.new(0, OFFSET_Y, 0)
+                                
+                                platform.CFrame = targetPos * CFrame.new(0, -3.1, 0)
+                                
+                                rootPart.CFrame = targetPos
+                                
+                                local start = tick()
+                                while tick() - start < WAIT_AT_ITEM and toggled do
+                                    if isAnyoneNearby(rootPart) then break end
+                                    if not target.Parent then break end
+                                    
+                                    platform.CFrame = targetPos * CFrame.new(0, -3.1, 0)
+                                    task.wait(0.1)
+                                end
+                            else
+                                platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
                                 if (rootPart.Position - safeCFrame.Position).Magnitude > 10 then
                                     rootPart.CFrame = safeCFrame
                                 end
@@ -326,13 +431,13 @@ Tab:AddToggle({
                 setfpscap(10) 
             end
             
-            print("Энергосбережение включено: Графика отключена")
+            print("on")
         else
             game:GetService("RunService"):Set3dRenderingEnabled(true)
             if setfpscap then
                 setfpscap(60)
             end
-            print("Энергосбережение выключено")
+            print("off")
         end
     end    
 })
@@ -817,13 +922,13 @@ Tab:AddToggle({
                 setfpscap(10) 
             end
             
-            print("Энергосбережение включено: Графика отключена")
+            print("on")
         else
             game:GetService("RunService"):Set3dRenderingEnabled(true)
             if setfpscap then
                 setfpscap(60)
             end
-            print("Энергосбережение выключено")
+            print("off")
         end
     end    
 })
@@ -1083,6 +1188,7 @@ else
 end
   	end    
 })
+
 
 
 
