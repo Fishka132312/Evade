@@ -234,7 +234,7 @@ shutdownServer()
 })
 
 Tab:AddToggle({
-    Name = "Disable 3D Rendering (CPU Saver)",
+    Name = "Disable 3D Rendering (CPU Saver!)",
     Default = false,
     Callback = function(Value)
         local player = game.Players.LocalPlayer
@@ -1017,6 +1017,7 @@ else
 end
   	end    
 })
+
 
 
 
