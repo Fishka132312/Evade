@@ -543,7 +543,7 @@ Tab:AddToggle({
 })
 
 Tab:AddButton({
-	Name = "SET MAZE + TEXT",
+	Name = "SET MAZE",
 	Callback = function()
 			local TextChatService = game:GetService("TextChatService")
 
@@ -1187,6 +1187,7 @@ else
 end
   	end    
 })
+
 
 
 
