@@ -11,95 +11,103 @@ local Section = Tab:AddSection({
 	Name = "Event farm"
 })
 
-Tab:AddButton({
-	Name = "Ticket (Use at own risk)",
-	Callback = function()
-    local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local toggled = false
 
-local gameFolder = workspace:WaitForChild("Game")
-local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
-local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
-local playersFolder = gameFolder:WaitForChild("Players")
+Tab:AddToggle({
+    Name = "Ticket (Use at own risk)",
+    Default = false,
+    Callback = function(Value)
+        toggled = Value
 
-local WAIT_AT_ITEM = 1.0
-local DANGER_RADIUS = 20 
-local ESCAPE_TIME = 2.0 
+        if toggled then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
 
-local platform = Instance.new("Part")
-platform.Name = "SafeZonePlatform"
-platform.Size = Vector3.new(20, 1, 20)
-platform.Anchored = true
-platform.CanCollide = true
-platform.Transparency = 0.5 
-platform.BrickColor = BrickColor.new("Bright blue")
-platform.Parent = workspace
+                local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+                local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
+                local playersFolder = gameFolder:WaitForChild("Players")
 
-local function getSafeZoneCFrame()
-    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
-end
+                local WAIT_AT_ITEM = 1.0
+                local DANGER_RADIUS = 20 
+                local ESCAPE_TIME = 2.0 
 
-local function isAnyoneNearby(myPart)
-    for _, otherChar in ipairs(playersFolder:GetChildren()) do
-        if otherChar:IsA("Model") and otherChar.Name ~= player.Name then
-            local healthcare = otherChar:FindFirstChild("Humanoid")
-            if healthcare and healthcare.Health > 0 then
-                local otherRoot = otherChar:FindFirstChild("HumanoidRootPart") or healthcare.RootPart
-                if otherRoot then
-                    local dist = (myPart.Position - otherRoot.Position).Magnitude
-                    if dist < DANGER_RADIUS then
-                        return true
-                    end
-                end
-            end
-        end
-    end
-    return false
-end
+                local platform = workspace:FindFirstChild("SafeZonePlatform") or Instance.new("Part")
+                platform.Name = "SafeZonePlatform"
+                platform.Size = Vector3.new(20, 1, 20)
+                platform.Anchored = true
+                platform.CanCollide = true
+                platform.Transparency = 0.5 
+                platform.BrickColor = BrickColor.new("Bright blue")
+                platform.Parent = workspace
 
-task.spawn(function()
-    while true do
-        local character = player.Character
-        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-        local humanoid = character and character:FindFirstChild("Humanoid")
-        
-        local safeCFrame = getSafeZoneCFrame()
-        platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
-
-        if rootPart and humanoid and humanoid.Health > 0 then
-            
-            if isAnyoneNearby(rootPart) then
-                rootPart.CFrame = safeCFrame
-                task.wait(ESCAPE_TIME)
-            else
-                local target = nil
-                for _, child in ipairs(ticketsFolder:GetChildren()) do
-                    if child.Name == "Visual" then
-                        target = child
-                        break
-                    end
+                local function getSafeZoneCFrame()
+                    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
                 end
 
-                if target then
-                    rootPart.CFrame = target:GetPivot()
+                local function isAnyoneNearby(myPart)
+                    for _, otherChar in ipairs(playersFolder:GetChildren()) do
+                        if otherChar:IsA("Model") and otherChar.Name ~= player.Name then
+                            local healthcare = otherChar:FindFirstChild("Humanoid")
+                            if healthcare and healthcare.Health > 0 then
+                                local otherRoot = otherChar:FindFirstChild("HumanoidRootPart") or healthcare.RootPart
+                                if otherRoot then
+                                    local dist = (myPart.Position - otherRoot.Position).Magnitude
+                                    if dist < DANGER_RADIUS then
+                                        return true
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    return false
+                end
+
+                while toggled do 
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChild("Humanoid")
                     
-                    local start = tick()
-                    while tick() - start < WAIT_AT_ITEM do
-                        if isAnyoneNearby(rootPart) then break end
-                        if not target.Parent then break end
-                        task.wait(0.1)
+                    local safeCFrame = getSafeZoneCFrame()
+                    platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
+
+                    if rootPart and humanoid and humanoid.Health > 0 then
+                        if isAnyoneNearby(rootPart) then
+                            rootPart.CFrame = safeCFrame
+                            task.wait(ESCAPE_TIME)
+                        else
+                            local target = nil
+                            for _, child in ipairs(ticketsFolder:GetChildren()) do
+                                if child.Name == "Visual" then
+                                    target = child
+                                    break
+                                end
+                            end
+
+                            if target then
+                                rootPart.CFrame = target:GetPivot()
+                                
+                                local start = tick()
+                                while tick() - start < WAIT_AT_ITEM and toggled do
+                                    if isAnyoneNearby(rootPart) then break end
+                                    if not target.Parent then break end
+                                    task.wait(0.1)
+                                end
+                            else
+                                if (rootPart.Position - safeCFrame.Position).Magnitude > 10 then
+                                    rootPart.CFrame = safeCFrame
+                                end
+                            end
+                        end
                     end
-                else
-                    if (rootPart.Position - safeCFrame.Position).Magnitude > 10 then
-                        rootPart.CFrame = safeCFrame
-                    end
+                    task.wait(0.1)
                 end
-            end
+
+                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end 
+            end)
         end
-        task.wait(0.1)
-    end
-end)
-  	end    
+    end    
 })
 
 Tab:AddToggle({
@@ -963,6 +971,7 @@ else
 end
   	end    
 })
+
 
 
 
