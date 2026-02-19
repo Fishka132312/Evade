@@ -129,7 +129,8 @@ Tab:AddToggle({
                 local WAIT_AT_ITEM = 1.0
                 local DANGER_RADIUS = 20 
                 local ESCAPE_TIME = 2.0 
-                local OFFSET_Y = -8
+                
+                local DISTANCE_BELOW = 5 
 
                 local platform = workspace:FindFirstChild("SafeZonePlatform") or Instance.new("Part")
                 platform.Name = "SafeZonePlatform"
@@ -184,18 +185,19 @@ Tab:AddToggle({
                             end
 
                             if target then
-                                local targetPos = target:GetPivot() * CFrame.new(0, OFFSET_Y, 0)
+                                local targetPos = target:GetPivot().Position
+                                local finalPosition = Vector3.new(targetPos.X, targetPos.Y - DISTANCE_BELOW, targetPos.Z)
                                 
-                                platform.CFrame = targetPos * CFrame.new(0, -3.1, 0)
+                                rootPart.CFrame = CFrame.new(finalPosition)
                                 
-                                rootPart.CFrame = targetPos
+                                platform.CFrame = CFrame.new(finalPosition - Vector3.new(0, 3.5, 0))
                                 
                                 local start = tick()
                                 while tick() - start < WAIT_AT_ITEM and toggled do
                                     if isAnyoneNearby(rootPart) then break end
                                     if not target.Parent then break end
                                     
-                                    platform.CFrame = targetPos * CFrame.new(0, -3.1, 0)
+                                    platform.CFrame = CFrame.new(finalPosition - Vector3.new(0, 3.5, 0))
                                     task.wait(0.1)
                                 end
                             else
@@ -1188,6 +1190,7 @@ else
 end
   	end    
 })
+
 
 
 
