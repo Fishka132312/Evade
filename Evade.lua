@@ -233,6 +233,36 @@ shutdownServer()
   	end    
 })
 
+Tab:AddToggle({
+    Name = "Disable 3D Rendering (CPU Saver)",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            game:GetService("RunService"):Set3dRenderingEnabled(false)
+        else
+            game:GetService("RunService"):Set3dRenderingEnabled(true)
+        end
+    end    
+})
+
+Tab:AddSlider({
+    Name = "FPS Cap (POWER Saver)",
+    Min = 1,
+    Max = 240,
+    Default = 60,
+    Color = Color3.fromRGB(0, 255, 120), 
+    Increment = 1,
+    ValueName = "FPS",
+    Callback = function(Value)
+        if setfpscap then
+            setfpscap(Value)
+            print("Лимит FPS установлен на: " .. Value)
+        else
+            warn("Твой чит не поддерживает функцию setfpscap")
+        end
+    end    
+})
+
 ----------------------------LVL---------------------------------
 local Tab = Window:MakeTab({
 	Name = "XP FARM",
@@ -538,7 +568,6 @@ local Players = game:GetService("Players")
 local ContentProvider = game:GetService("ContentProvider")
 local SoundService = game:GetService("SoundService")
 
--- Настройки
 local IMAGE_ID = "rbxassetid://102775636999671"
 local SOUND_ID = "rbxassetid://91054348924048"
 local SKY_ID   = "rbxassetid://102775636999671"
@@ -689,6 +718,36 @@ Tab:AddButton({
 	Callback = function()
     loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/ignore-it/refs/heads/main/infiniteyield'))()
   	end    
+})
+
+Tab:AddToggle({
+    Name = "Disable 3D Rendering (CPU Saver)",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            game:GetService("RunService"):Set3dRenderingEnabled(false)
+        else
+            game:GetService("RunService"):Set3dRenderingEnabled(true)
+        end
+    end    
+})
+
+Tab:AddSlider({
+    Name = "FPS Cap (POWER Saver)",
+    Min = 1,
+    Max = 240,
+    Default = 60,
+    Color = Color3.fromRGB(0, 255, 120), 
+    Increment = 1,
+    ValueName = "FPS",
+    Callback = function(Value)
+        if setfpscap then
+            setfpscap(Value)
+            print("Лимит FPS установлен на: " .. Value)
+        else
+            warn("Твой чит не поддерживает функцию setfpscap")
+        end
+    end    
 })
 
 
@@ -946,6 +1005,7 @@ else
 end
   	end    
 })
+
 
 
 
