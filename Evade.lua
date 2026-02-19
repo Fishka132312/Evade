@@ -201,14 +201,14 @@ Tab:AddButton({
 	Callback = function()
 			_G.AutoFarmActive = false
 print("---")
-print("Автофарм деактивирован.")
+print("Автофарм деактивирован EBAT.")
 print("Текущий цикл (если он шел) завершится, и новый не начнется.")
 print("---")
   	end    
 })
 
 Tab:AddButton({
-	Name = "Lol",
+	Name = "MAZE + TEXT",
 	Callback = function()
 			local TextChatService = game:GetService("TextChatService")
 
@@ -266,69 +266,78 @@ shutdownServer()
 
 ----------------------------LVL---------------------------------
 local Tab = Window:MakeTab({
-	Name = "TEST LVL Farm",
+	Name = "XP FARM",
 	Icon = "rbxassetid://4483345998",
 	PremiumOnly = false
 })
 
-Tab:AddButton({
-	Name = "Test",
-	Callback = function()
-			local Players = game:GetService("Players")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local RunService = game:GetService("RunService")
+Tab:AddToggle({
+	Name = "XP FARM VIP SERVER",
+	Default = false,
+	Callback = function(Value)
+		_G.AutoFarmActive = Value
+		
+		if _G.AutoFarmActive then
+			task.spawn(function()
+				local Players = game:GetService("Players")
+				local TextChatService = game:GetService("TextChatService")
+				local player = Players.LocalPlayer
+				local isProcessing = false
 
-local player = Players.LocalPlayer
-local itemSpawns = workspace.Game.Map.ItemSpawns
+				local function getRewardsGui()
+					local pg = player:FindFirstChild("PlayerGui")
+					local global = pg and pg:FindFirstChild("Global")
+					return global and global:FindFirstChild("Rewards")
+				end
 
-local function getExitDirection()
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
-    
-    local hrp = character.HumanoidRootPart
-    local modelCFrame, modelSize = itemSpawns:GetBoundingBox()
-    
-    local relativePos = modelCFrame:PointToObjectSpace(hrp.Position)
-    
-    local isInside = math.abs(relativePos.X) <= modelSize.X / 2
-                 and math.abs(relativePos.Y) <= modelSize.Y / 2
-                 and math.abs(relativePos.Z) <= modelSize.Z / 2
+				local function sendMessage(msg)
+					if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+						local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+						if channel then channel:SendAsync(msg) end
+					else
+						local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+						if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+							chatEvent.SayMessageRequest:FireServer(msg, "All")
+						end
+					end
+				end
 
-    if not isInside then return nil end
+				local function runCommands(rewardsGui)
+					isProcessing = true 
+					if rewardsGui then rewardsGui.Visible = false end 
+					
+					task.wait(2)
+					sendMessage("!map Maze")
+					task.wait(17)
+					sendMessage("!specialround Mimic")
+					task.wait(1)
+					sendMessage("!Timer 1")    
+					print("Ожидание...")
+					isProcessing = false
+				end
 
+				print("Autofarm Started")
 
-    if relativePos.X > 0 then
-        return "D"
-    else
-        return "A"
-    end
-end
-
-local function smoothExit()
-    local directionKey = getExitDirection()
-    
-    if directionKey then
-        print("Зона обнаружена! Начинаем выход через клавишу: " .. directionKey)
-        
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode[directionKey], false, game)
-        
-        while getExitDirection() == directionKey do
-            RunService.Heartbeat:Wait()
-        end
-        
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode[directionKey], false, game)
-        print("Выход завершен.")
-    else
-        print("Игрок в безопасности.")
-    end
-end
-
-smoothExit()
-  	end    
+				while _G.AutoFarmActive do
+					local rewardsGui = getRewardsGui()
+					
+					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
+						runCommands(rewardsGui)
+					end
+					
+					task.wait(1) 
+				end
+				
+				print("Autofarm Stopped")
+			end)
+		else
+			print("Autofarm turned off")
+		end
+	end    
 })
 
 Tab:AddButton({
-	Name = "Go outside map TP",
+	Name = "TP OUTSIDE MAP",
 	Callback = function()
 			local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -350,8 +359,7 @@ local function checkAndExitZone()
                  and math.abs(relativePos.Z) <= modelSize.Z / 2
 
     if isInside then
-        print("Игрок внутри ItemSpawns. Выводим за пределы...")
-        
+					
         local offsetX = (modelSize.X / 2) + 5
         if relativePos.X < 0 then offsetX = -offsetX end
         
@@ -359,9 +367,8 @@ local function checkAndExitZone()
         local targetWorldPos = modelCFrame:PointToWorldSpace(newRelativePos)
         
         hrp.CFrame = CFrame.new(targetWorldPos)
-        print("Out map")
     else
-        print("Out map1")
+        print("error")
     end
 end
 
@@ -370,66 +377,35 @@ checkAndExitZone()
 })
 
 Tab:AddButton({
-	Name = "Go outside map TWEEN",
+	Name = "TP OUTSIDE MAP + SAFE ZONE",
 	Callback = function()
 			local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-
 local player = Players.LocalPlayer
-local itemSpawns = workspace.Game.Map.ItemSpawns
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
+local IMAGE_ID = "rbxassetid://126150774709719"
+local SAFE_POSITION = Vector3.new(0, 500, 0)
 
-local TWEEN_TIME = 18
-local tweenInfo = TweenInfo.new(TWEEN_TIME, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+local platform = Instance.new("Part")
+platform.Name = "SafeZoneWithDecal"
+platform.Size = Vector3.new(20, 1, 20)
+platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
+platform.Anchored = true
+platform.CanCollide = true
+platform.BrickColor = BrickColor.new("Bright blue")
+platform.Transparency = 0.5
+platform.Parent = workspace
 
-local isTweening = false
+local decal = Instance.new("Decal")
+decal.Name = "PlatformLogo"
+decal.Texture = IMAGE_ID
+decal.Face = Enum.NormalId.Top 
+decal.Parent = platform
 
-local function checkAndExitZone()
-    if isTweening then return end
-
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    
-    local hrp = character.HumanoidRootPart
-    local charPos = hrp.Position
-    
-    local modelCFrame, modelSize = itemSpawns:GetBoundingBox()
-    local relativePos = modelCFrame:PointToObjectSpace(charPos)
-    
-    local isInside = math.abs(relativePos.X) <= modelSize.X / 2
-                 and math.abs(relativePos.Y) <= modelSize.Y / 2
-                 and math.abs(relativePos.Z) <= modelSize.Z / 2
-
-    if isInside then
-        isTweening = true
-        print("out map")
-        
-        local offsetX = (modelSize.X / 2) + 10 
-        if relativePos.X < 0 then offsetX = -offsetX end
-        
-        local targetWorldPos = modelCFrame:PointToWorldSpace(Vector3.new(offsetX, relativePos.Y, relativePos.Z))
-        
-        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetWorldPos)})
-        
-        hrp.Anchored = true 
-        tween:Play()
-        
-        tween.Completed:Connect(function()
-            hrp.Anchored = false
-            isTweening = false
-            print("out map1")
-        end)
-    end
-end
-
-while true do
-    checkAndExitZone()
-    task.wait(0.5)
-end
+rootPart.CFrame = CFrame.new(SAFE_POSITION)
   	end    
 })
-
 
 Tab:AddButton({
 	Name = "Remove invis parts",
@@ -951,6 +927,7 @@ game.DescendantAdded:Connect(addRemote)
 print("Spy Loaded!")
   	end    
 })
+
 
 
 
