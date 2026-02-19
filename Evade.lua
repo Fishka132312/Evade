@@ -111,7 +111,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "Ticket Farm 22",
+    Name = "Ticket Farm 2",
     Default = false,
     Callback = function(Value)
         toggled = Value
@@ -130,7 +130,7 @@ Tab:AddToggle({
                 local DANGER_RADIUS = 20 
                 local ESCAPE_TIME = 2.0 
                 
-                local DISTANCE_BELOW = 5 
+                local DISTANCE_BELOW = 8 
 
                 local platform = workspace:FindFirstChild("SafeZonePlatform") or Instance.new("Part")
                 platform.Name = "SafeZonePlatform"
@@ -1187,6 +1187,7 @@ else
 end
   	end    
 })
+
 
 
 
