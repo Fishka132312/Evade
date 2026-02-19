@@ -218,66 +218,76 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-	Name = "XP FARM",
-	Default = false,
-	Callback = function(Value)
-		_G.AutoFarmActive = Value
-		
-		if _G.AutoFarmActive then
-			task.spawn(function()
-				local Players = game:GetService("Players")
-				local TextChatService = game:GetService("TextChatService")
-				local player = Players.LocalPlayer
-				local isProcessing = false
+    Name = "XP FARM",
+    Default = false,
+    Callback = function(Value)
+        _G.AutoFarmActive = Value
+        
+        if _G.AutoFarmActive then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local TextChatService = game:GetService("TextChatService")
+                local player = Players.LocalPlayer
+                local isProcessing = false
+                local rewardCount = 0
 
-				local function getRewardsGui()
-					local pg = player:FindFirstChild("PlayerGui")
-					local global = pg and pg:FindFirstChild("Global")
-					return global and global:FindFirstChild("Rewards")
-				end
+                local function getRewardsGui()
+                    local pg = player:FindFirstChild("PlayerGui")
+                    local global = pg and pg:FindFirstChild("Global")
+                    return global and global:FindFirstChild("Rewards")
+                end
 
-				local function sendMessage(msg)
-					if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-						local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-						if channel then channel:SendAsync(msg) end
-					else
-						local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-						if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-							chatEvent.SayMessageRequest:FireServer(msg, "All")
-						end
-					end
-				end
+                local function sendMessage(msg)
+                    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                        if channel then channel:SendAsync(msg) end
+                    else
+                        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+                        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+                            chatEvent.SayMessageRequest:FireServer(msg, "All")
+                        end
+                    end
+                end
 
-				local function runCommands(rewardsGui)
-					isProcessing = true 
-					if rewardsGui then rewardsGui.Visible = false end 
-					
-					task.wait(2)
-					sendMessage("!map Maze")
-					task.wait(17)
-					sendMessage("!specialround Mimic")
-					task.wait(1)
-					sendMessage("!Timer 1")    
-					isProcessing = false
-				end
+                local function runCommands(rewardsGui)
+                    isProcessing = true 
+                    rewardCount = rewardCount + 1
+                    
+                    if rewardsGui then rewardsGui.Visible = false end 
+                    
+                    if rewardCount == 1 then
+                        task.wait(8)
+                        sendMessage("!specialround Mimic")
+                        task.wait(1)
+                        sendMessage("!Timer 1")
+                    else
+                        task.wait(2)
+                        sendMessage("!map Maze")
+                        task.wait(17)
+                        sendMessage("!specialround Mimic")
+                        task.wait(1)
+                        sendMessage("!Timer 1")
+                    end
+                    
+                    isProcessing = false
+                end
 
-
-				while _G.AutoFarmActive do
-					local rewardsGui = getRewardsGui()
-					
-					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
-						runCommands(rewardsGui)
-					end
-					
-					task.wait(1) 
-				end
-				
-				print("Autofarm Stopped")
-			end)
-		else
-			print("Autofarm turned off")
-		end
-	end    
+                while _G.AutoFarmActive do
+                    local rewardsGui = getRewardsGui()
+                    
+                    if rewardsGui and rewardsGui.Visible == true and not isProcessing then
+                        runCommands(rewardsGui)
+                    end
+                    
+                    task.wait(0.5)
+                end
+                
+                print("Autofarm Stopped")
+            end)
+        else
+            print("Autofarm turned off")
+        end
+    end     
 })
 
 Tab:AddButton({
@@ -1187,6 +1197,7 @@ else
 end
   	end    
 })
+
 
 
 
