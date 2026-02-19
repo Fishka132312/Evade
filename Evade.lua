@@ -234,67 +234,65 @@ shutdownServer()
 })
 
 Tab:AddToggle({
-    Name = "Disable 3D Rendering (CPU Saver)",
+    Name = "White Screen + Coin Tracker",
     Default = false,
     Callback = function(Value)
         local player = game.Players.LocalPlayer
         local coreGui = game:GetService("CoreGui")
         
-        local coinPath = player.PlayerGui:FindFirstChild("Shared") 
-            and player.PlayerGui.Shared:FindFirstChild("HUD")
-            and player.PlayerGui.Shared.HUD:FindFirstChild("Overlay")
-            and player.PlayerGui.Shared.HUD.Overlay:FindFirstChild("Default")
-            and player.PlayerGui.Shared.HUD.Overlay.Default:FindFirstChild("CharacterInfo")
-            and player.PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo:FindFirstChild("Tickets")
-            and player.PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo.Tickets:FindFirstChild("Cash")
+        local coinPath = player.PlayerGui:WaitForChild("Shared")
+            :WaitForChild("HUD")
+            :WaitForChild("Overlay")
+            :WaitForChild("Default")
+            :WaitForChild("CharacterInfo")
+            :WaitForChild("Item")
+            :WaitForChild("Tickets")
+            :WaitForChild("Cash")
 
-        local farmGui = coreGui:FindFirstChild("FarmStatusGui")
+        local farmGui = coreGui:FindFirstChild("FarmTracker")
         if not farmGui then
             farmGui = Instance.new("ScreenGui")
-            farmGui.Name = "FarmStatusGui"
+            farmGui.Name = "FarmTracker"
             farmGui.IgnoreGuiInset = true
             farmGui.Parent = coreGui
             
             local label = Instance.new("TextLabel")
-            label.Name = "CoinLabel"
-            label.Size = UDim2.new(1, 0, 0, 100)
-            label.Position = UDim2.new(0, 0, 0.45, 0)
+            label.Name = "Display"
+            label.Size = UDim2.new(1, 0, 0, 120)
+            label.Position = UDim2.new(0, 0, 0.4, 0)
             label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            label.BackgroundTransparency = 0.5
-            label.TextColor3 = Color3.fromRGB(0, 255, 127)
-            label.TextSize = 35
-            label.Font = Enum.Font.RobotoMono
+            label.BackgroundTransparency = 0.6
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.TextSize = 28
+            label.Font = Enum.Font.SourceSansBold
             label.Parent = farmGui
         end
 
-        local coinLabel = farmGui.CoinLabel
-        local lastValidValue = "0"
+        local displayLabel = farmGui.Display
+        local lastValidAmount = "Calculating..."
 
-        local function updateDisplay()
-            if coinPath then
-                local current = coinPath.Text
-                if current ~= "0" and current ~= "" and current ~= nil then
-                    lastValidValue = current
-                end
-                coinLabel.Text = "FARMING ACTIVE\nCoins: " .. lastValidValue
-            else
-                coinLabel.Text = "FARMING...\n(Coin Path Not Found)"
+        local function updateText()
+            local current = coinPath.Text
+            if current ~= "0" and current ~= "" and current ~= nil then
+                lastValidAmount = current
             end
+            displayLabel.Text = "⚡ FARMING MODE ACTIVE ⚡\n\nCASH: " .. lastValidAmount
         end
 
         if Value then
             game:GetService("RunService"):Set3dRenderingEnabled(false)
             farmGui.Enabled = true
+            updateText()
             
-            updateDisplay()
-            _G.CoinConn = coinPath:GetPropertyChangedSignal("Text"):Connect(updateDisplay)
+
+            _G.CoinLoop = coinPath:GetPropertyChangedSignal("Text"):Connect(updateText)
         else
             game:GetService("RunService"):Set3dRenderingEnabled(true)
             farmGui.Enabled = false
             
-            if _G.CoinConn then
-                _G.CoinConn:Disconnect()
-                _G.CoinConn = nil
+            if _G.CoinLoop then
+                _G.CoinLoop:Disconnect()
+                _G.CoinLoop = nil
             end
         end
     end    
@@ -1068,6 +1066,7 @@ else
 end
   	end    
 })
+
 
 
 
