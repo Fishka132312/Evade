@@ -348,76 +348,6 @@ shutdownServer()
 })
 
 Tab:AddToggle({
-	Name = "Balance Display",
-	Default = false,
-	Callback = function(Value)
-		local Player = game.Players.LocalPlayer
-		local PlayerGui = Player:WaitForChild("PlayerGui")
-
-		if Value then
-			_G.MyTrackerGui = Instance.new("ScreenGui")
-			_G.MyTrackerGui.Name = "BalanceDisplay"
-			_G.MyTrackerGui.Parent = PlayerGui
-			_G.MyTrackerGui.ResetOnSpawn = false
-
-			local Frame = Instance.new("Frame")
-			Frame.Size = UDim2.new(0, 160, 0, 40)
-			Frame.Position = UDim2.new(0, 15, 1, -55)
-			Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			Frame.BorderSizePixel = 0
-			Frame.Parent = _G.MyTrackerGui
-
-			local Corner = Instance.new("UICorner")
-			Corner.CornerRadius = UDim.new(0, 6)
-			Corner.Parent = Frame
-
-			local Label = Instance.new("TextLabel")
-			Label.Size = UDim2.new(1, -10, 1, 0)
-			Label.Position = UDim2.new(0, 5, 0, 0)
-			Label.BackgroundTransparency = 1
-			Label.TextColor3 = Color3.fromRGB(0, 0, 0)
-			Label.Font = Enum.Font.SourceSansBold
-			Label.TextScaled = true
-			Label.Text = "Searching..."
-			Label.Parent = Frame
-
-			task.spawn(function()
-				local success, target = pcall(function()
-					return PlayerGui:WaitForChild("Shared")
-						:WaitForChild("HUD")
-						:WaitForChild("Overlay")
-						:WaitForChild("Default")
-						:WaitForChild("CharacterInfo")
-						:WaitForChild("Item")
-						:WaitForChild("Tickets")
-						:WaitForChild("Cash")
-				end)
-
-				if success and target then
-					Label.Text = target.Text
-					
-					_G.TicketConnection = target:GetPropertyChangedSignal("Text"):Connect(function()
-						Label.Text = target.Text
-					end)
-				else
-					Label.Text = "Path not found"
-				end
-			end)
-
-		else
-			if _G.MyTrackerGui then
-				_G.MyTrackerGui:Destroy()
-				_G.MyTrackerGui = nil
-			end
-			if _G.TicketConnection then
-				_G.TicketConnection:Disconnect()
-				_G.TicketConnection = nil
-			end
-		end
-	end    
-})
-
-Tab:AddToggle({
     Name = "Disable 3D Rendering (CPU Saver)",
     Default = false,
     Callback = function(Value)
@@ -1197,6 +1127,7 @@ else
 end
   	end    
 })
+
 
 
 
