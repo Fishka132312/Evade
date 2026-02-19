@@ -218,7 +218,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM1",
+    Name = "XP FARMMm",
     Default = false,
     Callback = function(Value)
         _G.AutoFarmActive = Value
@@ -255,13 +255,13 @@ Tab:AddToggle({
                     
                     if rewardsGui then rewardsGui.Visible = false end 
                     
-                    if rewardCount == 1 then
+                    if rewardCount == 2 then
                         task.wait(8)
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
                     else
-                        task.wait(2)
+                        task.wait(1)
                         sendMessage("!map Maze")
                         task.wait(17)
                         sendMessage("!specialround Plushie Hell")
@@ -407,6 +407,7 @@ Tab:AddToggle({
 				local IMAGE_ID = "rbxassetid://126150774709719"
 				local SAFE_POSITION = Vector3.new(0, 500, 0)
 				local isProcessing = false
+				local rewardCount = 0
 
 				local platform = workspace:FindFirstChild("SafeZoneWithDecal")
 				if not platform then
@@ -449,7 +450,6 @@ Tab:AddToggle({
 				while _G.AutoFarmActive do
 					local character = player.Character
 					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-					
 					if rootPart then
 						if (rootPart.Position - SAFE_POSITION).Magnitude > 5 then
 							rootPart.CFrame = CFrame.new(SAFE_POSITION)
@@ -459,20 +459,29 @@ Tab:AddToggle({
 					local rewardsGui = getRewardsGui()
 					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
 						isProcessing = true
-						print("Награда получена, перезапуск...")
+						rewardCount = rewardCount + 1
 						
-						if rewardsGui then rewardsGui.Visible = false end 
-						task.wait(2)
-						sendMessage("!map Maze")
-						task.wait(17)
-						sendMessage("!specialround Mimic")
-						task.wait(1)
-						sendMessage("!Timer 1")
+						print("Награда #" .. rewardCount .. " получена")
+						rewardsGui.Visible = false
+						
+						if rewardCount == 2 then
+							task.wait(8)
+							sendMessage("!specialround Plushie Hell")
+							task.wait(1)
+							sendMessage("!Timer 1")
+						else
+							task.wait(1)
+							sendMessage("!map Maze")
+							task.wait(17)
+							sendMessage("!specialround Plushie Hell")
+							task.wait(1)
+							sendMessage("!Timer 1")
+						end
 						
 						isProcessing = false
 					end
 
-					task.wait(1)
+					task.wait(0.5)
 				end
 
 				if platform then platform:Destroy() end
@@ -502,7 +511,7 @@ end
 sendMessage("!map Maze")
 task.wait(17)
 
-sendMessage("!specialround Mimic")
+sendMessage("!specialround Plushie Hell")
 task.wait(1)
 
 sendMessage("!Timer 1")
@@ -519,46 +528,53 @@ Tab:AddToggle({
     Name = "XP FARM",
     Default = false,
     Callback = function(Value)
-        _G.SafeZoneEnabled = Value
+        toggled = Value
 
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-        local IMAGE_ID = "rbxassetid://126150774709719"
-        local SAFE_POSITION = Vector3.new(0, 500, 0)
-
-        if Value then
-            if not workspace:FindFirstChild("SafeZoneWithDecal") then
-                local platform = Instance.new("Part")
-                platform.Name = "SafeZoneWithDecal"
-                platform.Size = Vector3.new(20, 1, 20)
-                platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
-                platform.Anchored = true
-                platform.CanCollide = true
-                platform.BrickColor = BrickColor.new("Bright blue")
-                platform.Transparency = 0.5
-                platform.Parent = workspace
-
-                local decal = Instance.new("Decal")
-                decal.Name = "PlatformLogo"
-                decal.Texture = IMAGE_ID
-                decal.Face = Enum.NormalId.Top 
-                decal.Parent = platform
-            end
-
+        if toggled then
             task.spawn(function()
-                while _G.SafeZoneEnabled do
-                    local character = player.Character
-                    if character and character:FindFirstChild("HumanoidRootPart") then
-                        character.HumanoidRootPart.CFrame = CFrame.new(SAFE_POSITION)
-                    end
-                    task.wait(0.1)
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+
+                local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+
+                local platform = workspace:FindFirstChild("SafeZonePlatform")
+                if not platform then
+                    platform = Instance.new("Part")
+                    platform.Name = "SafeZonePlatform"
+                    platform.Size = Vector3.new(20, 1, 20)
+                    platform.Anchored = true
+                    platform.CanCollide = true
+                    platform.Transparency = 0.5 
+                    platform.BrickColor = BrickColor.new("Bright blue")
+                    platform.Parent = workspace
                 end
+
+                local function getSafeZoneCFrame()
+                    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
+                end
+
+                while toggled do 
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChild("Humanoid")
+                    
+                    local safeCFrame = getSafeZoneCFrame()
+                    
+                    platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
+
+                    if rootPart and humanoid and humanoid.Health > 0 then
+                        if (rootPart.Position - safeCFrame.Position).Magnitude > 5 then
+                            rootPart.CFrame = safeCFrame
+                        end
+                    end
+                    task.wait(0.5)
+                end
+
+                if platform then 
+                    platform.CFrame = CFrame.new(0, -1000, 0) 
+                end 
             end)
-        else
-            local oldPlatform = workspace:FindFirstChild("SafeZoneWithDecal")
-            if oldPlatform then
-                oldPlatform:Destroy()
-            end
         end
     end    
 })
@@ -567,49 +583,8 @@ local Section = Tab:AddSection({
 	Name = "FUN"
 })
 
-
 Tab:AddButton({
-	Name = "TP OUTSIDE MAP 1",
-	Callback = function()
-			local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local itemSpawns = workspace.Game.Map.ItemSpawns
-
-local function checkAndExitZone()
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    
-    local hrp = character.HumanoidRootPart
-    local charPos = hrp.Position
-    
-    local modelCFrame, modelSize = itemSpawns:GetBoundingBox()
-    
-    local relativePos = modelCFrame:PointToObjectSpace(charPos)
-    
-    local isInside = math.abs(relativePos.X) <= modelSize.X / 2
-                 and math.abs(relativePos.Y) <= modelSize.Y / 2
-                 and math.abs(relativePos.Z) <= modelSize.Z / 2
-
-    if isInside then
-					
-        local offsetX = (modelSize.X / 2) + 5
-        if relativePos.X < 0 then offsetX = -offsetX end
-        
-        local newRelativePos = Vector3.new(offsetX, relativePos.Y, relativePos.Z)
-        local targetWorldPos = modelCFrame:PointToWorldSpace(newRelativePos)
-        
-        hrp.CFrame = CFrame.new(targetWorldPos)
-    else
-        print("error")
-    end
-end
-
-checkAndExitZone()
-  	end    
-})
-
-Tab:AddButton({
-	Name = "TP OUTSIDE MAP 2",
+	Name = "TP OUTSIDE MAP x1",
 	Callback = function()
 			local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -1127,6 +1102,7 @@ else
 end
   	end    
 })
+
 
 
 
