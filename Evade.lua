@@ -111,7 +111,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "Ticket Farm 2",
+    Name = "Ticket Farm 22",
     Default = false,
     Callback = function(Value)
         toggled = Value
@@ -1190,6 +1190,7 @@ else
 end
   	end    
 })
+
 
 
 
