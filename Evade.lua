@@ -234,11 +234,12 @@ shutdownServer()
 })
 
 Tab:AddToggle({
-    Name = "White Screen + Coin Tracker",
+    Name = "White Screen + Advanced Tracker",
     Default = false,
     Callback = function(Value)
         local player = game.Players.LocalPlayer
         local coreGui = game:GetService("CoreGui")
+        local runService = game:GetService("RunService")
         
         local coinPath = player.PlayerGui:WaitForChild("Shared")
             :WaitForChild("HUD")
@@ -249,6 +250,17 @@ Tab:AddToggle({
             :WaitForChild("Tickets")
             :WaitForChild("Cash")
 
+        local function getCoinValue()
+            return tonumber(coinPath.Text:gsub("[%D]", "")) or 0
+        end
+
+        if not _G.StartCoins or _G.StartCoins == 0 then
+            _G.StartCoins = getCoinValue()
+            _G.LastCheckTime = os.time()
+            _G.CoinsAtLastCheck = _G.StartCoins
+            _G.HourlyRate = 0
+        end
+
         local farmGui = coreGui:FindFirstChild("FarmTracker")
         if not farmGui then
             farmGui = Instance.new("ScreenGui")
@@ -258,48 +270,57 @@ Tab:AddToggle({
             
             local label = Instance.new("TextLabel")
             label.Name = "Display"
-            label.Size = UDim2.new(1, 0, 0, 120)
-            label.Position = UDim2.new(0, 0, 0.4, 0)
+            label.Size = UDim2.new(1, 0, 0, 180)
+            label.Position = UDim2.new(0, 0, 0.35, 0)
             label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
             label.BackgroundTransparency = 0.6
             label.TextColor3 = Color3.fromRGB(255, 255, 255)
-            label.TextSize = 28
+            label.TextSize = 24
             label.Font = Enum.Font.SourceSansBold
             label.Parent = farmGui
         end
 
-        local displayLabel = farmGui.Display
-        local lastValidAmount = "Calculating..."
+        local function updateStats()
+            local currentCoins = getCoinValue()
+            if currentCoins == 0 then return end
 
-        local function updateText()
-            local current = coinPath.Text
-            if current ~= "0" and current ~= "" and current ~= nil then
-                lastValidAmount = current
+            local sessionEarned = currentCoins - _G.StartCoins
+            local now = os.time()
+            local elapsed = now - _G.LastCheckTime
+
+            if elapsed >= 120 then
+                local gained = currentCoins - _G.CoinsAtLastCheck
+                _G.HourlyRate = gained * 30
+                _G.CoinsAtLastCheck = currentCoins
+                _G.LastCheckTime = now
             end
-            displayLabel.Text = "⚡ FARMING MODE ACTIVE ⚡\n\nCASH: " .. lastValidAmount
+
+            farmGui.Display.Text = string.format(
+                "⚡ FARMING ACTIVE ⚡\n\nTotal: %s\nSession: +%d\nEst. Speed: %d/hr",
+                coinPath.Text, sessionEarned, _G.HourlyRate
+            )
         end
 
         if Value then
-            game:GetService("RunService"):Set3dRenderingEnabled(false)
+            runService:Set3dRenderingEnabled(false)
             farmGui.Enabled = true
-            updateText()
             
-
-            _G.CoinLoop = coinPath:GetPropertyChangedSignal("Text"):Connect(updateText)
+            updateStats()
+            _G.FarmConnection = coinPath:GetPropertyChangedSignal("Text"):Connect(updateStats)
         else
-            game:GetService("RunService"):Set3dRenderingEnabled(true)
+            runService:Set3dRenderingEnabled(true)
             farmGui.Enabled = false
             
-            if _G.CoinLoop then
-                _G.CoinLoop:Disconnect()
-                _G.CoinLoop = nil
+            if _G.FarmConnection then
+                _G.FarmConnection:Disconnect()
+                _G.FarmConnection = nil
             end
         end
     end    
 })
 
 Tab:AddToggle({
-    Name = "Fps Cap (POWER Saver",
+    Name = "Fps Cap (POWER Saver)",
     Default = false,
     Callback = function(Value)
         if Value then
@@ -1066,6 +1087,7 @@ else
 end
   	end    
 })
+
 
 
 
