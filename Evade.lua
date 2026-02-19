@@ -218,7 +218,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM",
+    Name = "XP FARM1",
     Default = false,
     Callback = function(Value)
         _G.AutoFarmActive = Value
@@ -257,14 +257,14 @@ Tab:AddToggle({
                     
                     if rewardCount == 1 then
                         task.wait(8)
-                        sendMessage("!specialround Mimic")
+                        sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
                     else
                         task.wait(2)
                         sendMessage("!map Maze")
                         task.wait(17)
-                        sendMessage("!specialround Mimic")
+                        sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
                     end
@@ -291,7 +291,7 @@ Tab:AddToggle({
 })
 
 Tab:AddButton({
-	Name = "MAZE + TEXT",
+	Name = "MAZE",
 	Callback = function()
 			local TextChatService = game:GetService("TextChatService")
 
@@ -310,7 +310,7 @@ end
 sendMessage("!map Maze")
 task.wait(17)
 
-sendMessage("!specialround Mimic")
+sendMessage("!specialround Plushie Hell")
 task.wait(1)
 
 sendMessage("!Timer 1")
@@ -1197,6 +1197,7 @@ else
 end
   	end    
 })
+
 
 
 
