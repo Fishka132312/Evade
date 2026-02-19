@@ -250,7 +250,6 @@ Tab:AddToggle({
 
 				local function runCommands(rewardsGui)
 					isProcessing = true 
-					print("Выполнение команд...")
 					if rewardsGui then rewardsGui.Visible = false end 
 					
 					task.wait(2)
@@ -259,11 +258,9 @@ Tab:AddToggle({
 					sendMessage("!specialround Mimic")
 					task.wait(1)
 					sendMessage("!Timer 1")    
-					print("Ожидание...")
 					isProcessing = false
 				end
 
-				print("Autofarm Started")
 
 				while _G.AutoFarmActive do
 					local rewardsGui = getRewardsGui()
@@ -1190,6 +1187,7 @@ else
 end
   	end    
 })
+
 
 
 
