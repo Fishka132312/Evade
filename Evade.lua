@@ -233,80 +233,61 @@ shutdownServer()
   	end    
 })
 
-Tab:AddToggle({
-	Name = "Отображать баланс!!",
-	Default = false,
-	Callback = function(Value)
-		local Player = game.Players.LocalPlayer
-		local PlayerGui = Player:WaitForChild("PlayerGui")
+Tab:AddButton({
+    Name = "Button!",
+    Callback = function()
+        -- 1. Получаем значение текста из GUI
+        local player = game.Players.LocalPlayer
+        local ticketsPath = player.PlayerGui:FindFirstChild("Shared")
+            and player.PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo.Item.Tickets.Cash
+        
+        local cashValue = ticketsPath and ticketsPath.Text or "Н/Д"
 
-		if Value then
-			-- 1. Создаем интерфейс
-			_G.MyTrackerGui = Instance.new("ScreenGui")
-			_G.MyTrackerGui.Name = "TicketTracker"
-			_G.MyTrackerGui.Parent = PlayerGui
-			_G.MyTrackerGui.ResetOnSpawn = false
+        -- 2. Создаем основной экран (ScreenGui), если его еще нет
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "InfoDisplayGui"
+        screenGui.Parent = player.PlayerGui
+        screenGui.ResetOnSpawn = false
 
-			local Frame = Instance.new("Frame")
-			Frame.Size = UDim2.new(0, 160, 0, 40)
-			Frame.Position = UDim2.new(0, 15, 1, -55) -- Левый нижний угол
-			Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			Frame.BorderSizePixel = 0
-			Frame.Parent = _G.MyTrackerGui
+        -- 3. Создаем белый фрейм
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0.2, 0, 0.1, 0) -- 20% ширины, 10% высоты экрана
+        frame.Position = UDim2.new(0.02, 0, 0.85, 0) -- Левый нижний угол
+        frame.BackgroundColor3 = Color3.new(1, 1, 1) -- Белый
+        frame.BorderSizePixel = 2
+        frame.Parent = screenGui
 
-			local Corner = Instance.new("UICorner")
-			Corner.CornerRadius = UDim.new(0, 6)
-			Corner.Parent = Frame
+        -- Закруглим углы для красоты
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = frame
 
-			local Label = Instance.new("TextLabel")
-			Label.Size = UDim2.new(1, -10, 1, 0)
-			Label.Position = UDim2.new(0, 5, 0, 0)
-			Label.BackgroundTransparency = 1
-			Label.TextColor3 = Color3.fromRGB(0, 0, 0)
-			Label.Font = Enum.Font.SourceSansBold
-			Label.TextScaled = true
-			Label.Text = "Поиск..."
-			Label.Parent = Frame
+        -- 4. Текст с информацией (черный)
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 0.6, 0)
+        label.Position = UDim2.new(0, 0, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "Tickets: " .. cashValue
+        label.TextColor3 = Color3.new(0, 0, 0) -- Черный
+        label.TextScaled = true -- Авто-размер текста под экран
+        label.Font = Enum.Font.SourceSansBold
+        label.Parent = frame
 
-			-- 2. Безопасный поиск пути через цепочку WaitForChild
-			-- Это решит проблему "Ошибка пути"
-			task.spawn(function()
-				local success, target = pcall(function()
-					return PlayerGui:WaitForChild("Shared")
-						:WaitForChild("HUD")
-						:WaitForChild("Overlay")
-						:WaitForChild("Default")
-						:WaitForChild("CharacterInfo")
-						:WaitForChild("Item")
-						:WaitForChild("Tickets")
-						:WaitForChild("Cash")
-				end)
+        -- 5. Кнопка закрытия
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.new(1, 0, 0.4, 0)
+        closeBtn.Position = UDim2.new(0, 0, 0.6, 0)
+        closeBtn.BackgroundColor3 = Color3.new(0.9, 0.3, 0.3) -- Красноватая
+        closeBtn.Text = "CLOSE"
+        closeBtn.TextColor3 = Color3.new(1, 1, 1)
+        closeBtn.TextScaled = true
+        closeBtn.Parent = frame
 
-				if success and target then
-					-- Устанавливаем текст сразу
-					Label.Text = target.Text
-					
-					-- Следим за изменениями
-					_G.TicketConnection = target:GetPropertyChangedSignal("Text"):Connect(function()
-						Label.Text = target.Text
-					end)
-				else
-					Label.Text = "Не найден путь"
-				end
-			end)
-
-		else
-			-- 3. Удаление при выключении
-			if _G.MyTrackerGui then
-				_G.MyTrackerGui:Destroy()
-				_G.MyTrackerGui = nil
-			end
-			if _G.TicketConnection then
-				_G.TicketConnection:Disconnect()
-				_G.TicketConnection = nil
-			end
-		end
-	end    
+        -- Скрипт удаления при нажатии
+        closeBtn.MouseButton1Click:Connect(function()
+            screenGui:Destroy()
+        end)
+    end    
 })
 
 Tab:AddToggle({
@@ -1089,6 +1070,7 @@ else
 end
   	end    
 })
+
 
 
 
