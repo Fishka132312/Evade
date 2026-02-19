@@ -1,14 +1,14 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
-local Window = OrionLib:MakeWindow({Name = "🎄Evade🎄", HidePremium = false, SaveConfig = true, ConfigFolder = "🎄Evade🎄"})
+local Window = OrionLib:MakeWindow({Name = "❤️ Evade🏮", HidePremium = false, SaveConfig = true, ConfigFolder = "🎄Evade🎄"})
 
 local Tab = Window:MakeTab({
-	Name = "Farm",
+	Name = "Event farm 💌",
 	Icon = "rbxassetid://4483345998",
 	PremiumOnly = false
 })
 
 local Section = Tab:AddSection({
-	Name = "Rejoint to turn off"
+	Name = "Event farm"
 })
 
 Tab:AddButton({
@@ -22,12 +22,10 @@ local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
 local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
 local playersFolder = gameFolder:WaitForChild("Players")
 
--- Settings
 local WAIT_AT_ITEM = 1.0
 local DANGER_RADIUS = 20 
 local ESCAPE_TIME = 2.0 
 
--- Платформа
 local platform = Instance.new("Part")
 platform.Name = "SafeZonePlatform"
 platform.Size = Vector3.new(20, 1, 20)
@@ -104,108 +102,96 @@ end)
   	end    
 })
 
-Tab:AddButton({
-	Name = "Maze",
-	Callback = function()
-			local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
-
-local message = "!map Maze"
-
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then 
-            channel:SendAsync(msg) 
-        end
-    else
-        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
-        end
-    end
-end
-
-task.wait(1)
-
-sendMessage(message)
-  	end    
-})
-
-Tab:AddButton({
+Tab:AddToggle({
 	Name = "XP FARM",
-	Callback = function()
-			local Players = game:GetService("Players")
-local TextChatService = game:GetService("TextChatService")
+	Default = false,
+	Callback = function(Value)
+		_G.AutoFarmActive = Value
+		
+		if _G.AutoFarmActive then
+			task.spawn(function()
+				local Players = game:GetService("Players")
+				local TextChatService = game:GetService("TextChatService")
+				local player = Players.LocalPlayer
+				
+				local IMAGE_ID = "rbxassetid://126150774709719"
+				local SAFE_POSITION = Vector3.new(0, 500, 0)
+				local isProcessing = false
 
-local player = Players.LocalPlayer
-_G.AutoFarmActive = true
-local isProcessing = false
+				local platform = workspace:FindFirstChild("SafeZoneWithDecal")
+				if not platform then
+					platform = Instance.new("Part")
+					platform.Name = "SafeZoneWithDecal"
+					platform.Size = Vector3.new(20, 1, 20)
+					platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
+					platform.Anchored = true
+					platform.CanCollide = true
+					platform.BrickColor = BrickColor.new("Bright blue")
+					platform.Transparency = 0.5
+					platform.Parent = workspace
 
-local function getRewardsGui()
-    local pg = player:FindFirstChild("PlayerGui")
-    if pg then
-        local global = pg:FindFirstChild("Global")
-        if global then
-            return global:FindFirstChild("Rewards")
-        end
-    end
-    return nil
-end
+					local decal = Instance.new("Decal")
+					decal.Texture = IMAGE_ID
+					decal.Face = Enum.NormalId.Top 
+					decal.Parent = platform
+				end
 
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then channel:SendAsync(msg) end
-    else
-        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
-        end
-    end
-end
+				local function getRewardsGui()
+					local pg = player:FindFirstChild("PlayerGui")
+					local global = pg and pg:FindFirstChild("Global")
+					return global and global:FindFirstChild("Rewards")
+				end
 
-local function runCommands(rewardsGui)
-    isProcessing = true 
-    print("End")
-    if rewardsGui then rewardsGui.Visible = false end 
-    
-    task.wait(2)
-    sendMessage("!map Maze")
-    task.wait(17)
-    sendMessage("!specialround Mimic")
-    task.wait(1)
-    sendMessage("!Timer 1")    
-    print("Waiting...")
-    isProcessing = false
-end
+				local function sendMessage(msg)
+					if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+						local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+						if channel then channel:SendAsync(msg) end
+					else
+						local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+						if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+							chatEvent.SayMessageRequest:FireServer(msg, "All")
+						end
+					end
+				end
 
-task.spawn(function()
-    print("Autofarm turned off")
-    
-    while _G.AutoFarmActive do
-        local rewardsGui = getRewardsGui()
-        
-        if rewardsGui and rewardsGui.Visible == true and not isProcessing then
-            runCommands(rewardsGui)
-        end
-        
-        task.wait(1) 
-    end
-end)
-  	end    
+				print("Autofarm & SafeZone: ON")
+
+				while _G.AutoFarmActive do
+					local character = player.Character
+					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+					
+					if rootPart then
+						if (rootPart.Position - SAFE_POSITION).Magnitude > 5 then
+							rootPart.CFrame = CFrame.new(SAFE_POSITION)
+						end
+					end
+
+					local rewardsGui = getRewardsGui()
+					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
+						isProcessing = true
+						print("Награда получена, перезапуск...")
+						
+						if rewardsGui then rewardsGui.Visible = false end 
+						task.wait(2)
+						sendMessage("!map Maze")
+						task.wait(17)
+						sendMessage("!specialround Mimic")
+						task.wait(1)
+						sendMessage("!Timer 1")
+						
+						isProcessing = false
+					end
+
+					task.wait(1)
+				end
+
+				if platform then platform:Destroy() end
+				print("Autofarm & SafeZone: OFF")
+			end)
+		end
+	end    
 })
 
-Tab:AddButton({
-	Name = "XP FARM STOP",
-	Callback = function()
-			_G.AutoFarmActive = false
-print("---")
-print("Автофарм деактивирован EBAT.")
-print("Текущий цикл (если он шел) завершится, и новый не начнется.")
-print("---")
-  	end    
-})
 
 Tab:AddButton({
 	Name = "MAZE + TEXT",
@@ -271,8 +257,12 @@ local Tab = Window:MakeTab({
 	PremiumOnly = false
 })
 
+local Section = Tab:AddSection({
+	Name = "PV SERVER FARM (FASTEST)"
+})
+
 Tab:AddToggle({
-	Name = "XP FARM VIP SERVER",
+	Name = "XP FARM",
 	Default = false,
 	Callback = function(Value)
 		_G.AutoFarmActive = Value
@@ -282,7 +272,28 @@ Tab:AddToggle({
 				local Players = game:GetService("Players")
 				local TextChatService = game:GetService("TextChatService")
 				local player = Players.LocalPlayer
+				
+				local IMAGE_ID = "rbxassetid://126150774709719"
+				local SAFE_POSITION = Vector3.new(0, 500, 0)
 				local isProcessing = false
+
+				local platform = workspace:FindFirstChild("SafeZoneWithDecal")
+				if not platform then
+					platform = Instance.new("Part")
+					platform.Name = "SafeZoneWithDecal"
+					platform.Size = Vector3.new(20, 1, 20)
+					platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
+					platform.Anchored = true
+					platform.CanCollide = true
+					platform.BrickColor = BrickColor.new("Bright blue")
+					platform.Transparency = 0.5
+					platform.Parent = workspace
+
+					local decal = Instance.new("Decal")
+					decal.Texture = IMAGE_ID
+					decal.Face = Enum.NormalId.Top 
+					decal.Parent = platform
+				end
 
 				local function getRewardsGui()
 					local pg = player:FindFirstChild("PlayerGui")
@@ -302,42 +313,132 @@ Tab:AddToggle({
 					end
 				end
 
-				local function runCommands(rewardsGui)
-					isProcessing = true 
-					if rewardsGui then rewardsGui.Visible = false end 
-					
-					task.wait(2)
-					sendMessage("!map Maze")
-					task.wait(17)
-					sendMessage("!specialround Mimic")
-					task.wait(1)
-					sendMessage("!Timer 1")    
-					print("Ожидание...")
-					isProcessing = false
-				end
-
-				print("Autofarm Started")
+				print("Autofarm & SafeZone: ON")
 
 				while _G.AutoFarmActive do
-					local rewardsGui = getRewardsGui()
+					local character = player.Character
+					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
 					
-					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
-						runCommands(rewardsGui)
+					if rootPart then
+						if (rootPart.Position - SAFE_POSITION).Magnitude > 5 then
+							rootPart.CFrame = CFrame.new(SAFE_POSITION)
+						end
 					end
-					
-					task.wait(1) 
+
+					local rewardsGui = getRewardsGui()
+					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
+						isProcessing = true
+						print("Награда получена, перезапуск...")
+						
+						if rewardsGui then rewardsGui.Visible = false end 
+						task.wait(2)
+						sendMessage("!map Maze")
+						task.wait(17)
+						sendMessage("!specialround Mimic")
+						task.wait(1)
+						sendMessage("!Timer 1")
+						
+						isProcessing = false
+					end
+
+					task.wait(1)
 				end
-				
-				print("Autofarm Stopped")
+
+				if platform then platform:Destroy() end
+				print("Autofarm & SafeZone: OFF")
 			end)
-		else
-			print("Autofarm turned off")
 		end
 	end    
 })
 
 Tab:AddButton({
-	Name = "TP OUTSIDE MAP",
+	Name = "SET MAZE + TEXT",
+	Callback = function()
+			local TextChatService = game:GetService("TextChatService")
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then channel:SendAsync(msg) end
+    else
+        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+sendMessage("!map Maze")
+task.wait(17)
+
+sendMessage("!specialround Mimic")
+task.wait(1)
+
+sendMessage("!Timer 1")
+
+print("Down")
+  	end    
+})
+
+local Section = Tab:AddSection({
+	Name = "PUBLIC SERVER FARM"
+})
+
+Tab:AddToggle({
+    Name = "XP FARM",
+    Default = false,
+    Callback = function(Value)
+        _G.SafeZoneEnabled = Value
+
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local IMAGE_ID = "rbxassetid://126150774709719"
+        local SAFE_POSITION = Vector3.new(0, 500, 0)
+
+        if Value then
+            if not workspace:FindFirstChild("SafeZoneWithDecal") then
+                local platform = Instance.new("Part")
+                platform.Name = "SafeZoneWithDecal"
+                platform.Size = Vector3.new(20, 1, 20)
+                platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
+                platform.Anchored = true
+                platform.CanCollide = true
+                platform.BrickColor = BrickColor.new("Bright blue")
+                platform.Transparency = 0.5
+                platform.Parent = workspace
+
+                local decal = Instance.new("Decal")
+                decal.Name = "PlatformLogo"
+                decal.Texture = IMAGE_ID
+                decal.Face = Enum.NormalId.Top 
+                decal.Parent = platform
+            end
+
+            task.spawn(function()
+                while _G.SafeZoneEnabled do
+                    local character = player.Character
+                    if character and character:FindFirstChild("HumanoidRootPart") then
+                        character.HumanoidRootPart.CFrame = CFrame.new(SAFE_POSITION)
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        else
+            local oldPlatform = workspace:FindFirstChild("SafeZoneWithDecal")
+            if oldPlatform then
+                oldPlatform:Destroy()
+            end
+        end
+    end    
+})
+
+local Section = Tab:AddSection({
+	Name = "FUN"
+})
+
+
+Tab:AddButton({
+	Name = "TP OUTSIDE MAP 1",
 	Callback = function()
 			local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -377,7 +478,7 @@ checkAndExitZone()
 })
 
 Tab:AddButton({
-	Name = "TP OUTSIDE MAP + SAFE ZONE",
+	Name = "TP OUTSIDE MAP 2",
 	Callback = function()
 			local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -863,70 +964,7 @@ end
   	end    
 })
 
-Tab:AddButton({
-	Name = "Show all remotes",
-	Callback = function()
-			local Players = game:GetService("Players")
-local lp = Players.LocalPlayer
-local pgui = lp:WaitForChild("PlayerGui")
 
-local sg = Instance.new("ScreenGui", pgui)
-sg.Name = "SimpleRemoteSpy"
-sg.ResetOnSpawn = false
-
-local frame = Instance.new("ScrollingFrame", sg)
-frame.Size = UDim2.new(0, 250, 0, 350)
-frame.Position = UDim2.new(0, 50, 0, 50)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.CanvasSize = UDim2.new(0, 0, 20, 0) 
-frame.Visible = true
-
-local layout = Instance.new("UIListLayout", frame)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local toggle = Instance.new("TextButton", sg)
-toggle.Size = UDim2.new(0, 100, 0, 30)
-toggle.Position = UDim2.new(0, 50, 0, 20)
-toggle.Text = "OPEN/CLOSE"
-toggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-toggle.TextColor3 = Color3.new(1, 1, 1)
-
-toggle.MouseButton1Click:Connect(function()
-    frame.Visible = not frame.Visible
-end)
-
-local function addRemote(obj)
-    if obj:IsA("RemoteEvent") then
-        local remoteFrame = Instance.new("Frame", frame)
-        remoteFrame.Size = UDim2.new(1, 0, 0, 40)
-        remoteFrame.BackgroundTransparency = 1
-
-        local btn = Instance.new("TextButton", remoteFrame)
-        btn.Size = UDim2.new(0.8, 0, 0.9, 0)
-        btn.Position = UDim2.new(0.1, 0, 0.05, 0)
-        btn.Text = "FIRE: " .. obj.Name
-        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        btn.TextColor3 = Color3.new(1, 1, 1)
-        btn.TextScaled = true
-
-        btn.MouseButton1Click:Connect(function()
-            obj:FireServer()
-            btn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-            task.wait(0.2)
-            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        end)
-    end
-end
-
-for _, v in pairs(game:GetDescendants()) do
-    addRemote(v)
-end
-
-game.DescendantAdded:Connect(addRemote)
-
-print("Spy Loaded!")
-  	end    
-})
 
 
 
