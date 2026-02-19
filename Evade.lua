@@ -234,23 +234,22 @@ shutdownServer()
 })
 
 Tab:AddToggle({
-	Name = "Balance Display!!",
+	Name = "Balance Display",
 	Default = false,
 	Callback = function(Value)
 		local Player = game.Players.LocalPlayer
 		local PlayerGui = Player:WaitForChild("PlayerGui")
 
 		if Value then
-			-- Создаем GUI
 			_G.MyTrackerGui = Instance.new("ScreenGui")
 			_G.MyTrackerGui.Name = "BalanceDisplay"
 			_G.MyTrackerGui.Parent = PlayerGui
 			_G.MyTrackerGui.ResetOnSpawn = false
 
 			local Frame = Instance.new("Frame")
-			Frame.Size = UDim2.new(0, 180, 0, 60) -- Увеличил высоту для второй строки
-			Frame.Position = UDim2.new(0, 15, 1, -75)
-			Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25) -- Сделал чуть темнее для стиля
+			Frame.Size = UDim2.new(0, 160, 0, 40)
+			Frame.Position = UDim2.new(0, 15, 1, -55)
+			Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 			Frame.BorderSizePixel = 0
 			Frame.Parent = _G.MyTrackerGui
 
@@ -259,24 +258,14 @@ Tab:AddToggle({
 			Corner.Parent = Frame
 
 			local Label = Instance.new("TextLabel")
-			Label.Size = UDim2.new(1, -10, 0.5, 0)
+			Label.Size = UDim2.new(1, -10, 1, 0)
 			Label.Position = UDim2.new(0, 5, 0, 0)
 			Label.BackgroundTransparency = 1
-			Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+			Label.TextColor3 = Color3.fromRGB(0, 0, 0)
 			Label.Font = Enum.Font.SourceSansBold
 			Label.TextScaled = true
-			Label.Text = "Loading..."
+			Label.Text = "Searching..."
 			Label.Parent = Frame
-
-			local AvgLabel = Instance.new("TextLabel")
-			AvgLabel.Size = UDim2.new(1, -10, 0.5, 0)
-			AvgLabel.Position = UDim2.new(0, 5, 0.5, 0)
-			AvgLabel.BackgroundTransparency = 1
-			AvgLabel.TextColor3 = Color3.fromRGB(0, 255, 100) -- Зеленоватый для статистики
-			AvgLabel.Font = Enum.Font.SourceSans
-			AvgLabel.TextScaled = true
-			AvgLabel.Text = "Analyzing: 0s"
-			AvgLabel.Parent = Frame
 
 			task.spawn(function()
 				local success, target = pcall(function()
@@ -291,56 +280,10 @@ Tab:AddToggle({
 				end)
 
 				if success and target then
-					-- Вспомогательная функция для очистки текста (если там есть символы вроде $)
-					local function getCleanValue()
-						return tonumber(target.Text:gsub("%D", "")) or 0
-					end
-
-					local lastBalance = getCleanValue()
-					local startBalance2Min = lastBalance
-					local startTime = tick()
-
-					Label.Text = "Cash: " .. target.Text
-
-					-- Обновление основного текста
+					Label.Text = target.Text
+					
 					_G.TicketConnection = target:GetPropertyChangedSignal("Text"):Connect(function()
-						local currentBalance = getCleanValue()
-						Label.Text = "Cash: " .. target.Text
-						
-						-- Проверка на резкий скачок (больше 1000)
-						local diff = math.abs(currentBalance - lastBalance)
-						if diff > 1000 then
-							-- Если скачок большой, сбрасываем точку отсчета 2-х минут, чтобы не портить статистику
-							startBalance2Min = currentBalance
-							startTime = tick()
-						end
-						lastBalance = currentBalance
-					end)
-
-					-- Цикл анализа (раз в 2 минуты / 120 секунд)
-					task.spawn(function()
-						while _G.MyTrackerGui do
-							local elapsed = tick() - startTime
-							
-							if elapsed >= 120 then
-								local currentBalance = getCleanValue()
-								local gained = currentBalance - startBalance2Min
-								
-								-- Если доход отрицательный (потратили) или слишком большой скачок — игнорируем
-								if gained < 0 or gained > 50000 then gained = 0 end 
-								
-								local perHour = gained * 30 -- 2 минуты * 30 = 60 минут
-								AvgLabel.Text = string.format("Avg: %d/hr", perHour)
-								
-								-- Сбрасываем цикл замера
-								startBalance2Min = currentBalance
-								startTime = tick()
-							else
-								-- Показываем прогресс анализа (секунды)
-								AvgLabel.Text = string.format("Analyzing: %ds", math.floor(elapsed))
-							end
-							task.wait(1)
-						end
+						Label.Text = target.Text
 					end)
 				else
 					Label.Text = "Path not found"
@@ -348,7 +291,6 @@ Tab:AddToggle({
 			end)
 
 		else
-			-- Отключение
 			if _G.MyTrackerGui then
 				_G.MyTrackerGui:Destroy()
 				_G.MyTrackerGui = nil
@@ -1141,6 +1083,7 @@ else
 end
   	end    
 })
+
 
 
 
