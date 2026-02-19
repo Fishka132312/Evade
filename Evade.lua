@@ -121,28 +121,7 @@ Tab:AddToggle({
 				local Players = game:GetService("Players")
 				local TextChatService = game:GetService("TextChatService")
 				local player = Players.LocalPlayer
-				
-				local IMAGE_ID = "rbxassetid://126150774709719"
-				local SAFE_POSITION = Vector3.new(0, 500, 0)
 				local isProcessing = false
-
-				local platform = workspace:FindFirstChild("SafeZoneWithDecal")
-				if not platform then
-					platform = Instance.new("Part")
-					platform.Name = "SafeZoneWithDecal"
-					platform.Size = Vector3.new(20, 1, 20)
-					platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
-					platform.Anchored = true
-					platform.CanCollide = true
-					platform.BrickColor = BrickColor.new("Bright blue")
-					platform.Transparency = 0.5
-					platform.Parent = workspace
-
-					local decal = Instance.new("Decal")
-					decal.Texture = IMAGE_ID
-					decal.Face = Enum.NormalId.Top 
-					decal.Parent = platform
-				end
 
 				local function getRewardsGui()
 					local pg = player:FindFirstChild("PlayerGui")
@@ -162,44 +141,40 @@ Tab:AddToggle({
 					end
 				end
 
-				print("Autofarm & SafeZone: ON")
-
-				while _G.AutoFarmActive do
-					local character = player.Character
-					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+				local function runCommands(rewardsGui)
+					isProcessing = true 
+					print("Выполнение команд...")
+					if rewardsGui then rewardsGui.Visible = false end 
 					
-					if rootPart then
-						if (rootPart.Position - SAFE_POSITION).Magnitude > 5 then
-							rootPart.CFrame = CFrame.new(SAFE_POSITION)
-						end
-					end
-
-					local rewardsGui = getRewardsGui()
-					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
-						isProcessing = true
-						print("Награда получена, перезапуск...")
-						
-						if rewardsGui then rewardsGui.Visible = false end 
-						task.wait(2)
-						sendMessage("!map Maze")
-						task.wait(17)
-						sendMessage("!specialround Mimic")
-						task.wait(1)
-						sendMessage("!Timer 1")
-						
-						isProcessing = false
-					end
-
+					task.wait(2)
+					sendMessage("!map Maze")
+					task.wait(17)
+					sendMessage("!specialround Mimic")
 					task.wait(1)
+					sendMessage("!Timer 1")    
+					print("Ожидание...")
+					isProcessing = false
 				end
 
-				if platform then platform:Destroy() end
-				print("Autofarm & SafeZone: OFF")
+				print("Autofarm Started")
+
+				while _G.AutoFarmActive do
+					local rewardsGui = getRewardsGui()
+					
+					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
+						runCommands(rewardsGui)
+					end
+					
+					task.wait(1) 
+				end
+				
+				print("Autofarm Stopped")
 			end)
+		else
+			print("Autofarm turned off")
 		end
 	end    
 })
-
 
 Tab:AddButton({
 	Name = "MAZE + TEXT",
@@ -971,6 +946,7 @@ else
 end
   	end    
 })
+
 
 
 
