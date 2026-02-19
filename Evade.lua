@@ -234,58 +234,79 @@ shutdownServer()
 })
 
 Tab:AddToggle({
-    Name = "Отображать баланс",
-    Default = false,
-    Callback = function(Value)
-        local Player = game.Players.LocalPlayer
-        local PlayerGui = Player:WaitForChild("PlayerGui")
-        
-        local targetPath = PlayerGui:FindFirstChild("Shared") and 
-                           PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo.Item.Tickets.Cash
+	Name = "Отображать баланс!!",
+	Default = false,
+	Callback = function(Value)
+		local Player = game.Players.LocalPlayer
+		local PlayerGui = Player:WaitForChild("PlayerGui")
 
-        if Value then
-            _G.MyTrackerGui = Instance.new("ScreenGui")
-            _G.MyTrackerGui.Name = "TicketDisplay"
-            _G.MyTrackerGui.Parent = PlayerGui
-            _G.MyTrackerGui.ResetOnSpawn = false
+		if Value then
+			-- 1. Создаем интерфейс
+			_G.MyTrackerGui = Instance.new("ScreenGui")
+			_G.MyTrackerGui.Name = "TicketTracker"
+			_G.MyTrackerGui.Parent = PlayerGui
+			_G.MyTrackerGui.ResetOnSpawn = false
 
-            local Frame = Instance.new("Frame")
-            Frame.Name = "MainFrame"
-            Frame.Parent = _G.MyTrackerGui
-            Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            Frame.BorderSizePixel = 0
-            Frame.Position = UDim2.new(0, 10, 1, -60)
-            Frame.Size = UDim2.new(0, 180, 0, 45)
+			local Frame = Instance.new("Frame")
+			Frame.Size = UDim2.new(0, 160, 0, 40)
+			Frame.Position = UDim2.new(0, 15, 1, -55) -- Левый нижний угол
+			Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Frame.BorderSizePixel = 0
+			Frame.Parent = _G.MyTrackerGui
 
-            local UICorner = Instance.new("UICorner")
-            UICorner.CornerRadius = UDim.new(0, 8)
-            UICorner.Parent = Frame
+			local Corner = Instance.new("UICorner")
+			Corner.CornerRadius = UDim.new(0, 6)
+			Corner.Parent = Frame
 
-            local Label = Instance.new("TextLabel")
-            Label.Parent = Frame
-            Label.BackgroundTransparency = 1
-            Label.Size = UDim2.new(1, 0, 1, 0)
-            Label.TextColor3 = Color3.fromRGB(0, 0, 0)
-            Label.Font = Enum.Font.GothamBold
-            Label.TextScaled = true 
-            Label.Text = targetPath and targetPath.Text or "Ошибка пути"
+			local Label = Instance.new("TextLabel")
+			Label.Size = UDim2.new(1, -10, 1, 0)
+			Label.Position = UDim2.new(0, 5, 0, 0)
+			Label.BackgroundTransparency = 1
+			Label.TextColor3 = Color3.fromRGB(0, 0, 0)
+			Label.Font = Enum.Font.SourceSansBold
+			Label.TextScaled = true
+			Label.Text = "Поиск..."
+			Label.Parent = Frame
 
-            if targetPath then
-                _G.TicketConnection = targetPath:GetPropertyChangedSignal("Text"):Connect(function()
-                    Label.Text = targetPath.Text
-                end)
-            end
-        else
-            if _G.MyTrackerGui then
-                _G.MyTrackerGui:Destroy()
-                _G.MyTrackerGui = nil
-            end
-            if _G.TicketConnection then
-                _G.TicketConnection:Disconnect()
-                _G.TicketConnection = nil
-            end
-        end
-    end    
+			-- 2. Безопасный поиск пути через цепочку WaitForChild
+			-- Это решит проблему "Ошибка пути"
+			task.spawn(function()
+				local success, target = pcall(function()
+					return PlayerGui:WaitForChild("Shared")
+						:WaitForChild("HUD")
+						:WaitForChild("Overlay")
+						:WaitForChild("Default")
+						:WaitForChild("CharacterInfo")
+						:WaitForChild("Item")
+						:WaitForChild("Tickets")
+						:WaitForChild("Cash")
+				end)
+
+				if success and target then
+					-- Устанавливаем текст сразу
+					Label.Text = target.Text
+					
+					-- Следим за изменениями
+					_G.TicketConnection = target:GetPropertyChangedSignal("Text"):Connect(function()
+						Label.Text = target.Text
+					end)
+				else
+					Label.Text = "Не найден путь"
+				end
+			end)
+
+		else
+			-- 3. Удаление при выключении
+			if _G.MyTrackerGui then
+				_G.MyTrackerGui:Destroy()
+				_G.MyTrackerGui = nil
+			end
+			if _G.TicketConnection then
+				_G.TicketConnection:Disconnect()
+				_G.TicketConnection = nil
+			end
+		end
+	end    
 })
 
 Tab:AddToggle({
@@ -1068,6 +1089,7 @@ else
 end
   	end    
 })
+
 
 
 
