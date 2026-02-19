@@ -237,10 +237,65 @@ Tab:AddToggle({
     Name = "Disable 3D Rendering (CPU Saver)",
     Default = false,
     Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        local coreGui = game:GetService("CoreGui")
+        
+        local coinPath = player.PlayerGui:FindFirstChild("Shared") 
+            and player.PlayerGui.Shared:FindFirstChild("HUD")
+            and player.PlayerGui.Shared.HUD:FindFirstChild("Overlay")
+            and player.PlayerGui.Shared.HUD.Overlay:FindFirstChild("Default")
+            and player.PlayerGui.Shared.HUD.Overlay.Default:FindFirstChild("CharacterInfo")
+            and player.PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo:FindFirstChild("Tickets")
+            and player.PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo.Tickets:FindFirstChild("Cash")
+
+        local farmGui = coreGui:FindFirstChild("FarmStatusGui")
+        if not farmGui then
+            farmGui = Instance.new("ScreenGui")
+            farmGui.Name = "FarmStatusGui"
+            farmGui.IgnoreGuiInset = true
+            farmGui.Parent = coreGui
+            
+            local label = Instance.new("TextLabel")
+            label.Name = "CoinLabel"
+            label.Size = UDim2.new(1, 0, 0, 100)
+            label.Position = UDim2.new(0, 0, 0.45, 0)
+            label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            label.BackgroundTransparency = 0.5
+            label.TextColor3 = Color3.fromRGB(0, 255, 127)
+            label.TextSize = 35
+            label.Font = Enum.Font.RobotoMono
+            label.Parent = farmGui
+        end
+
+        local coinLabel = farmGui.CoinLabel
+        local lastValidValue = "0"
+
+        local function updateDisplay()
+            if coinPath then
+                local current = coinPath.Text
+                if current ~= "0" and current ~= "" and current ~= nil then
+                    lastValidValue = current
+                end
+                coinLabel.Text = "FARMING ACTIVE\nCoins: " .. lastValidValue
+            else
+                coinLabel.Text = "FARMING...\n(Coin Path Not Found)"
+            end
+        end
+
         if Value then
             game:GetService("RunService"):Set3dRenderingEnabled(false)
+            farmGui.Enabled = true
+            
+            updateDisplay()
+            _G.CoinConn = coinPath:GetPropertyChangedSignal("Text"):Connect(updateDisplay)
         else
             game:GetService("RunService"):Set3dRenderingEnabled(true)
+            farmGui.Enabled = false
+            
+            if _G.CoinConn then
+                _G.CoinConn:Disconnect()
+                _G.CoinConn = nil
+            end
         end
     end    
 })
@@ -1013,6 +1068,7 @@ else
 end
   	end    
 })
+
 
 
 
