@@ -234,6 +234,53 @@ shutdownServer()
 })
 
 Tab:AddToggle({
+    Name = "Show how much you earn",
+    Default = false,
+    Callback = function(Value)
+        _G.TrackerEnabled = Value
+        
+        if _G.TrackerEnabled then
+            local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer.PlayerGui)
+            local frame = Instance.new("Frame", screenGui)
+            frame.Size = UDim2.new(0, 200, 0, 50)
+            frame.Position = UDim2.new(0.5, -100, 0.1, 0)
+            frame.BackgroundColor3 = Color3.new(1, 1, 1)
+            
+            local label = Instance.new("TextLabel", frame)
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.TextColor3 = Color3.new(0, 0, 0)
+            label.Text = "Cash: 0"
+            label.TextSize = 20
+
+            task.spawn(function()
+                local lastValidValue = "0"
+                
+                while _G.TrackerEnabled do
+                    local path = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Shared")
+                    if path then
+                        local cashElement = path.HUD.Overlay.Default.CharacterInfo.Item.Tickets.Cash
+                        local currentCash = cashElement.Text
+                        
+                        local cashNumber = tonumber(currentCash:match("%d+")) or 0
+                        
+                        if cashNumber > 0 then
+                            lastValidValue = currentCash
+                            label.Text = "Cash: " .. lastValidValue
+                        else
+                            label.Text = "Cash: " .. lastValidValue
+                        end
+                    end
+                    task.wait(0.1) 
+                end
+                
+                screenGui:Destroy()
+            end)
+        end
+    end    
+})
+
+Tab:AddToggle({
     Name = "Disable 3D Rendering (CPU Saver)",
     Default = false,
     Callback = function(Value)
