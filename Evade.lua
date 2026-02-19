@@ -218,7 +218,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARMMm",
+    Name = "XP FARM",
     Default = false,
     Callback = function(Value)
         _G.AutoFarmActive = Value
@@ -1102,6 +1102,7 @@ else
 end
   	end    
 })
+
 
 
 
