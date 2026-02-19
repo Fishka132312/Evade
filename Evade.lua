@@ -245,20 +245,24 @@ Tab:AddToggle({
     end    
 })
 
-Tab:AddSlider({
-    Name = "FPS Cap (POWER Saver)",
-    Min = 1,
-    Max = 240,
-    Default = 60,
-    Color = Color3.fromRGB(0, 255, 120), 
-    Increment = 1,
-    ValueName = "FPS",
+Tab:AddToggle({
+    Name = "Fps Cap (POWER Saver",
+    Default = false,
     Callback = function(Value)
-        if setfpscap then
-            setfpscap(Value)
-            print("Лимит FPS установлен на: " .. Value)
+        if Value then
+            game:GetService("RunService"):Set3dRenderingEnabled(false)
+            
+            if setfpscap then
+                setfpscap(10) 
+            end
+            
+            print("Энергосбережение включено: Графика отключена")
         else
-            warn("Твой чит не поддерживает функцию setfpscap")
+            game:GetService("RunService"):Set3dRenderingEnabled(true)
+            if setfpscap then
+                setfpscap(60)
+            end
+            print("Энергосбережение выключено")
         end
     end    
 })
@@ -732,20 +736,24 @@ Tab:AddToggle({
     end    
 })
 
-Tab:AddSlider({
-    Name = "FPS Cap (POWER Saver)",
-    Min = 1,
-    Max = 240,
-    Default = 60,
-    Color = Color3.fromRGB(0, 255, 120), 
-    Increment = 1,
-    ValueName = "FPS",
+Tab:AddToggle({
+    Name = "Fps Cap (POWER Saver",
+    Default = false,
     Callback = function(Value)
-        if setfpscap then
-            setfpscap(Value)
-            print("Лимит FPS установлен на: " .. Value)
+        if Value then
+            game:GetService("RunService"):Set3dRenderingEnabled(false)
+            
+            if setfpscap then
+                setfpscap(10) 
+            end
+            
+            print("Энергосбережение включено: Графика отключена")
         else
-            warn("Твой чит не поддерживает функцию setfpscap")
+            game:GetService("RunService"):Set3dRenderingEnabled(true)
+            if setfpscap then
+                setfpscap(60)
+            end
+            print("Энергосбережение выключено")
         end
     end    
 })
@@ -1005,6 +1013,7 @@ else
 end
   	end    
 })
+
 
 
 
