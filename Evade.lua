@@ -238,61 +238,13 @@ Tab:AddToggle({
     Default = false,
     Callback = function(Value)
         local player = game.Players.LocalPlayer
-        local coreGui = game:GetService("CoreGui")
-        
-        local coinPath = player.PlayerGui:WaitForChild("Shared")
-            :WaitForChild("HUD")
-            :WaitForChild("Overlay")
-            :WaitForChild("Default")
-            :WaitForChild("CharacterInfo")
-            :WaitForChild("Item")
-            :WaitForChild("Tickets")
-            :WaitForChild("Cash")
-
-        local farmGui = coreGui:FindFirstChild("FarmTracker")
-        if not farmGui then
-            farmGui = Instance.new("ScreenGui")
-            farmGui.Name = "FarmTracker"
-            farmGui.IgnoreGuiInset = true
-            farmGui.Parent = coreGui
-            
-            local label = Instance.new("TextLabel")
-            label.Name = "Display"
-            label.Size = UDim2.new(1, 0, 0, 120)
-            label.Position = UDim2.new(0, 0, 0.4, 0)
-            label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            label.BackgroundTransparency = 0.6
-            label.TextColor3 = Color3.fromRGB(255, 255, 255)
-            label.TextSize = 28
-            label.Font = Enum.Font.SourceSansBold
-            label.Parent = farmGui
-        end
-
-        local displayLabel = farmGui.Display
-        local lastValidAmount = "Calculating..."
-
-        local function updateText()
-            local current = coinPath.Text
-            if current ~= "0" and current ~= "" and current ~= nil then
-                lastValidAmount = current
-            end
-            displayLabel.Text = "⚡ FARMING MODE ACTIVE ⚡\n\nCASH: " .. lastValidAmount
-        end
+        local coinPath = player.PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo.Item.Tickets.Cash
 
         if Value then
             game:GetService("RunService"):Set3dRenderingEnabled(false)
-            farmGui.Enabled = true
-            updateText()
-            
-            _G.CoinLoop = coinPath:GetPropertyChangedSignal("Text"):Connect(updateText)
+            print("Монеты сейчас: " .. coinPath.Text)
         else
             game:GetService("RunService"):Set3dRenderingEnabled(true)
-            farmGui.Enabled = false
-            
-            if _G.CoinLoop then
-                _G.CoinLoop:Disconnect()
-                _G.CoinLoop = nil
-            end
         end
     end    
 })
@@ -1065,6 +1017,7 @@ else
 end
   	end    
 })
+
 
 
 
