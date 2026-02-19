@@ -234,48 +234,56 @@ shutdownServer()
 })
 
 Tab:AddToggle({
-    Name = "Show how much you earn",
+    Name = "Отображать баланс",
     Default = false,
     Callback = function(Value)
-        _G.TrackerEnabled = Value
+        local Player = game.Players.LocalPlayer
+        local PlayerGui = Player:WaitForChild("PlayerGui")
         
-        if _G.TrackerEnabled then
-            local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer.PlayerGui)
-            local frame = Instance.new("Frame", screenGui)
-            frame.Size = UDim2.new(0, 200, 0, 50)
-            frame.Position = UDim2.new(0.5, -100, 0.1, 0)
-            frame.BackgroundColor3 = Color3.new(1, 1, 1)
-            
-            local label = Instance.new("TextLabel", frame)
-            label.Size = UDim2.new(1, 0, 1, 0)
-            label.BackgroundTransparency = 1
-            label.TextColor3 = Color3.new(0, 0, 0)
-            label.Text = "Cash: 0"
-            label.TextSize = 20
+        local targetPath = PlayerGui:FindFirstChild("Shared") and 
+                           PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo.Item.Tickets.Cash
 
-            task.spawn(function()
-                local lastValidValue = "0"
-                
-                while _G.TrackerEnabled do
-                    local path = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Shared")
-                    if path then
-                        local cashElement = path.HUD.Overlay.Default.CharacterInfo.Item.Tickets.Cash
-                        local currentCash = cashElement.Text
-                        
-                        local cashNumber = tonumber(currentCash:match("%d+")) or 0
-                        
-                        if cashNumber > 0 then
-                            lastValidValue = currentCash
-                            label.Text = "Cash: " .. lastValidValue
-                        else
-                            label.Text = "Cash: " .. lastValidValue
-                        end
-                    end
-                    task.wait(0.1) 
-                end
-                
-                screenGui:Destroy()
-            end)
+        if Value then
+            _G.MyTrackerGui = Instance.new("ScreenGui")
+            _G.MyTrackerGui.Name = "TicketDisplay"
+            _G.MyTrackerGui.Parent = PlayerGui
+            _G.MyTrackerGui.ResetOnSpawn = false
+
+            local Frame = Instance.new("Frame")
+            Frame.Name = "MainFrame"
+            Frame.Parent = _G.MyTrackerGui
+            Frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            Frame.BorderSizePixel = 0
+            Frame.Position = UDim2.new(0, 10, 1, -60)
+            Frame.Size = UDim2.new(0, 180, 0, 45)
+
+            local UICorner = Instance.new("UICorner")
+            UICorner.CornerRadius = UDim.new(0, 8)
+            UICorner.Parent = Frame
+
+            local Label = Instance.new("TextLabel")
+            Label.Parent = Frame
+            Label.BackgroundTransparency = 1
+            Label.Size = UDim2.new(1, 0, 1, 0)
+            Label.TextColor3 = Color3.fromRGB(0, 0, 0)
+            Label.Font = Enum.Font.GothamBold
+            Label.TextScaled = true 
+            Label.Text = targetPath and targetPath.Text or "Ошибка пути"
+
+            if targetPath then
+                _G.TicketConnection = targetPath:GetPropertyChangedSignal("Text"):Connect(function()
+                    Label.Text = targetPath.Text
+                end)
+            end
+        else
+            if _G.MyTrackerGui then
+                _G.MyTrackerGui:Destroy()
+                _G.MyTrackerGui = nil
+            end
+            if _G.TicketConnection then
+                _G.TicketConnection:Disconnect()
+                _G.TicketConnection = nil
+            end
         end
     end    
 })
@@ -1060,6 +1068,7 @@ else
 end
   	end    
 })
+
 
 
 
