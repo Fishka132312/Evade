@@ -216,7 +216,7 @@ Tab:AddToggle({
 })                          
 
 Tab:AddToggle({
-    Name = "Ticket Farm 2 (Tween Mode)",
+    Name = "Ticket Farm 2 (Smooth)",
     Default = false,
     Callback = function(Value)
         TICKETFARMTWEEN = Value
@@ -228,11 +228,13 @@ Tab:AddToggle({
                 local player = Players.LocalPlayer
                 
                 local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
                 local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
                 
-                local DISTANCE_BELOW = 10
-                local TWEEN_SPEED = 20
+                local DISTANCE_BELOW = 10 -- Твои -10 блоков вниз
+                local TWEEN_SPEED = 0.5 -- Скорость перемещения (чем меньше, тем быстрее)
 
+                -- Создаем или находим платформу
                 local platform = workspace:FindFirstChild("SafeZonePlatform")
                 if not platform then
                     platform = Instance.new("Part")
@@ -245,33 +247,37 @@ Tab:AddToggle({
                     platform.Parent = workspace
                 end
 
-                local function tweenTo(targetCFrame)
+                -- Функция для плавного движения
+                local function smoothMove(targetPosition)
                     local character = player.Character
-                    local root = character and character:FindFirstChild("HumanoidRootPart")
-                    if not root then return end
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    if not rootPart then return end
 
-                    local distance = (root.Position - targetCFrame.Position).Magnitude
-                    local duration = distance / TWEEN_SPEED
+                    -- Конечная точка для персонажа (на -10 вниз от цели)
+                    local charTargetPos = Vector3.new(targetPosition.X, targetPosition.Y - DISTANCE_BELOW, targetPosition.Z)
+                    -- Платформа еще на 3.5 блока ниже ног, чтобы стоять на ней
+                    local platTargetPos = charTargetPos - Vector3.new(0, 3.5, 0)
+
+                    local tweenInfo = TweenInfo.new(TWEEN_SPEED, Enum.EasingStyle.Linear)
                     
-                    local info = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                    local tween = TweenService:Create(root, info, {CFrame = targetCFrame})
+                    -- Запускаем твины параллельно
+                    local charTween = TweenService:Create(rootPart, tweenInfo, {CFrame = CFrame.new(charTargetPos)})
+                    local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(platTargetPos)})
                     
-                    tween:Play()
+                    charTween:Play()
+                    platTween:Play()
                     
-                    while tween.PlaybackState == Enum.PlaybackState.Playing and TICKETFARMTWEEN do
-                        platform.CFrame = root.CFrame * CFrame.new(0, -3.5, 0)
-                        task.wait()
-                    end
-                    
-                    if not TICKETFARMTWEEN then tween:Cancel() end
+                    -- Ждем завершения, но проверяем, не выключили ли скрипт
+                    charTween.Completed:Wait()
                 end
 
+                -- Основной цикл
                 while TICKETFARMTWEEN do
                     local character = player.Character
-                    local root = character and character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = character and character:FindFirstChild("Humanoid")
-
-                    if root and humanoid and humanoid.Health > 0 then
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    
+                    if rootPart then
+                        -- Ищем ближайший тикет (Visual)
                         local targetTicket = nil
                         for _, child in ipairs(ticketsFolder:GetChildren()) do
                             if child.Name == "Visual" then
@@ -281,27 +287,29 @@ Tab:AddToggle({
                         end
 
                         if targetTicket then
-                            local ticketPos = targetTicket:GetPivot().Position
-                            local goalCFrame = CFrame.new(ticketPos.X, ticketPos.Y - DISTANCE_BELOW, ticketPos.Z)
+                            -- Если есть тикет, твинимся к нему (на -10 вниз)
+                            smoothMove(targetTicket:GetPivot().Position)
                             
-                            tweenTo(goalCFrame)
-                            
+                            -- Ждем, пока тикет исчезнет
                             while targetTicket.Parent and TICKETFARMTWEEN do
-                                platform.CFrame = root.CFrame * CFrame.new(0, -3.5, 0)
                                 task.wait(0.1)
                             end
                         else
-                            local currentPos = root.Position
-                            platform.CFrame = root.CFrame * CFrame.new(0, -3.5, 0)
+                            -- Если тикетов нет, твинимся под ItemSpawns (на -10 вниз)
+                            local spawnPos = itemSpawns:GetPivot().Position
+                            smoothMove(spawnPos)
                         end
                     end
-                    task.wait(0.2)
+                    task.wait(0.1)
                 end
 
-                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end
+                -- Если выключили: прячем платформу далеко вниз
+                if platform then
+                    platform.CFrame = CFrame.new(0, -5000, 0)
+                end
             end)
         end
-    end
+    end    
 })
  
 
