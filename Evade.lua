@@ -218,6 +218,120 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
+    Name = "Ticket Farm 3 (Ultra Safe)",
+    Default = false,
+    Callback = function(Value)
+        toggled = Value
+
+        if toggled then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+
+                local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+                local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
+                local playersFolder = gameFolder:WaitForChild("Players")
+
+                -- --- НАСТРОЙКИ БЕЗОПАСНОСТИ ---
+                local WAIT_AT_ITEM = 1.5   -- Сколько стоять под тикетом
+                local SPAWN_DELAY = 3.0    -- Пауза ПОСЛЕ появления тикета перед ТП
+                local DANGER_RADIUS = 25   -- Радиус обнаружения других игроков
+                local ESCAPE_TIME = 2.0    -- Время побега в сейф-зону
+                local DISTANCE_BELOW = 10  -- Высота ПОД тикетом (под полом)
+                -- ------------------------------
+                
+                local platform = workspace:FindFirstChild("SafeZonePlatform") or Instance.new("Part")
+                platform.Name = "SafeZonePlatform"
+                platform.Size = Vector3.new(10, 1, 10)
+                platform.Anchored = true
+                platform.CanCollide = true
+                platform.Transparency = 0.8 -- Сделал прозрачнее, чтобы не палилось
+                platform.BrickColor = BrickColor.new("Bright blue")
+                platform.Parent = workspace
+
+                local function getSafeZoneCFrame()
+                    -- Сейф-зона теперь тоже под картой (-50), а не в небе (500)
+                    return itemSpawns:GetPivot() * CFrame.new(0, -50, 0)
+                end
+
+                local function isAnyoneNearby(myPart)
+                    for _, otherChar in ipairs(playersFolder:GetChildren()) do
+                        if otherChar:IsA("Model") and otherChar.Name ~= player.Name then
+                            local healthcare = otherChar:FindFirstChild("Humanoid")
+                            if healthcare and healthcare.Health > 0 then
+                                local otherRoot = otherChar:FindFirstChild("HumanoidRootPart") or healthcare.RootPart
+                                if otherRoot then
+                                    local dist = (myPart.Position - otherRoot.Position).Magnitude
+                                    if dist < DANGER_RADIUS then return true end
+                                end
+                            end
+                        end
+                    end
+                    return false
+                end
+
+                local lastTicket = nil -- Переменная, чтобы знать, что тикет новый
+
+                while toggled do 
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChild("Humanoid")
+                    local safeCFrame = getSafeZoneCFrame()
+
+                    if rootPart and humanoid and humanoid.Health > 0 then
+                        if isAnyoneNearby(rootPart) then
+                            platform.CFrame = safeCFrame * CFrame.new(0, -1, 0)
+                            rootPart.CFrame = safeCFrame
+                            task.wait(ESCAPE_TIME)
+                        else
+                            local target = nil
+                            for _, child in ipairs(ticketsFolder:GetChildren()) do
+                                if child.Name == "Visual" then
+                                    target = child
+                                    break
+                                end
+                            end
+
+                            if target then
+                                -- Если это новый тикет, ждем перед телепортом
+                                if lastTicket ~= target then
+                                    task.wait(SPAWN_DELAY) 
+                                    lastTicket = target
+                                end
+
+                                local targetPos = target:GetPivot().Position
+                                -- Координата под тикетом
+                                local finalPosition = Vector3.new(targetPos.X, targetPos.Y - DISTANCE_BELOW, targetPos.Z)
+                                
+                                rootPart.CFrame = CFrame.new(finalPosition)
+                                platform.CFrame = CFrame.new(finalPosition - Vector3.new(0, 1, 0))
+                                
+                                local start = tick()
+                                while tick() - start < WAIT_AT_ITEM and toggled do
+                                    if isAnyoneNearby(rootPart) then break end
+                                    if not target.Parent then break end
+                                    task.wait(0.1)
+                                end
+                            else
+                                -- Если тикетов нет, сидим в сейф-зоне под картой
+                                platform.CFrame = safeCFrame * CFrame.new(0, -1, 0)
+                                if (rootPart.Position - safeCFrame.Position).Magnitude > 5 then
+                                    rootPart.CFrame = safeCFrame
+                                end
+                                lastTicket = nil
+                            end
+                        end
+                    end
+                    task.wait(0.2)
+                end
+                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end 
+            end)
+        end
+    end    
+})
+
+Tab:AddToggle({
     Name = "XP FARM",
     Default = false,
     Callback = function(Value)
@@ -1102,6 +1216,7 @@ else
 end
   	end    
 })
+
 
 
 
