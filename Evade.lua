@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM1",
+    Name = "XP FARM",
     Default = false,
     Callback = function(Value)
         XPFARMPV = Value
@@ -579,103 +579,116 @@ local Section = Tab:AddSection({
 })
 
 Tab:AddToggle({
-	Name = "XP FARM",
-	Default = false,
-	Callback = function(Value)
-		XPFARMPV = Value
-		
-		if XPFARMPV then
-			task.spawn(function()
-				local Players = game:GetService("Players")
-				local TextChatService = game:GetService("TextChatService")
-				local player = Players.LocalPlayer
-				
-				local IMAGE_ID = "rbxassetid://126150774709719"
-				local SAFE_POSITION = Vector3.new(0, 500, 0)
-				local isProcessing = false
-				local rewardCount = 0
+    Name = "XP FARM PV",
+    Default = false,
+    Callback = function(Value)
+        XPFARMPV2 = Value
+        
+        if XPFARMPV2 then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local TextChatService = game:GetService("TextChatService")
+                local player = Players.LocalPlayer
+                
+                local isProcessing = false
+                local rewardCount = 0
 
-				local platform = workspace:FindFirstChild("SafeZoneWithDecal")
-				if not platform then
-					platform = Instance.new("Part")
-					platform.Name = "SafeZoneWithDecal"
-					platform.Size = Vector3.new(20, 1, 20)
-					platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
-					platform.Anchored = true
-					platform.CanCollide = true
-					platform.BrickColor = BrickColor.new("Bright blue")
-					platform.Transparency = 0.5
-					platform.Parent = workspace
+                local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+                
+                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-50, 5, 0) 
 
-					local decal = Instance.new("Decal")
-					decal.Texture = IMAGE_ID
-					decal.Face = Enum.NormalId.Top 
-					decal.Parent = platform
-				end
+                local platform = workspace:FindFirstChild("FarmSafeZone")
+                if not platform then
+                    platform = Instance.new("Part")
+                    platform.Name = "FarmSafeZone"
+                    platform.Size = Vector3.new(15, 1, 15)
+                    platform.Position = safePos - Vector3.new(0, 3, 0)
+                    platform.Anchored = true
+                    platform.BrickColor = BrickColor.new("Bright blue")
+                    platform.Transparency = 0.5
+                    platform.Parent = workspace
+                end
 
-				local function getRewardsGui()
-					local pg = player:FindFirstChild("PlayerGui")
-					local global = pg and pg:FindFirstChild("Global")
-					return global and global:FindFirstChild("Rewards")
-				end
+                local function getTimerText()
+                    local pg = player:FindFirstChild("PlayerGui")
+                    local timerObj = pg and pg:FindFirstChild("Shared") 
+                        and pg.Shared:FindFirstChild("HUD")
+                        and pg.Shared.HUD:FindFirstChild("Overlay")
+                        and pg.Shared.HUD.Overlay:FindFirstChild("Default")
+                        and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer:FindFirstChild("Timer")
+                    
+                    return timerObj and timerObj.Text or ""
+                end
 
-				local function sendMessage(msg)
-					if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-						local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-						if channel then channel:SendAsync(msg) end
-					else
-						local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-						if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-							chatEvent.SayMessageRequest:FireServer(msg, "All")
-						end
-					end
-				end
+                local function sendMessage(msg)
+                    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                        if channel then channel:SendAsync(msg) end
+                    else
+                        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+                        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+                            chatEvent.SayMessageRequest:FireServer(msg, "All")
+                        end
+                    end
+                end
 
-				print("Autofarm & SafeZone: ON")
+                print("Autofarm: ON. Сейф-зона создана.")
 
-				while XPFARMPV do
-					local character = player.Character
-					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-					if rootPart then
-						if (rootPart.Position - SAFE_POSITION).Magnitude > 5 then
-							rootPart.CFrame = CFrame.new(SAFE_POSITION)
-						end
-					end
+                while XPFARMPV2 do
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    if rootPart then
+                        if (rootPart.Position - safePos).Magnitude > 5 then
+                            rootPart.CFrame = CFrame.new(safePos)
+                        end
+                    end
 
-					local rewardsGui = getRewardsGui()
-					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
-						isProcessing = true
-						rewardCount = rewardCount + 1
-						
-						print("Награда #" .. rewardCount .. " получена")
-						rewardsGui.Visible = false
-						
-						if rewardCount == 2 then
-							task.wait(8)
-							sendMessage("!specialround Plushie Hell")
-							task.wait(1)
-							sendMessage("!Timer 1")
-						else
-							task.wait(1)
-							sendMessage("!map Maze")
-							task.wait(17)
-							sendMessage("!specialround Plushie Hell")
-							task.wait(1)
-							sendMessage("!Timer 1")
-						end
-						
-						isProcessing = false
-					end
+                    local pg = player:FindFirstChild("PlayerGui")
+                    local rewardsGui = pg and pg:FindFirstChild("Global") and pg.Global:FindFirstChild("Rewards")
 
-					task.wait(0.5)
-				end
+                    if rewardsGui and rewardsGui.Visible == true and not isProcessing then
+                        isProcessing = true
+                        rewardCount = rewardCount + 1
+                        rewardsGui.Visible = false
+                        print("Награда получена! Счетчик: " .. rewardCount)
 
-				if platform then platform:Destroy() end
-				print("Autofarm & SafeZone: OFF")
-			end)
-		end
-	end    
+                        if rewardCount >= 2 then
+                            task.wait(1)
+                            sendMessage("!map Maze")
+                            rewardCount = 0 
+                        end
+
+                        while XPFARMPV2 do
+                            local currentTimer = getTimerText()
+                            if currentTimer == "0:29" then
+                                break 
+                            end
+                            task.wait(0.1)
+                        end
+
+                        if XPFARMPV2 then
+                            sendMessage("!specialround Plushie Hell")
+                            task.wait(1)
+                            sendMessage("!Timer 1")
+                        end
+
+                        isProcessing = false
+                    end
+
+                    task.wait(0.1)
+                end
+                
+                if platform then platform:Destroy() end
+                print("Autofarm: OFF")
+            end)
+        end
+    end     
 })
+
 
 Tab:AddButton({
     Name = "MAZE",
@@ -738,55 +751,57 @@ Tab:AddToggle({
     Name = "XP FARM PB",
     Default = false,
     Callback = function(Value)
-        XPFARMPB = Value
-
-        if XPFARMPB then
+        XPFARMPV2 = Value
+        
+        if XPFARMPV2 then
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local player = Players.LocalPlayer
-
+                
                 local gameFolder = workspace:WaitForChild("Game")
                 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+                
+                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-500, 500, 0) 
 
-                local platform = workspace:FindFirstChild("SafeZonePlatformPB")
+                local platform = workspace:FindFirstChild("FarmSafeZonePublic")
                 if not platform then
                     platform = Instance.new("Part")
-                    platform.Name = "SafeZonePlatformPB"
-                    platform.Size = Vector3.new(20, 1, 20)
+                    platform.Name = "FarmSafeZonePublic"
+                    platform.Size = Vector3.new(15, 1, 15)
+                    platform.Position = safePos - Vector3.new(0, 3, 0)
                     platform.Anchored = true
-                    platform.CanCollide = true
-                    platform.Transparency = 0.5 
                     platform.BrickColor = BrickColor.new("Bright blue")
+                    platform.Transparency = 0.5
                     platform.Parent = workspace
                 end
 
-                local function getSafeZoneCFrame()
-                    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
-                end
+                print("Autofarm: ON. Сейф-зона активна.")
 
-                while XPFARMPB do 
+                while XPFARMPV2 do
                     local character = player.Character
                     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = character and character:FindFirstChild("Humanoid")
-                    
-                    local safeCFrame = getSafeZoneCFrame()
-                    
-                    platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
-
-                    if rootPart and humanoid and humanoid.Health > 0 then
-                        if (rootPart.Position - safeCFrame.Position).Magnitude > 5 then
-                            rootPart.CFrame = safeCFrame
+                    if rootPart then
+                        if (rootPart.Position - safePos).Magnitude > 5 then
+                            rootPart.CFrame = CFrame.new(safePos)
                         end
                     end
-                    task.wait(0.5)
-                end
 
-                if platform then 
-                    platform.CFrame = CFrame.new(0, -1000, 0) 
-                end 
+                    local pg = player:FindFirstChild("PlayerGui")
+                    local rewardsGui = pg and pg:FindFirstChild("Global") and pg.Global:FindFirstChild("Rewards")
+
+                    if rewardsGui and rewardsGui.Visible == true then
+                        rewardsGui.Visible = false
+                        print("GUI наград скрыто")
+                    end
+
+                    task.wait(0.1)
+                end
+                
+                if platform then platform:Destroy() end
+                print("Autofarm: OFF")
             end)
         end
-    end    
+    end     
 })
 
 local Section = Tab:AddSection({
