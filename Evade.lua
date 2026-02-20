@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM1",
+    Name = "XP FARM11",
     Default = false,
     Callback = function(Value)
         XPFARMFOREVENT = Value
@@ -315,24 +315,19 @@ Tab:AddToggle({
                     return global and global:FindFirstChild("Rewards")
                 end
 
-                local function waitForRound()
-                    local roundGui = player:FindFirstChild("PlayerGui")
-                    if roundGui then
-                        roundGui = roundGui:FindFirstChild("Shared")
-                        if roundGui then roundGui = roundGui:FindFirstChild("HUD") end
-                        if roundGui then roundGui = roundGui:FindFirstChild("Overlay") end
-                        if roundGui then roundGui = roundGui:FindFirstChild("Default") end
-                        if roundGui then roundGui = roundGui:FindFirstChild("RoundOverlay") end
-                        if roundGui then roundGui = roundGui:FindFirstChild("Round") end
-                    end
-
-                    if roundGui then
-                        while XPFARMFOREVENT and not roundGui.Visible do
-                            task.wait(0.1)
-                        end
-                    else
-                        warn("Путь к Round GUI не найден!")
-                        task.wait(2)
+                local function waitForRoundStart()
+                    local roundPath = player:WaitForChild("PlayerGui")
+                        :WaitForChild("Shared")
+                        :WaitForChild("HUD")
+                        :WaitForChild("Overlay")
+                        :WaitForChild("Default")
+                        :WaitForChild("RoundOverlay")
+                        :WaitForChild("Round")
+                    
+                    local timer = roundPath:WaitForChild("RoundTimer")
+                    
+                    while XPFARMFOREVENT and not timer.Visible do
+                        task.wait(0.1)
                     end
                 end
 
@@ -357,12 +352,16 @@ Tab:AddToggle({
                     if rewardCount == 2 then
                         task.wait(1)
                         sendMessage("!map Maze")
-                        waitForRound() 
+                        
+                        waitForRoundStart()
+                        
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
                     else
-                        waitForRound()
+
+                        waitForRoundStart()
+                        
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
@@ -392,8 +391,9 @@ Tab:AddToggle({
 Tab:AddButton({
     Name = "MAZE",
     Callback = function()
+        local Players = game:GetService("Players")
         local TextChatService = game:GetService("TextChatService")
-        local player = game:GetService("Players").LocalPlayer
+        local player = Players.LocalPlayer
 
         local function sendMessage(msg)
             if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
@@ -409,28 +409,21 @@ Tab:AddButton({
 
         sendMessage("!map Maze")
 
-        local roundGui = player.PlayerGui:WaitUntilChild("Shared", 5)
-        if roundGui then
-            roundGui = roundGui:FindFirstChild("HUD")
-            if roundGui then roundGui = roundGui:FindFirstChild("Overlay") end
-            if roundGui then roundGui = roundGui:FindFirstChild("Default") end
-            if roundGui then roundGui = roundGui:FindFirstChild("RoundOverlay") end
-            if roundGui then roundGui = roundGui:FindFirstChild("Round") end
-        end
+        local success, timer = pcall(function()
+            return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
+        end)
 
-        if roundGui then
-            local startWait = tick()
-            while not roundGui.Visible and (tick() - startWait) < 30 do
+        if success and timer then
+            while not timer.Visible do
                 task.wait(0.1)
             end
+            
+            sendMessage("!specialround Plushie Hell")
+            task.wait(1)
+            sendMessage("!Timer 1")
         else
-            warn("Не удалось найти путь к Round GUI!")
-            task.wait(10) 
+            warn("Путь к RoundTimer не найден! Проверь GUI.")
         end
-
-        sendMessage("!specialround Plushie Hell")
-        task.wait(1)
-        sendMessage("!Timer 1")
 
         print("Down")
     end    
@@ -680,8 +673,9 @@ Tab:AddToggle({
 Tab:AddButton({
     Name = "MAZE",
     Callback = function()
+        local Players = game:GetService("Players")
         local TextChatService = game:GetService("TextChatService")
-        local player = game:GetService("Players").LocalPlayer
+        local player = Players.LocalPlayer
 
         local function sendMessage(msg)
             if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
@@ -697,28 +691,21 @@ Tab:AddButton({
 
         sendMessage("!map Maze")
 
-        local roundGui = player.PlayerGui:WaitUntilChild("Shared", 5)
-        if roundGui then
-            roundGui = roundGui:FindFirstChild("HUD")
-            if roundGui then roundGui = roundGui:FindFirstChild("Overlay") end
-            if roundGui then roundGui = roundGui:FindFirstChild("Default") end
-            if roundGui then roundGui = roundGui:FindFirstChild("RoundOverlay") end
-            if roundGui then roundGui = roundGui:FindFirstChild("Round") end
-        end
+        local success, timer = pcall(function()
+            return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
+        end)
 
-        if roundGui then
-            local startWait = tick()
-            while not roundGui.Visible and (tick() - startWait) < 30 do
+        if success and timer then
+            while not timer.Visible do
                 task.wait(0.1)
             end
+            
+            sendMessage("!specialround Plushie Hell")
+            task.wait(1)
+            sendMessage("!Timer 1")
         else
-            warn("Не удалось найти путь к Round GUI!")
-            task.wait(10) 
+            warn("Путь к RoundTimer не найден! Проверь GUI.")
         end
-
-        sendMessage("!specialround Plushie Hell")
-        task.wait(1)
-        sendMessage("!Timer 1")
 
         print("Down")
     end    
