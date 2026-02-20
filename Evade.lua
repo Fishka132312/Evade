@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM",
+    Name = "XP FARM1",
     Default = false,
     Callback = function(Value)
         XPFARMPV = Value
