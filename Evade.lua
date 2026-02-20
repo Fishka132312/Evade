@@ -938,6 +938,65 @@ end)
   	end    
 })
 
+local Tab = Window:MakeTab({
+	Name = "Emotes",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+local Section = Tab:AddSection({
+	Name = "Emotes"
+})
+
+Tab:AddTextbox({
+    Name = "Emote",
+    Default = "",
+    TextDisappear = true,
+    Callback = function(Value)
+        -- Определяем игрока и его гуманоида
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+        if not character then return end
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if not humanoid then return end
+
+        -- Ищем папку с эмоцией по названию, которое ты ввел (Value)
+        local emotesRoot = game:GetService("ReplicatedStorage").Items.Emotes
+        local emoteFolder = emotesRoot:FindFirstChild(Value)
+
+        if emoteFolder then
+            -- Выбираем правильный объект анимации (R15 или R6)
+            local animObject
+            if humanoid.RigType == Enum.HumanoidRigType.R15 then
+                -- Пытаемся найти в подпапке Animations или в корне папки эмоции
+                animObject = (emoteFolder:FindFirstChild("Animations") and emoteFolder.Animations:FindFirstChild("Animation")) 
+                             or emoteFolder:FindFirstChild("Animation")
+            else
+                animObject = (emoteFolder:FindFirstChild("Animations") and emoteFolder.Animations:FindFirstChild("AnimationClassic")) 
+                             or emoteFolder:FindFirstChild("AnimationClassic")
+            end
+
+            if animObject then
+                -- Останавливаем все текущие анимации, чтобы они не смешивались
+                for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                    track:Stop(0.1)
+                end
+
+                -- Загружаем и запускаем новую
+                local track = humanoid:LoadAnimation(animObject)
+                track.Priority = Enum.AnimationPriority.Action -- Ставим высокий приоритет
+                track.Looped = true
+                track:Play()
+                
+                print("Успешно запущено: " .. Value)
+            else
+                warn("В папке '" .. Value .. "' не найден объект Animation!")
+            end
+        else
+            warn("Эмоция '" .. Value .. "' не найдена в ReplicatedStorage.Items.Emotes")
+        end
+    end     
+})
 --------------------------------MISC-----------------------------
 local Tab = Window:MakeTab({
 	Name = "Misc",
@@ -1249,4 +1308,5 @@ Tab:AddToggle({
         end
     end    
 })
+
 
