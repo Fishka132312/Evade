@@ -947,7 +947,7 @@ local Tab = Window:MakeTab({
 })
 
 local Section = Tab:AddSection({
-	Name = "Misc"
+	Name = "Tools"
 })
 
 Tab:AddButton({
@@ -1047,6 +1047,17 @@ end)
 })
 
 Tab:AddButton({
+	Name = "Infinite Yield",
+	Callback = function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/ignore-it/refs/heads/main/infiniteyield'))()
+  	end    
+})
+
+local Section = Tab:AddSection({
+	Name = "Fps Boost"
+})
+
+Tab:AddButton({
 	Name = "Fps boost",
 	Callback = function()
     local RunService = game:GetService("RunService")
@@ -1101,25 +1112,6 @@ end)
   	end    
 })
 
-Tab:AddButton({
-	Name = "Infinite Yield",
-	Callback = function()
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/ignore-it/refs/heads/main/infiniteyield'))()
-  	end    
-})
-
-Tab:AddToggle({
-    Name = "Fps Cap (POWER Saver)",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            setfpscap(10)
-        else
-            setfpscap(60)
-        end
-    end    
-})
-
 Tab:AddToggle({
     Name = "Disable 3D Rendering",
     Default = false,
@@ -1130,6 +1122,10 @@ Tab:AddToggle({
             game:GetService("RunService"):Set3dRenderingEnabled(true)
         end
     end    
+})
+
+local Section = Tab:AddSection({
+	Name = "Avoid ban"
 })
 
 Tab:AddButton({
@@ -1236,4 +1232,21 @@ end)
 
 shutdownServer()
   	end    
+})
+
+local Section = Tab:AddSection({
+	Name = "Other"
+})
+
+
+Tab:AddToggle({
+    Name = "Fps Cap (POWER Saver)",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            setfpscap(10)
+        else
+            setfpscap(60)
+        end
+    end    
 })
