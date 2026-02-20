@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM1",
+    Name = "XP FARM11",
     Default = false,
     Callback = function(Value)
         XPFARMPV = Value
@@ -311,6 +311,32 @@ Tab:AddToggle({
                 local SAFE_POSITION = Vector3.new(0, 500, 0)
                 local isProcessing = false
                 local rewardCount = 0
+
+                local function getTimerText()
+                    local pg = player:FindFirstChild("PlayerGui")
+                    local timerObj = pg and pg:FindFirstChild("Shared") 
+                        and pg.Shared:FindFirstChild("HUD")
+                        and pg.Shared.HUD:FindFirstChild("Overlay")
+                        and pg.Shared.HUD.Overlay:FindFirstChild("Default")
+                        and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer:FindFirstChild("Timer")
+                    
+                    return timerObj and timerObj.Text or ""
+                end
+
+                local function sendMessage(msg)
+                    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                        if channel then channel:SendAsync(msg) end
+                    else
+                        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+                        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+                            chatEvent.SayMessageRequest:FireServer(msg, "All")
+                        end
+                    end
+                end
 
                 local platform = workspace:FindFirstChild("SafeZoneWithDecal")
                 if not platform then
@@ -327,30 +353,7 @@ Tab:AddToggle({
                     decal.Parent = platform
                 end
 
-                local function getRoundTimer()
-                    local pg = player:FindFirstChild("PlayerGui")
-                    return pg and pg:FindFirstChild("Shared") 
-                        and pg.Shared:FindFirstChild("HUD")
-                        and pg.Shared.HUD:FindFirstChild("Overlay")
-                        and pg.Shared.HUD.Overlay:FindFirstChild("Default")
-                        and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
-                        and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
-                        and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
-                end
-
-                local function sendMessage(msg)
-                    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-                        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-                        if channel then channel:SendAsync(msg) end
-                    else
-                        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-                        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-                            chatEvent.SayMessageRequest:FireServer(msg, "All")
-                        end
-                    end
-                end
-
-                print("Autofarm & SafeZone: ON")
+                print("Autofarm: ON. Waiting for Rewards GUI...")
 
                 while XPFARMPV do
                     local character = player.Character
@@ -366,28 +369,30 @@ Tab:AddToggle({
                         isProcessing = true
                         rewardCount = rewardCount + 1
                         rewardsGui.Visible = false
-                        print("Награда получена. Счетчик: " .. rewardCount)
+                        print("Награда получена! Счетчик: " .. rewardCount)
 
-                        if rewardCount == 2 then
+                        if rewardCount >= 2 then
+                            task.wait(1)
                             sendMessage("!map Maze")
-                            task.wait(13)
+                            print("Счетчик 2: Карта Maze запрошена. Жду 0:29...")
                             rewardCount = 0
                         else
-                            task.wait(1)
+                            print("Счетчик 1: Просто жду 0:29...")
                         end
 
-                        print("Ищу RoundTimer...")
-                        local timer = getRoundTimer()
-                        while XPFARMPV and (not timer or timer.Visible == false) do
-                            task.wait(0.5)
-                            timer = getRoundTimer()
+                        while XPFARMPV do
+                            local currentTimer = getTimerText()
+                            if currentTimer == "0:29" then
+                                break
+                            end
+                            task.wait(0.1)
                         end
 
-                        if XPFARMPV and timer and timer.Visible == true then
+                        if XPFARMPV then
                             sendMessage("!specialround Plushie Hell")
                             task.wait(1)
                             sendMessage("!Timer 1")
-                            print("Раунд запущен!")
+                            print("Команды отправлены на 0:29!")
                         end
 
                         isProcessing = false
@@ -397,7 +402,7 @@ Tab:AddToggle({
                 end
 
                 if platform then platform:Destroy() end
-                print("Autofarm & SafeZone: OFF")
+                print("Autofarm: OFF")
             end)
         end
     end     
@@ -1082,4 +1087,5 @@ Tab:AddToggle({
         end
     end    
 })
+
 
