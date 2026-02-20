@@ -336,7 +336,6 @@ Tab:AddToggle({
                     end
                 end
 
-                print("Autofarm: ON. Ожидание GUI наград...")
 
                 while XPFARMPV do
                     local pg = player:FindFirstChild("PlayerGui")
@@ -346,15 +345,12 @@ Tab:AddToggle({
                         isProcessing = true
                         rewardCount = rewardCount + 1
                         rewardsGui.Visible = false
-                        print("Награда получена! Счетчик: " .. rewardCount)
 
                         if rewardCount >= 2 then
                             task.wait(1)
                             sendMessage("!map Maze")
-                            print("Счетчик 2: Карта Maze запрошена. Жду 0:29...")
                             rewardCount = 0 
                         else
-                            print("Счетчик 1: Жду появления таймера 0:29...")
                         end
 
                         while XPFARMPV do
@@ -369,7 +365,6 @@ Tab:AddToggle({
                             sendMessage("!specialround Plushie Hell")
                             task.wait(1)
                             sendMessage("!Timer 1")
-                            print("Раунд настроен на 0:29")
                         end
 
                         isProcessing = false
@@ -378,7 +373,6 @@ Tab:AddToggle({
                     task.wait(0.5)
                 end
                 
-                print("Autofarm: OFF")
             end)
         end
     end     
@@ -596,7 +590,7 @@ Tab:AddToggle({
                 local gameFolder = workspace:WaitForChild("Game")
                 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
                 
-                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-50, 5, 0) 
+                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-1000, 1000, 0) 
 
                 local platform = workspace:FindFirstChild("FarmSafeZone")
                 if not platform then
@@ -654,7 +648,6 @@ Tab:AddToggle({
                         isProcessing = true
                         rewardCount = rewardCount + 1
                         rewardsGui.Visible = false
-                        print("Награда получена! Счетчик: " .. rewardCount)
 
                         if rewardCount >= 2 then
                             task.wait(1)
@@ -683,7 +676,6 @@ Tab:AddToggle({
                 end
                 
                 if platform then platform:Destroy() end
-                print("Autofarm: OFF")
             end)
         end
     end     
@@ -761,7 +753,7 @@ Tab:AddToggle({
                 local gameFolder = workspace:WaitForChild("Game")
                 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
                 
-                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-500, 500, 0) 
+                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-1000, 1000, 0) 
 
                 local platform = workspace:FindFirstChild("FarmSafeZonePublic")
                 if not platform then
@@ -774,8 +766,6 @@ Tab:AddToggle({
                     platform.Transparency = 0.5
                     platform.Parent = workspace
                 end
-
-                print("Autofarm: ON. Сейф-зона активна.")
 
                 while XPFARMPV2 do
                     local character = player.Character
@@ -791,14 +781,12 @@ Tab:AddToggle({
 
                     if rewardsGui and rewardsGui.Visible == true then
                         rewardsGui.Visible = false
-                        print("GUI наград скрыто")
-                    end
+					end
 
                     task.wait(0.1)
                 end
                 
                 if platform then platform:Destroy() end
-                print("Autofarm: OFF")
             end)
         end
     end     
@@ -1071,3 +1059,4 @@ Tab:AddToggle({
         end
     end    
 })
+
