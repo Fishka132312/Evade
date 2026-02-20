@@ -296,23 +296,46 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM",
+    Name = "XP FARM1",
     Default = false,
     Callback = function(Value)
-        XPFARMFOREVENT = Value
+        XPFARMPV = Value
         
-        if XPFARMFOREVENT then
+        if XPFARMPV then
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local TextChatService = game:GetService("TextChatService")
                 local player = Players.LocalPlayer
+                
+                local IMAGE_ID = "rbxassetid://126150774709719"
+                local SAFE_POSITION = Vector3.new(0, 500, 0)
                 local isProcessing = false
                 local rewardCount = 0
 
-                local function getRewardsGui()
+                local platform = workspace:FindFirstChild("SafeZoneWithDecal")
+                if not platform then
+                    platform = Instance.new("Part")
+                    platform.Name = "SafeZoneWithDecal"
+                    platform.Size = Vector3.new(20, 1, 20)
+                    platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
+                    platform.Anchored = true
+                    platform.CanCollide = true
+                    platform.Parent = workspace
+                    local decal = Instance.new("Decal")
+                    decal.Texture = IMAGE_ID
+                    decal.Face = Enum.NormalId.Top 
+                    decal.Parent = platform
+                end
+
+                local function getRoundTimer()
                     local pg = player:FindFirstChild("PlayerGui")
-                    local global = pg and pg:FindFirstChild("Global")
-                    return global and global:FindFirstChild("Rewards")
+                    return pg and pg:FindFirstChild("Shared") 
+                        and pg.Shared:FindFirstChild("HUD")
+                        and pg.Shared.HUD:FindFirstChild("Overlay")
+                        and pg.Shared.HUD.Overlay:FindFirstChild("Default")
+                        and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
                 end
 
                 local function sendMessage(msg)
@@ -327,64 +350,55 @@ Tab:AddToggle({
                     end
                 end
 
-                local function getRoundTimer()
+                print("Autofarm & SafeZone: ON")
+
+                while XPFARMPV do
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    if rootPart and (rootPart.Position - SAFE_POSITION).Magnitude > 5 then
+                        rootPart.CFrame = CFrame.new(SAFE_POSITION)
+                    end
+
                     local pg = player:FindFirstChild("PlayerGui")
-                    return pg and pg:FindFirstChild("Shared") 
-                        and pg.Shared:FindFirstChild("HUD")
-                        and pg.Shared.HUD:FindFirstChild("Overlay")
-                        and pg.Shared.HUD.Overlay:FindFirstChild("Default")
-                        and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
-                        and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
-                        and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
-                end
+                    local rewardsGui = pg and pg:FindFirstChild("Global") and pg.Global:FindFirstChild("Rewards")
 
-                local function runCommands(rewardsGui)
-                    isProcessing = true 
-                    rewardCount = rewardCount + 1
-                    
-                    if rewardsGui then rewardsGui.Visible = false end 
-                    
-                    task.wait(8)
-                    
-                    if rewardCount >= 2 then
-                        sendMessage("!map Maze")
-                        task.wait(1)
-                        rewardCount = 0 
-                    end
-
-                    print("Ожидание появления RoundTimer...")
-                    local timer = getRoundTimer()
-                    
-                    while XPFARMFOREVENT and (not timer or timer.Visible == false) do
-                        task.wait(0.5)
-                        timer = getRoundTimer()
-                    end
-
-                    if XPFARMFOREVENT and timer and timer.Visible == true then
-                        print("Таймер найден! Отправка команд...")
-                        sendMessage("!specialround Plushie Hell")
-                        task.wait(1)
-                        sendMessage("!Timer 1")
-                    end
-                    
-                    isProcessing = false
-                end
-
-                print("Autofarm Started")
-                while XPFARMFOREVENT do
-                    local rewardsGui = getRewardsGui()
-                    
                     if rewardsGui and rewardsGui.Visible == true and not isProcessing then
-                        runCommands(rewardsGui)
+                        isProcessing = true
+                        rewardCount = rewardCount + 1
+                        rewardsGui.Visible = false
+                        print("Награда получена. Счетчик: " .. rewardCount)
+
+                        if rewardCount == 2 then
+                            sendMessage("!map Maze")
+                            task.wait(13)
+                            rewardCount = 0
+                        else
+                            task.wait(1)
+                        end
+
+                        print("Ищу RoundTimer...")
+                        local timer = getRoundTimer()
+                        while XPFARMPV and (not timer or timer.Visible == false) do
+                            task.wait(0.5)
+                            timer = getRoundTimer()
+                        end
+
+                        if XPFARMPV and timer and timer.Visible == true then
+                            sendMessage("!specialround Plushie Hell")
+                            task.wait(1)
+                            sendMessage("!Timer 1")
+                            print("Раунд запущен!")
+                        end
+
+                        isProcessing = false
                     end
-                    
+
                     task.wait(0.5)
                 end
-                
-                print("Autofarm Stopped")
+
+                if platform then platform:Destroy() end
+                print("Autofarm & SafeZone: OFF")
             end)
-        else
-            print("Autofarm turned off")
         end
     end     
 })
@@ -1068,3 +1082,4 @@ Tab:AddToggle({
         end
     end    
 })
+
