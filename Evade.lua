@@ -570,6 +570,105 @@ local Section = Tab:AddSection({
 	Name = "PV SERVER FARM (FASTEST)"
 })
 
+Tab:AddToggle({
+	Name = "XP FARM",
+	Default = false,
+	Callback = function(Value)
+		XPFARMPV = Value
+		
+		if XPFARMPV then
+			task.spawn(function()
+				local Players = game:GetService("Players")
+				local TextChatService = game:GetService("TextChatService")
+				local player = Players.LocalPlayer
+				
+				local IMAGE_ID = "rbxassetid://126150774709719"
+				local SAFE_POSITION = Vector3.new(0, 500, 0)
+				local isProcessing = false
+				local rewardCount = 0
+
+				local platform = workspace:FindFirstChild("SafeZoneWithDecal")
+				if not platform then
+					platform = Instance.new("Part")
+					platform.Name = "SafeZoneWithDecal"
+					platform.Size = Vector3.new(20, 1, 20)
+					platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
+					platform.Anchored = true
+					platform.CanCollide = true
+					platform.BrickColor = BrickColor.new("Bright blue")
+					platform.Transparency = 0.5
+					platform.Parent = workspace
+
+					local decal = Instance.new("Decal")
+					decal.Texture = IMAGE_ID
+					decal.Face = Enum.NormalId.Top 
+					decal.Parent = platform
+				end
+
+				local function getRewardsGui()
+					local pg = player:FindFirstChild("PlayerGui")
+					local global = pg and pg:FindFirstChild("Global")
+					return global and global:FindFirstChild("Rewards")
+				end
+
+				local function sendMessage(msg)
+					if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+						local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+						if channel then channel:SendAsync(msg) end
+					else
+						local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+						if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+							chatEvent.SayMessageRequest:FireServer(msg, "All")
+						end
+					end
+				end
+
+				print("Autofarm & SafeZone: ON")
+
+				while XPFARMPV do
+					local character = player.Character
+					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+					if rootPart then
+						if (rootPart.Position - SAFE_POSITION).Magnitude > 5 then
+							rootPart.CFrame = CFrame.new(SAFE_POSITION)
+						end
+					end
+
+					local rewardsGui = getRewardsGui()
+					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
+						isProcessing = true
+						rewardCount = rewardCount + 1
+						
+						print("Награда #" .. rewardCount .. " получена")
+						rewardsGui.Visible = false
+						
+						if rewardCount == 2 then
+							task.wait(8)
+							sendMessage("!specialround Plushie Hell")
+							task.wait(1)
+							sendMessage("!Timer 1")
+						else
+							task.wait(1)
+							sendMessage("!map Maze")
+							task.wait(17)
+							sendMessage("!specialround Plushie Hell")
+							task.wait(1)
+							sendMessage("!Timer 1")
+						end
+						
+						isProcessing = false
+					end
+
+					task.wait(0.5)
+				end
+
+				if platform then platform:Destroy() end
+				print("Autofarm & SafeZone: OFF")
+			end)
+		end
+	end    
+})
+
 Tab:AddButton({
     Name = "MAZE",
     Callback = function()
@@ -618,6 +717,61 @@ Tab:AddButton({
 
 local Section = Tab:AddSection({
 	Name = "PUBLIC SERVER FARM"
+})
+
+Tab:AddToggle({
+    Name = "XP FARM PB",
+    Default = false,
+    Callback = function(Value)
+        XPFARMPB = Value
+
+        if XPFARMPB then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+
+                local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+
+                local platform = workspace:FindFirstChild("SafeZonePlatformPB")
+                if not platform then
+                    platform = Instance.new("Part")
+                    platform.Name = "SafeZonePlatformPB"
+                    platform.Size = Vector3.new(20, 1, 20)
+                    platform.Anchored = true
+                    platform.CanCollide = true
+                    platform.Transparency = 0.5 
+                    platform.BrickColor = BrickColor.new("Bright blue")
+                    platform.Parent = workspace
+                end
+
+                local function getSafeZoneCFrame()
+                    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
+                end
+
+                while XPFARMPB do 
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChild("Humanoid")
+                    
+                    local safeCFrame = getSafeZoneCFrame()
+                    
+                    platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
+
+                    if rootPart and humanoid and humanoid.Health > 0 then
+                        if (rootPart.Position - safeCFrame.Position).Magnitude > 5 then
+                            rootPart.CFrame = safeCFrame
+                        end
+                    end
+                    task.wait(0.5)
+                end
+
+                if platform then 
+                    platform.CFrame = CFrame.new(0, -1000, 0) 
+                end 
+            end)
+        end
+    end    
 })
 
 local Section = Tab:AddSection({
