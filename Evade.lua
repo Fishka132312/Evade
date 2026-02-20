@@ -327,43 +327,50 @@ Tab:AddToggle({
                     end
                 end
 
+                local function getRoundTimer()
+                    local pg = player:FindFirstChild("PlayerGui")
+                    return pg and pg:FindFirstChild("Shared") 
+                        and pg.Shared:FindFirstChild("HUD")
+                        and pg.Shared.HUD:FindFirstChild("Overlay")
+                        and pg.Shared.HUD.Overlay:FindFirstChild("Default")
+                        and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
+                        and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
+                end
+
                 local function runCommands(rewardsGui)
                     isProcessing = true 
                     rewardCount = rewardCount + 1
                     
                     if rewardsGui then rewardsGui.Visible = false end 
                     
-                    task.wait(5)
+                    task.wait(10)
                     
-                    if rewardCount == 2 then
+                    if rewardCount >= 2 then
                         sendMessage("!map Maze")
                         task.wait(1)
+                        rewardCount = 0 
                     end
 
-                    local playerGui = player:WaitForChild("PlayerGui")
-                    local timerPath = playerGui:FindFirstChild("Shared") 
-                        and playerGui.Shared:FindFirstChild("HUD")
-                        and playerGui.Shared.HUD:FindFirstChild("Overlay")
-                        and playerGui.Shared.HUD.Overlay:FindFirstChild("Default")
-                        and playerGui.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
-                        and playerGui.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
-                        and playerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
+                    print("Ожидание появления RoundTimer...")
+                    local timer = getRoundTimer()
+                    
+                    while XPFARMFOREVENT and (not timer or timer.Visible == false) do
+                        task.wait(0.5)
+                        timer = getRoundTimer()
+                    end
 
-                    if timerPath then
-                        while XPFARMFOREVENT and timerPath.Visible == false do
-                            task.wait(0.5)
-                        end
-                        
+                    if XPFARMFOREVENT and timer and timer.Visible == true then
+                        print("Таймер найден! Отправка команд...")
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
-                    else
-                        warn("Критическая ошибка: Путь к RoundTimer не найден в PlayerGui!")
                     end
                     
                     isProcessing = false
                 end
 
+                print("Autofarm Started")
                 while XPFARMFOREVENT do
                     local rewardsGui = getRewardsGui()
                     
@@ -401,26 +408,36 @@ Tab:AddButton({
             end
         end
 
+        local function getRoundTimer()
+            local pg = player:FindFirstChild("PlayerGui")
+            return pg and pg:FindFirstChild("Shared") 
+                and pg.Shared:FindFirstChild("HUD")
+                and pg.Shared.HUD:FindFirstChild("Overlay")
+                and pg.Shared.HUD.Overlay:FindFirstChild("Default")
+                and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
+                and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
+                and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
+        end
+
         task.spawn(function()
             sendMessage("!map Maze")
+            print("Карта Maze запрошена. Ждем 5 секунд...")
             
-            task.wait(5)
+            task.wait(10)
 
-            local success, timer = pcall(function()
-                return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
-            end)
+            local timer = getRoundTimer()
+            
+            while not timer or timer.Visible == false do
+                task.wait(0.5)
+                timer = getRoundTimer()
+            end
 
-            if success and timer then
-                while not timer.Visible do
-                    task.wait(0.5)
-                end
-                
+            if timer and timer.Visible == true then
+                print("Таймер активен! Финализируем настройки...")
                 sendMessage("!specialround Plushie Hell")
                 task.wait(1)
                 sendMessage("!Timer 1")
                 print("MAZE Setup Complete")
-            else
-                warn("Путь к RoundTimer не найден! Проверь иерархию в Explorer.")
             end
         end)
         
@@ -688,26 +705,36 @@ Tab:AddButton({
             end
         end
 
+        local function getRoundTimer()
+            local pg = player:FindFirstChild("PlayerGui")
+            return pg and pg:FindFirstChild("Shared") 
+                and pg.Shared:FindFirstChild("HUD")
+                and pg.Shared.HUD:FindFirstChild("Overlay")
+                and pg.Shared.HUD.Overlay:FindFirstChild("Default")
+                and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
+                and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
+                and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
+        end
+
         task.spawn(function()
             sendMessage("!map Maze")
+            print("Карта Maze запрошена. Ждем 5 секунд...")
             
-            task.wait(5)
+            task.wait(10)
 
-            local success, timer = pcall(function()
-                return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
-            end)
+            local timer = getRoundTimer()
+            
+            while not timer or timer.Visible == false do
+                task.wait(0.5)
+                timer = getRoundTimer()
+            end
 
-            if success and timer then
-                while not timer.Visible do
-                    task.wait(0.5)
-                end
-                
+            if timer and timer.Visible == true then
+                print("Таймер активен! Финализируем настройки...")
                 sendMessage("!specialround Plushie Hell")
                 task.wait(1)
                 sendMessage("!Timer 1")
                 print("MAZE Setup Complete")
-            else
-                warn("Путь к RoundTimer не найден! Проверь иерархию в Explorer.")
             end
         end)
         
@@ -1041,5 +1068,6 @@ Tab:AddToggle({
         end
     end    
 })
+
 
 
