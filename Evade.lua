@@ -949,7 +949,7 @@ local Section = Tab:AddSection({
 })
 
 Tab:AddTextbox({
-    Name = "Emote",
+    Name = "Type Emote",
     Default = "",
     TextDisappear = true,
     Callback = function(Value)
@@ -997,6 +997,30 @@ Tab:AddTextbox({
         end
     end     
 })
+
+Tab:AddButton({
+	Name = "Stop Emote",
+	Callback = function()
+      		local character = game.Players.LocalPlayer.Character
+if character then
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        -- Находим все анимации, которые проигрываются в данный момент
+        local activeTracks = humanoid:GetPlayingAnimationTracks()
+        
+        for _, t in pairs(activeTracks) do
+            -- Можно остановить вообще всё
+            t:Stop()
+            
+            -- Или, если хочешь остановить только свою (по ID):
+            -- if t.Animation.AnimationId == "rbxassetid://ТВОЙ_ID" then t:Stop() end
+        end
+        print("Все локальные анимации остановлены!")
+    end
+end
+  	end    
+})
+
 --------------------------------MISC-----------------------------
 local Tab = Window:MakeTab({
 	Name = "Misc",
@@ -1308,5 +1332,6 @@ Tab:AddToggle({
         end
     end    
 })
+
 
 
