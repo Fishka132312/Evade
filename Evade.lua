@@ -11,9 +11,212 @@ local Section = Tab:AddSection({
 	Name = "Event farm"
 })
 
+Tab:AddToggle({
+    Name = "Ticket Farm 1 (TP)",
+    Default = false,
+    Callback = function(Value)
+        TICKETFARM1 = Value
+
+        if TICKETFARM1 then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+
+                local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+                local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
+                local playersFolder = gameFolder:WaitForChild("Players")
+
+                local WAIT_AT_ITEM = 1.0
+                local DANGER_RADIUS = 20 
+                local ESCAPE_TIME = 2.0 
+
+                local platform = workspace:FindFirstChild("SafeZonePlatform1") or Instance.new("Part")
+                platform.Name = "SafeZonePlatform1"
+                platform.Size = Vector3.new(20, 1, 20)
+                platform.Anchored = true
+                platform.CanCollide = true
+                platform.Transparency = 0.5 
+                platform.BrickColor = BrickColor.new("Bright blue")
+                platform.Parent = workspace
+
+                local function getSafeZoneCFrame()
+                    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
+                end
+
+                local function isAnyoneNearby(myPart)
+                    for _, otherChar in ipairs(playersFolder:GetChildren()) do
+                        if otherChar:IsA("Model") and otherChar.Name ~= player.Name then
+                            local healthcare = otherChar:FindFirstChild("Humanoid")
+                            if healthcare and healthcare.Health > 0 then
+                                local otherRoot = otherChar:FindFirstChild("HumanoidRootPart") or healthcare.RootPart
+                                if otherRoot then
+                                    local dist = (myPart.Position - otherRoot.Position).Magnitude
+                                    if dist < DANGER_RADIUS then
+                                        return true
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    return false
+                end
+
+                while TICKETFARM1 do 
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChild("Humanoid")
+                    
+                    local safeCFrame = getSafeZoneCFrame()
+                    platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
+
+                    if rootPart and humanoid and humanoid.Health > 0 then
+                        if isAnyoneNearby(rootPart) then
+                            rootPart.CFrame = safeCFrame
+                            task.wait(ESCAPE_TIME)
+                        else
+                            local target = nil
+                            for _, child in ipairs(ticketsFolder:GetChildren()) do
+                                if child.Name == "Visual" then
+                                    target = child
+                                    break
+                                end
+                            end
+
+                            if target then
+                                rootPart.CFrame = target:GetPivot()
+                                
+                                local start = tick()
+                                while tick() - start < WAIT_AT_ITEM and TICKETFARM1 do
+                                    if isAnyoneNearby(rootPart) then break end
+                                    if not target.Parent then break end
+                                    task.wait(0.1)
+                                end
+                            else
+                                if (rootPart.Position - safeCFrame.Position).Magnitude > 10 then
+                                    rootPart.CFrame = safeCFrame
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.1)
+                end
+
+                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end 
+            end)
+        end
+    end    
+})
 
 Tab:AddToggle({
-    Name = "Ticket Farm 3 (TWEEN)",
+    Name = "Ticket Farm 2 (TP)",
+    Default = false,
+    Callback = function(Value)
+        TICKETFARM2 = Value
+
+        if TICKETFARM2 then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+
+                local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+                local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
+                local playersFolder = gameFolder:WaitForChild("Players")
+
+                local WAIT_AT_ITEM = 1.0
+                local DANGER_RADIUS = 20 
+                local ESCAPE_TIME = 2.0 
+                
+                local DISTANCE_BELOW = 8 
+
+                local platform = workspace:FindFirstChild("SafeZonePlatform2") or Instance.new("Part")
+                platform.Name = "SafeZonePlatform2"
+                platform.Size = Vector3.new(15, 1, 15)
+                platform.Anchored = true
+                platform.CanCollide = true
+                platform.Transparency = 0.5 
+                platform.BrickColor = BrickColor.new("Bright blue")
+                platform.Parent = workspace
+
+                local function getSafeZoneCFrame()
+                    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
+                end
+
+                local function isAnyoneNearby(myPart)
+                    for _, otherChar in ipairs(playersFolder:GetChildren()) do
+                        if otherChar:IsA("Model") and otherChar.Name ~= player.Name then
+                            local healthcare = otherChar:FindFirstChild("Humanoid")
+                            if healthcare and healthcare.Health > 0 then
+                                local otherRoot = otherChar:FindFirstChild("HumanoidRootPart") or healthcare.RootPart
+                                if otherRoot then
+                                    local dist = (myPart.Position - otherRoot.Position).Magnitude
+                                    if dist < DANGER_RADIUS then
+                                        return true
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    return false
+                end
+
+                while TICKETFARM2 do 
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChild("Humanoid")
+                    
+                    local safeCFrame = getSafeZoneCFrame()
+
+                    if rootPart and humanoid and humanoid.Health > 0 then
+                        if isAnyoneNearby(rootPart) then
+                            platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
+                            rootPart.CFrame = safeCFrame
+                            task.wait(ESCAPE_TIME)
+                        else
+                            local target = nil
+                            for _, child in ipairs(ticketsFolder:GetChildren()) do
+                                if child.Name == "Visual" then
+                                    target = child
+                                    break
+                                end
+                            end
+
+                            if target then
+                                local targetPos = target:GetPivot().Position
+                                local finalPosition = Vector3.new(targetPos.X, targetPos.Y - DISTANCE_BELOW, targetPos.Z)
+                                
+                                rootPart.CFrame = CFrame.new(finalPosition)
+                                
+                                platform.CFrame = CFrame.new(finalPosition - Vector3.new(0, 3.5, 0))
+                                
+                               local start = tick()
+                                while tick() - start < WAIT_AT_ITEM and TICKETFARM2 do
+                                    if isAnyoneNearby(rootPart) then break end
+                                    if not target.Parent then break end
+                                    
+                                    platform.CFrame = CFrame.new(finalPosition - Vector3.new(0, 3.5, 0))
+                                    task.wait(0.1)
+                                end
+                            else
+                                platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
+                                if (rootPart.Position - safeCFrame.Position).Magnitude > 10 then
+                                    rootPart.CFrame = safeCFrame
+                              end
+                            end
+                        end
+                    end
+                    task.wait(0.1)
+                end
+
+                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end 
+            end)
+        end
+    end    
+})                          
+
+Tab:AddToggle({
+    Name = "Ticket Farm 33 (TWEEN)",
     Default = false,
     Callback = function(Value)
         TICKETFARMTWEEN = Value
@@ -24,109 +227,95 @@ Tab:AddToggle({
                 local TweenService = game:GetService("TweenService")
                 local player = Players.LocalPlayer
                 
-                local gameFolder = workspace:WaitForChild("Game")
-                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
-                local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
-                
+                -- Настройки
                 local BASE_SPEED = 50
                 local DISTANCE_BELOW = 10 
-                local currentTarget = nil
-                local activeTween = nil
-                local activePlatTween = nil
+                local PLATFORM_OFFSET = 3.5 -- Расстояние от ног до платформы
 
-                local platform = workspace:FindFirstChild("SafeZonePlatformTWEEN")
-                if not platform then
-                    platform = Instance.new("Part")
-                    platform.Name = "SafeZonePlatformTWEEN"
-                    platform.Size = Vector3.new(15, 1, 15)
-                    platform.Anchored = true
-                    platform.CanCollide = true
-                    platform.Transparency = 0.5
-                    platform.BrickColor = BrickColor.new("Bright blue")
-                    platform.Parent = workspace
-                end
+                -- Ссылка на папки (с проверкой)
+                local gameFolder = workspace:WaitForChild("Game", 10)
+                if not gameFolder then return end
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+                local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
 
-                local function stopTweens()
-                    if activeTween then activeTween:Cancel() end
-                    if activePlatTween then activePlatTween:Cancel() end
-                end
-
-                local function smoothMove(targetPosition)
-                    local character = player.Character
-                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                    
-                    if not rootPart or not humanoid or humanoid.Health <= 0 or not TICKETFARMTWEEN then return end
-
-                    local charTargetPos = Vector3.new(targetPosition.X, targetPosition.Y - DISTANCE_BELOW, targetPosition.Z)
-                    local platTargetPos = charTargetPos - Vector3.new(0, 3.5, 0)
-
-                    local distance = (rootPart.Position - charTargetPos).Magnitude
-                    if distance < 1 then return end
-
-                    local duration = distance / BASE_SPEED
-                    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                    
-                    stopTweens()
-
-                    activeTween = TweenService:Create(rootPart, tweenInfo, {CFrame = CFrame.new(charTargetPos)})
-                    activePlatTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(platTargetPos)})
-                    
-                    activeTween:Play()
-                    activePlatTween:Play()
-                    
-                    local startWait = tick()
-                    while (tick() - startWait) < duration and TICKETFARMTWEEN do
-                        if not rootPart.Parent or not humanoid or humanoid.Health <= 0 or not TICKETFARMTWEEN then
-                            stopTweens()
-                            return
-                        end
-                        task.wait(0.1)
+                -- Создание/Поиск платформы
+                local function getPlatform()
+                    local p = workspace:FindFirstChild("SafeZonePlatformTWEEN")
+                    if not p then
+                        p = Instance.new("Part")
+                        p.Name = "SafeZonePlatformTWEEN"
+                        p.Size = Vector3.new(15, 1, 15)
+                        p.Anchored = true
+                        p.CanCollide = true
+                        p.Transparency = 0.5
+                        p.BrickColor = BrickColor.new("Bright blue")
+                        p.Parent = workspace
                     end
+                    return p
                 end
 
                 while TICKETFARMTWEEN do
-                    local character = player.Character
-                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                    
-                    if rootPart and humanoid and humanoid.Health > 0 then
-                        local ticket = nil
-                        local minDistance = math.huge
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+                    if root and hum and hum.Health > 0 then
+                        local platform = getPlatform()
                         
-                        local allTickets = ticketsFolder:GetChildren()
-                        for _, child in ipairs(allTickets) do
-                            if child.Name == "Visual" and child.Parent then
-                                local pos = child:GetPivot().Position
-                                local dist = (rootPart.Position - pos).Magnitude
+                        -- Определяем целевой тикет
+                        local targetTicket = nil
+                        local minDistance = math.huge
+                        for _, child in ipairs(ticketsFolder:GetChildren()) do
+                            if child.Name == "Visual" then
+                                local dist = (root.Position - child:GetPivot().Position).Magnitude
                                 if dist < minDistance then
                                     minDistance = dist
-                                    ticket = child
+                                    targetTicket = child
                                 end
                             end
                         end
 
-                        if ticket then
-                            currentTarget = ticket
-                            smoothMove(ticket:GetPivot().Position)
-                        else
-                            if currentTarget ~= "Spawn" then
-                                currentTarget = "Spawn"
-                                smoothMove(itemSpawns:GetPivot().Position)
+                        -- Определяем финальную позицию (X и Z от тикета или спавна, Y всегда фиксирован)
+                        local goalPoint = targetTicket and targetTicket:GetPivot().Position or itemSpawns:GetPivot().Position
+                        local targetY = itemSpawns:GetPivot().Position.Y - DISTANCE_BELOW
+                        
+                        local finalCharPos = Vector3.new(goalPoint.X, targetY, goalPoint.Z)
+                        local finalPlatPos = finalCharPos - Vector3.new(0, PLATFORM_OFFSET, 0)
+
+                        -- Проверка: если мы уже на месте (или очень близко), ничего не делаем
+                        local distToGoal = (Vector2.new(root.Position.X, root.Position.Z) - Vector2.new(finalCharPos.X, finalCharPos.Z)).Magnitude
+                        local verticalDist = math.abs(root.Position.Y - targetY)
+
+                        if distToGoal > 1 or verticalDist > 1 then
+                            local duration = distToGoal / BASE_SPEED
+                            if verticalDist > 5 then duration = 0.5 end -- Быстрый спуск вниз, если респавнулись
+
+                            local tInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                            
+                            local charTween = TweenService:Create(root, tInfo, {CFrame = CFrame.new(finalCharPos)})
+                            local platTween = TweenService:Create(platform, tInfo, {CFrame = CFrame.new(finalPlatPos)})
+
+                            charTween:Play()
+                            platTween:Play()
+
+                            -- Ждем либо окончания пути, либо появления нового тикета
+                            local startWait = tick()
+                            while tick() - startWait < duration and TICKETFARMTWEEN do
+                                -- Если появился новый тикет, который ближе текущего, прерываем твин
+                                task.wait(0.1)
+                                if targetTicket and not targetTicket.Parent then break end 
                             end
+                            charTween:Cancel()
+                            platTween:Cancel()
                         end
-                    else
-                        currentTarget = nil
-                        task.wait(1)
                     end
                     task.wait(0.2)
                 end
 
-                stopTweens()
-                if platform then platform.CFrame = CFrame.new(0, -5000, 0) end
+                -- Очистка при выключении
+                local p = workspace:FindFirstChild("SafeZonePlatformTWEEN")
+                if p then p:Destroy() end
             end)
-        else
-            TICKETFARMTWEEN = false
         end
     end 
 })
@@ -375,6 +564,192 @@ local Section = Tab:AddSection({
 	Name = "PV SERVER FARM (FASTEST)"
 })
 
+Tab:AddToggle({
+	Name = "XP FARM",
+	Default = false,
+	Callback = function(Value)
+		XPFARMPV = Value
+		
+		if XPFARMPV then
+			task.spawn(function()
+				local Players = game:GetService("Players")
+				local TextChatService = game:GetService("TextChatService")
+				local player = Players.LocalPlayer
+				
+				local IMAGE_ID = "rbxassetid://126150774709719"
+				local SAFE_POSITION = Vector3.new(0, 500, 0)
+				local isProcessing = false
+				local rewardCount = 0
+
+				local platform = workspace:FindFirstChild("SafeZoneWithDecal")
+				if not platform then
+					platform = Instance.new("Part")
+					platform.Name = "SafeZoneWithDecal"
+					platform.Size = Vector3.new(20, 1, 20)
+					platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
+					platform.Anchored = true
+					platform.CanCollide = true
+					platform.BrickColor = BrickColor.new("Bright blue")
+					platform.Transparency = 0.5
+					platform.Parent = workspace
+
+					local decal = Instance.new("Decal")
+					decal.Texture = IMAGE_ID
+					decal.Face = Enum.NormalId.Top 
+					decal.Parent = platform
+				end
+
+				local function getRewardsGui()
+					local pg = player:FindFirstChild("PlayerGui")
+					local global = pg and pg:FindFirstChild("Global")
+					return global and global:FindFirstChild("Rewards")
+				end
+
+				local function sendMessage(msg)
+					if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+						local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+						if channel then channel:SendAsync(msg) end
+					else
+						local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+						if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+							chatEvent.SayMessageRequest:FireServer(msg, "All")
+						end
+					end
+				end
+
+				print("Autofarm & SafeZone: ON")
+
+				while XPFARMPV do
+					local character = player.Character
+					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+					if rootPart then
+						if (rootPart.Position - SAFE_POSITION).Magnitude > 5 then
+							rootPart.CFrame = CFrame.new(SAFE_POSITION)
+						end
+					end
+
+					local rewardsGui = getRewardsGui()
+					if rewardsGui and rewardsGui.Visible == true and not isProcessing then
+						isProcessing = true
+						rewardCount = rewardCount + 1
+						
+						print("Награда #" .. rewardCount .. " получена")
+						rewardsGui.Visible = false
+						
+						if rewardCount == 2 then
+							task.wait(8)
+							sendMessage("!specialround Plushie Hell")
+							task.wait(1)
+							sendMessage("!Timer 1")
+						else
+							task.wait(1)
+							sendMessage("!map Maze")
+							task.wait(17)
+							sendMessage("!specialround Plushie Hell")
+							task.wait(1)
+							sendMessage("!Timer 1")
+						end
+						
+						isProcessing = false
+					end
+
+					task.wait(0.5)
+				end
+
+				if platform then platform:Destroy() end
+				print("Autofarm & SafeZone: OFF")
+			end)
+		end
+	end    
+})
+
+Tab:AddButton({
+	Name = "SET MAZE",
+	Callback = function()
+			local TextChatService = game:GetService("TextChatService")
+
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then channel:SendAsync(msg) end
+    else
+        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        end
+    end
+end
+
+sendMessage("!map Maze")
+task.wait(17)
+
+sendMessage("!specialround Plushie Hell")
+task.wait(1)
+
+sendMessage("!Timer 1")
+
+print("Down")
+  	end    
+})
+
+local Section = Tab:AddSection({
+	Name = "PUBLIC SERVER FARM"
+})
+
+Tab:AddToggle({
+    Name = "XP FARM PB",
+    Default = false,
+    Callback = function(Value)
+        XPFARMPB = Value
+
+        if XPFARMPB then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+
+                local gameFolder = workspace:WaitForChild("Game")
+                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+
+                local platform = workspace:FindFirstChild("SafeZonePlatformPB")
+                if not platform then
+                    platform = Instance.new("Part")
+                    platform.Name = "SafeZonePlatformPB"
+                    platform.Size = Vector3.new(20, 1, 20)
+                    platform.Anchored = true
+                    platform.CanCollide = true
+                    platform.Transparency = 0.5 
+                    platform.BrickColor = BrickColor.new("Bright blue")
+                    platform.Parent = workspace
+                end
+
+                local function getSafeZoneCFrame()
+                    return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
+                end
+
+                while XPFARMPB do 
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChild("Humanoid")
+                    
+                    local safeCFrame = getSafeZoneCFrame()
+                    
+                    platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
+
+                    if rootPart and humanoid and humanoid.Health > 0 then
+                        if (rootPart.Position - safeCFrame.Position).Magnitude > 5 then
+                            rootPart.CFrame = safeCFrame
+                        end
+                    end
+                    task.wait(0.5)
+                end
+
+                if platform then 
+                    platform.CFrame = CFrame.new(0, -1000, 0) 
+                end 
+            end)
+        end
+    end    
+})
 
 local Section = Tab:AddSection({
 	Name = "FUN"
