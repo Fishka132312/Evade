@@ -310,7 +310,6 @@ Tab:AddToggle({
                 local isProcessing = false
                 local rewardCount = 0
 
-                -- Функция получения текста таймера (динамическая проверка пути)
                 local function getTimerText()
                     local pg = player:FindFirstChild("PlayerGui")
                     local timerObj = pg and pg:FindFirstChild("Shared") 
@@ -325,7 +324,6 @@ Tab:AddToggle({
                     return timerObj and timerObj.Text or ""
                 end
 
-                -- Функция отправки сообщений
                 local function sendMessage(msg)
                     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
                         local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
@@ -341,17 +339,15 @@ Tab:AddToggle({
                 print("Autofarm: ON. Ожидание GUI наград...")
 
                 while XPFARMPV do
-                    -- Проверка появления GUI наград
                     local pg = player:FindFirstChild("PlayerGui")
                     local rewardsGui = pg and pg:FindFirstChild("Global") and pg.Global:FindFirstChild("Rewards")
 
                     if rewardsGui and rewardsGui.Visible == true and not isProcessing then
                         isProcessing = true
                         rewardCount = rewardCount + 1
-                        rewardsGui.Visible = false -- Скрываем, чтобы не мешало
+                        rewardsGui.Visible = false
                         print("Награда получена! Счетчик: " .. rewardCount)
 
-                        -- Проверка счетчика для смены карты
                         if rewardCount >= 2 then
                             task.wait(1)
                             sendMessage("!map Maze")
@@ -361,16 +357,14 @@ Tab:AddToggle({
                             print("Счетчик 1: Жду появления таймера 0:29...")
                         end
 
-                        -- Цикл ожидания конкретного времени 0:29
                         while XPFARMPV do
                             local currentTimer = getTimerText()
                             if currentTimer == "0:29" then
                                 break 
                             end
-                            task.wait(0.1) -- Опрашиваем текст часто, чтобы не пропустить
+                            task.wait(0.1)
                         end
 
-                        -- Финальные команды
                         if XPFARMPV then
                             sendMessage("!specialround Plushie Hell")
                             task.wait(1)
@@ -381,7 +375,7 @@ Tab:AddToggle({
                         isProcessing = false
                     end
 
-                    task.wait(0.5) -- Обычная проверка появления GUI
+                    task.wait(0.5)
                 end
                 
                 print("Autofarm: OFF")
@@ -409,40 +403,36 @@ Tab:AddButton({
             end
         end
 
-        local function getRoundTimer()
+        local function getTimerText()
             local pg = player:FindFirstChild("PlayerGui")
-            return pg and pg:FindFirstChild("Shared") 
+            local timerObj = pg and pg:FindFirstChild("Shared") 
                 and pg.Shared:FindFirstChild("HUD")
                 and pg.Shared.HUD:FindFirstChild("Overlay")
                 and pg.Shared.HUD.Overlay:FindFirstChild("Default")
                 and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
                 and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
                 and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
+                and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer:FindFirstChild("Timer")
+            
+            return timerObj and timerObj.Text or ""
         end
 
         task.spawn(function()
             sendMessage("!map Maze")
-            print("Карта Maze запрошена. Ждем 5 секунд...")
-            
-            task.wait(8)
 
-            local timer = getRoundTimer()
-            
-            while not timer or timer.Visible == false do
-                task.wait(0.5)
-                timer = getRoundTimer()
+            while true do
+                local currentTimer = getTimerText()
+                if currentTimer == "0:29" then
+                    break
+                end
+                task.wait(0.1)
             end
 
-            if timer and timer.Visible == true then
-                print("Таймер активен! Финализируем настройки...")
-                sendMessage("!specialround Plushie Hell")
-                task.wait(1)
-                sendMessage("!Timer 1")
-                print("MAZE Setup Complete")
-            end
+            sendMessage("!specialround Plushie Hell")
+            task.wait(1)
+            sendMessage("!Timer 1")
         end)
         
-        print("Button Clicked: Maze sequence started")
     end    
 })
 
@@ -706,40 +696,37 @@ Tab:AddButton({
             end
         end
 
-        local function getRoundTimer()
+        local function getTimerText()
             local pg = player:FindFirstChild("PlayerGui")
-            return pg and pg:FindFirstChild("Shared") 
+            local timerObj = pg and pg:FindFirstChild("Shared") 
                 and pg.Shared:FindFirstChild("HUD")
                 and pg.Shared.HUD:FindFirstChild("Overlay")
                 and pg.Shared.HUD.Overlay:FindFirstChild("Default")
                 and pg.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
                 and pg.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
                 and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
+                and pg.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer:FindFirstChild("Timer")
+            
+            return timerObj and timerObj.Text or ""
         end
 
         task.spawn(function()
             sendMessage("!map Maze")
-            print("Карта Maze запрошена. Ждем 5 секунд...")
-            
-            task.wait(8)
 
-            local timer = getRoundTimer()
-            
-            while not timer or timer.Visible == false do
-                task.wait(0.5)
-                timer = getRoundTimer()
+            while true do
+                local currentTimer = getTimerText()
+                if currentTimer == "0:29" then
+                    break
+                end
+                task.wait(0.1)
             end
 
-            if timer and timer.Visible == true then
-                print("Таймер активен! Финализируем настройки...")
-                sendMessage("!specialround Plushie Hell")
-                task.wait(1)
-                sendMessage("!Timer 1")
-                print("MAZE Setup Complete")
-            end
+            sendMessage("!specialround Plushie Hell")
+            task.wait(1)
+            sendMessage("!Timer 1")
+            print("MAZE Setup Complete")
         end)
         
-        print("Button Clicked: Maze sequence started")
     end    
 })
 
@@ -1069,6 +1056,3 @@ Tab:AddToggle({
         end
     end    
 })
-
-
-
