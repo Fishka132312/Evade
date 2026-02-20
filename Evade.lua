@@ -390,32 +390,50 @@ Tab:AddToggle({
 })
 
 Tab:AddButton({
-	Name = "MAZE",
-	Callback = function()
-			local TextChatService = game:GetService("TextChatService")
+    Name = "MAZE",
+    Callback = function()
+        local TextChatService = game:GetService("TextChatService")
+        local player = game:GetService("Players").LocalPlayer
 
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then channel:SendAsync(msg) end
-    else
-        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        local function sendMessage(msg)
+            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                if channel then channel:SendAsync(msg) end
+            else
+                local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+                if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+                    chatEvent.SayMessageRequest:FireServer(msg, "All")
+                end
+            end
         end
-    end
-end
 
-sendMessage("!map Maze")
-task.wait(17)
+        sendMessage("!map Maze")
 
-sendMessage("!specialround Plushie Hell")
-task.wait(1)
+        local roundGui = player.PlayerGui:WaitUntilChild("Shared", 5)
+        if roundGui then
+            roundGui = roundGui:FindFirstChild("HUD")
+            if roundGui then roundGui = roundGui:FindFirstChild("Overlay") end
+            if roundGui then roundGui = roundGui:FindFirstChild("Default") end
+            if roundGui then roundGui = roundGui:FindFirstChild("RoundOverlay") end
+            if roundGui then roundGui = roundGui:FindFirstChild("Round") end
+        end
 
-sendMessage("!Timer 1")
+        if roundGui then
+            local startWait = tick()
+            while not roundGui.Visible and (tick() - startWait) < 30 do
+                task.wait(0.1)
+            end
+        else
+            warn("Не удалось найти путь к Round GUI!")
+            task.wait(10) 
+        end
 
-print("Down")
-  	end    
+        sendMessage("!specialround Plushie Hell")
+        task.wait(1)
+        sendMessage("!Timer 1")
+
+        print("Down")
+    end    
 })
 
 Tab:AddButton({
@@ -660,32 +678,50 @@ Tab:AddToggle({
 })
 
 Tab:AddButton({
-	Name = "SET MAZE",
-	Callback = function()
-			local TextChatService = game:GetService("TextChatService")
+    Name = "MAZE",
+    Callback = function()
+        local TextChatService = game:GetService("TextChatService")
+        local player = game:GetService("Players").LocalPlayer
 
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then channel:SendAsync(msg) end
-    else
-        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        local function sendMessage(msg)
+            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                if channel then channel:SendAsync(msg) end
+            else
+                local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+                if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+                    chatEvent.SayMessageRequest:FireServer(msg, "All")
+                end
+            end
         end
-    end
-end
 
-sendMessage("!map Maze")
-task.wait(17)
+        sendMessage("!map Maze")
 
-sendMessage("!specialround Plushie Hell")
-task.wait(1)
+        local roundGui = player.PlayerGui:WaitUntilChild("Shared", 5)
+        if roundGui then
+            roundGui = roundGui:FindFirstChild("HUD")
+            if roundGui then roundGui = roundGui:FindFirstChild("Overlay") end
+            if roundGui then roundGui = roundGui:FindFirstChild("Default") end
+            if roundGui then roundGui = roundGui:FindFirstChild("RoundOverlay") end
+            if roundGui then roundGui = roundGui:FindFirstChild("Round") end
+        end
 
-sendMessage("!Timer 1")
+        if roundGui then
+            local startWait = tick()
+            while not roundGui.Visible and (tick() - startWait) < 30 do
+                task.wait(0.1)
+            end
+        else
+            warn("Не удалось найти путь к Round GUI!")
+            task.wait(10) 
+        end
 
-print("Down")
-  	end    
+        sendMessage("!specialround Plushie Hell")
+        task.wait(1)
+        sendMessage("!Timer 1")
+
+        print("Down")
+    end    
 })
 
 local Section = Tab:AddSection({
