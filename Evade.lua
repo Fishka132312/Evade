@@ -233,7 +233,6 @@ Tab:AddToggle({
 			local TweenService = game:GetService("TweenService")
 			local player = game:GetService("Players").LocalPlayer
 			
-			-- Функция для платного перемещения (Tween)
 			local function smoothMove(targetCFrame)
 				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 				if hrp then
@@ -243,7 +242,6 @@ Tab:AddToggle({
 				end
 			end
 
-			-- Создаем платформу один раз
 			if not _G.SafeZonePart then
 				_G.SafeZonePart = Instance.new("Part")
 				_G.SafeZonePart.Size = Vector3.new(12, 1, 12)
@@ -263,11 +261,9 @@ Tab:AddToggle({
 					local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
 					local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
 
-					-- Проверяем наличие тикетов
 					local targetTicket = ticketsFolder:FindFirstChildWhichIsA("BasePart") or ticketsFolder:FindFirstChildOfClass("Model")
 
 					if targetTicket then
-						-- ЛОГИКА 1: ТИКЕТ ЕСТЬ -> Летим к нему
 						local ticketPos = targetTicket:GetPivot().Position
 						local targetPos = ticketPos + Vector3.new(0, -10, 0)
 
@@ -277,23 +273,21 @@ Tab:AddToggle({
 
 						task.wait(math.random(2, 4))
 					else
-						-- ЛОГИКА 2: ТИКЕТОВ НЕТ -> Проверяем позицию относительно спавнов
 						local closestSpawn = itemSpawns:FindFirstChildWhichIsA("BasePart")
 						if closestSpawn then
 							local spawnPos = closestSpawn.Position
 							local waitPos = spawnPos + Vector3.new(0, -10, 0)
 
-							-- Если мы еще не под спавном (дистанция больше 5 студов), летим туда заранее
 							if (hrp.Position - waitPos).Magnitude > 5 then
 								_G.SafeZonePart.CFrame = CFrame.new(waitPos - Vector3.new(0, 1.5, 0))
 								local tw = smoothMove(CFrame.new(waitPos))
 								if tw then tw.Completed:Wait() end
 							end
 						end
-						task.wait(0.5) -- Быстрая проверка появления тикетов
+						task.wait(0.5)
 					end
 				else
-					task.wait(2) -- Ждем респавна
+					task.wait(2)
 				end
 				task.wait(0.1)
 			end
@@ -302,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM",
+    Name = "XP FARM1",
     Default = false,
     Callback = function(Value)
         XPFARMFOREVENT = Value
@@ -319,6 +313,27 @@ Tab:AddToggle({
                     local pg = player:FindFirstChild("PlayerGui")
                     local global = pg and pg:FindFirstChild("Global")
                     return global and global:FindFirstChild("Rewards")
+                end
+
+                local function waitForRound()
+                    local roundGui = player:FindFirstChild("PlayerGui")
+                    if roundGui then
+                        roundGui = roundGui:FindFirstChild("Shared")
+                        if roundGui then roundGui = roundGui:FindFirstChild("HUD") end
+                        if roundGui then roundGui = roundGui:FindFirstChild("Overlay") end
+                        if roundGui then roundGui = roundGui:FindFirstChild("Default") end
+                        if roundGui then roundGui = roundGui:FindFirstChild("RoundOverlay") end
+                        if roundGui then roundGui = roundGui:FindFirstChild("Round") end
+                    end
+
+                    if roundGui then
+                        while XPFARMFOREVENT and not roundGui.Visible do
+                            task.wait(0.1)
+                        end
+                    else
+                        warn("Путь к Round GUI не найден!")
+                        task.wait(2)
+                    end
                 end
 
                 local function sendMessage(msg)
@@ -340,14 +355,14 @@ Tab:AddToggle({
                     if rewardsGui then rewardsGui.Visible = false end 
                     
                     if rewardCount == 2 then
-                        task.wait(8)
+                        task.wait(1)
+                        sendMessage("!map Maze")
+                        waitForRound() 
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
                     else
-                        task.wait(1)
-                        sendMessage("!map Maze")
-                        task.wait(17)
+                        waitForRound()
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
