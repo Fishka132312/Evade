@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM",
+    Name = "XP FARM1",
     Default = false,
     Callback = function(Value)
         XPFARMFOREVENT = Value
@@ -1068,6 +1068,7 @@ Tab:AddToggle({
         end
     end    
 })
+
 
 
 
