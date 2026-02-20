@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM1",
+    Name = "XP FARM",
     Default = false,
     Callback = function(Value)
         XPFARMFOREVENT = Value
@@ -344,7 +344,7 @@ Tab:AddToggle({
                     
                     if rewardsGui then rewardsGui.Visible = false end 
                     
-                    task.wait(10)
+                    task.wait(8)
                     
                     if rewardCount >= 2 then
                         sendMessage("!map Maze")
@@ -423,7 +423,7 @@ Tab:AddButton({
             sendMessage("!map Maze")
             print("Карта Maze запрошена. Ждем 5 секунд...")
             
-            task.wait(10)
+            task.wait(8)
 
             local timer = getRoundTimer()
             
@@ -720,7 +720,7 @@ Tab:AddButton({
             sendMessage("!map Maze")
             print("Карта Maze запрошена. Ждем 5 секунд...")
             
-            task.wait(10)
+            task.wait(8)
 
             local timer = getRoundTimer()
             
@@ -1068,7 +1068,3 @@ Tab:AddToggle({
         end
     end    
 })
-
-
-
-
