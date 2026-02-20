@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM",
+    Name = "XP FARM11",
     Default = false,
     Callback = function(Value)
         XPFARMFOREVENT = Value
@@ -315,6 +315,22 @@ Tab:AddToggle({
                     return global and global:FindFirstChild("Rewards")
                 end
 
+                local function waitForRoundStart()
+                    local roundPath = player:WaitForChild("PlayerGui")
+                        :WaitForChild("Shared")
+                        :WaitForChild("HUD")
+                        :WaitForChild("Overlay")
+                        :WaitForChild("Default")
+                        :WaitForChild("RoundOverlay")
+                        :WaitForChild("Round")
+                    
+                    local timer = roundPath:WaitForChild("RoundTimer")
+                    
+                    while XPFARMFOREVENT and not timer.Visible do
+                        task.wait(0.1)
+                    end
+                end
+
                 local function sendMessage(msg)
                     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
                         local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
@@ -331,34 +347,24 @@ Tab:AddToggle({
                     isProcessing = true 
                     rewardCount = rewardCount + 1
                     
-\                    if rewardsGui then rewardsGui.Visible = false end 
-                    
-                    task.wait(5)
+                    if rewardsGui then rewardsGui.Visible = false end 
                     
                     if rewardCount == 2 then
-                        sendMessage("!map Maze")
                         task.wait(1)
-                    end
-
-                    local playerGui = player:WaitForChild("PlayerGui")
-                    local timerPath = playerGui:FindFirstChild("Shared") 
-                        and playerGui.Shared:FindFirstChild("HUD")
-                        and playerGui.Shared.HUD:FindFirstChild("Overlay")
-                        and playerGui.Shared.HUD.Overlay:FindFirstChild("Default")
-                        and playerGui.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
-                        and playerGui.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
-                        and playerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
-
-                    if timerPath then
-                        while XPFARMFOREVENT and timerPath.Visible == false do
-                            task.wait(0.5)
-                        end
+                        sendMessage("!map Maze")
+                        
+                        waitForRoundStart()
                         
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
                     else
-                        warn("Критическая ошибка: Путь к RoundTimer не найден в PlayerGui!")
+
+                        waitForRoundStart()
+                        
+                        sendMessage("!specialround Plushie Hell")
+                        task.wait(1)
+                        sendMessage("!Timer 1")
                     end
                     
                     isProcessing = false
@@ -401,30 +407,25 @@ Tab:AddButton({
             end
         end
 
-        task.spawn(function()
-            sendMessage("!map Maze")
-            
-            task.wait(5)
+        sendMessage("!map Maze")
 
-            local success, timer = pcall(function()
-                return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
-            end)
-
-            if success and timer then
-                while not timer.Visible do
-                    task.wait(0.5)
-                end
-                
-                sendMessage("!specialround Plushie Hell")
-                task.wait(1)
-                sendMessage("!Timer 1")
-                print("MAZE Setup Complete")
-            else
-                warn("Путь к RoundTimer не найден! Проверь иерархию в Explorer.")
-            end
+        local success, timer = pcall(function()
+            return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
         end)
-        
-        print("Button Clicked: Maze sequence started")
+
+        if success and timer then
+            while not timer.Visible do
+                task.wait(0.1)
+            end
+            
+            sendMessage("!specialround Plushie Hell")
+            task.wait(1)
+            sendMessage("!Timer 1")
+        else
+            warn("Путь к RoundTimer не найден! Проверь GUI.")
+        end
+
+        print("Down")
     end    
 })
 
@@ -688,30 +689,25 @@ Tab:AddButton({
             end
         end
 
-        task.spawn(function()
-            sendMessage("!map Maze")
-            
-            task.wait(5)
+        sendMessage("!map Maze")
 
-            local success, timer = pcall(function()
-                return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
-            end)
-
-            if success and timer then
-                while not timer.Visible do
-                    task.wait(0.5)
-                end
-                
-                sendMessage("!specialround Plushie Hell")
-                task.wait(1)
-                sendMessage("!Timer 1")
-                print("MAZE Setup Complete")
-            else
-                warn("Путь к RoundTimer не найден! Проверь иерархию в Explorer.")
-            end
+        local success, timer = pcall(function()
+            return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
         end)
-        
-        print("Button Clicked: Maze sequence started")
+
+        if success and timer then
+            while not timer.Visible do
+                task.wait(0.1)
+            end
+            
+            sendMessage("!specialround Plushie Hell")
+            task.wait(1)
+            sendMessage("!Timer 1")
+        else
+            warn("Путь к RoundTimer не найден! Проверь GUI.")
+        end
+
+        print("Down")
     end    
 })
 
