@@ -213,125 +213,86 @@ Tab:AddToggle({
             end)
         end
     end    
-})                          
+})                      
 
 Tab:AddToggle({
-    Name = "Ticket Farm 3 (TWEEN)",
-    Default = false,
-    Callback = function(Value)
-        TICKETFARMTWEEN = Value
+	Name = "Ticket Farm 3 (TWEEN)",
+	Default = false,
+	Callback = function(Value)
+		_G.TicketFarmEnabled = Value
+		
+		if not Value then
+			if _G.SafeZonePart then
+				_G.SafeZonePart:Destroy()
+				_G.SafeZonePart = nil
+			end
+			return
+		end
 
-        if TICKETFARMTWEEN then
-            task.spawn(function()
-                local Players = game:GetService("Players")
-                local TweenService = game:GetService("TweenService")
-                local player = Players.LocalPlayer
-                
-                local gameFolder = workspace:WaitForChild("Game")
-                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
-                local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
-                
-                local BASE_SPEED = 50
-                local DISTANCE_BELOW = 10 
-                local currentTarget = nil
-                local activeTween = nil
-                local activePlatTween = nil
+		task.spawn(function()
+			local TweenService = game:GetService("TweenService")
+			local player = game:GetService("Players").LocalPlayer
+			
+			local function smoothMove(targetCFrame)
+				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if hrp then
+					local tween = TweenService:Create(hrp, TweenInfo.new(1, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+					tween:Play()
+					return tween
+				end
+			end
 
-                local platform = workspace:FindFirstChild("SafeZonePlatformTWEEN")
-                if not platform then
-                    platform = Instance.new("Part")
-                    platform.Name = "SafeZonePlatformTWEEN"
-                    platform.Size = Vector3.new(15, 1, 15)
-                    platform.Anchored = true
-                    platform.CanCollide = true
-                    platform.Transparency = 0.5
-                    platform.BrickColor = BrickColor.new("Bright blue")
-                    platform.Parent = workspace
-                end
+			if not _G.SafeZonePart then
+				_G.SafeZonePart = Instance.new("Part")
+				_G.SafeZonePart.Size = Vector3.new(12, 1, 12)
+				_G.SafeZonePart.Anchored = true
+				_G.SafeZonePart.Transparency = 0.5
+				_G.SafeZonePart.BrickColor = BrickColor.new("Bright green")
+				_G.SafeZonePart.Parent = workspace
+			end
 
-                local function stopTweens()
-                    if activeTween then activeTween:Cancel() end
-                    if activePlatTween then activePlatTween:Cancel() end
-                end
+			while _G.TicketFarmEnabled do
+				local char = player.Character
+				local hrp = char and char:FindFirstChild("HumanoidRootPart")
+				local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-                local function smoothMove(targetPosition)
-                    local character = player.Character
-                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                    
-                    if not rootPart or not humanoid or humanoid.Health <= 0 or not TICKETFARMTWEEN then return end
+				if hrp and hum and hum.Health > 0 then
+					local gameFolder = workspace:WaitForChild("Game")
+					local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+					local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
 
-                    local charTargetPos = Vector3.new(targetPosition.X, targetPosition.Y - DISTANCE_BELOW, targetPosition.Z)
-                    local platTargetPos = charTargetPos - Vector3.new(0, 3.5, 0)
+					local targetTicket = ticketsFolder:FindFirstChildWhichIsA("BasePart") or ticketsFolder:FindFirstChildOfClass("Model")
 
-                    local distance = (rootPart.Position - charTargetPos).Magnitude
-                    if distance < 1 then return end
+					if targetTicket then
+						local ticketPos = targetTicket:GetPivot().Position
+						local targetPos = ticketPos + Vector3.new(0, -10, 0)
 
-                    local duration = distance / BASE_SPEED
-                    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                    
-                    stopTweens()
+						_G.SafeZonePart.CFrame = CFrame.new(targetPos - Vector3.new(0, 1.5, 0))
+						local tw = smoothMove(CFrame.new(targetPos))
+						if tw then tw.Completed:Wait() end
 
-                    activeTween = TweenService:Create(rootPart, tweenInfo, {CFrame = CFrame.new(charTargetPos)})
-                    activePlatTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(platTargetPos)})
-                    
-                    activeTween:Play()
-                    activePlatTween:Play()
-                    
-                    local startWait = tick()
-                    while (tick() - startWait) < duration and TICKETFARMTWEEN do
-                        if not rootPart.Parent or not humanoid or humanoid.Health <= 0 or not TICKETFARMTWEEN then
-                            stopTweens()
-                            return
-                        end
-                        task.wait(0.1)
-                    end
-                end
+						task.wait(math.random(2, 4))
+					else
+						local closestSpawn = itemSpawns:FindFirstChildWhichIsA("BasePart")
+						if closestSpawn then
+							local spawnPos = closestSpawn.Position
+							local waitPos = spawnPos + Vector3.new(0, -10, 0)
 
-                while TICKETFARMTWEEN do
-                    local character = player.Character
-                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                    
-                    if rootPart and humanoid and humanoid.Health > 0 then
-                        local ticket = nil
-                        local minDistance = math.huge
-                        
-                        local allTickets = ticketsFolder:GetChildren()
-                        for _, child in ipairs(allTickets) do
-                            if child.Name == "Visual" and child.Parent then
-                                local pos = child:GetPivot().Position
-                                local dist = (rootPart.Position - pos).Magnitude
-                                if dist < minDistance then
-                                    minDistance = dist
-                                    ticket = child
-                                end
-                            end
-                        end
-
-                        if ticket then
-                            currentTarget = ticket
-                            smoothMove(ticket:GetPivot().Position)
-                        else
-                            if currentTarget ~= "Spawn" then
-                                currentTarget = "Spawn"
-                                smoothMove(itemSpawns:GetPivot().Position)
-                            end
-                        end
-                    else
-                        currentTarget = nil
-                        task.wait(1)
-                    end
-                    task.wait(0.2)
-                end
-
-                stopTweens()
-                if platform then platform.CFrame = CFrame.new(0, -5000, 0) end
-            end)
-        else
-            TICKETFARMTWEEN = false
-        end
-    end 
+							if (hrp.Position - waitPos).Magnitude > 5 then
+								_G.SafeZonePart.CFrame = CFrame.new(waitPos - Vector3.new(0, 1.5, 0))
+								local tw = smoothMove(CFrame.new(waitPos))
+								if tw then tw.Completed:Wait() end
+							end
+						end
+						task.wait(0.5)
+					end
+				else
+					task.wait(2)
+				end
+				task.wait(0.1)
+			end
+		end)
+	end    
 })
 
 Tab:AddToggle({
@@ -1032,4 +993,3 @@ Tab:AddToggle({
         end
     end    
 })
-
