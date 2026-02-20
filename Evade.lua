@@ -218,118 +218,120 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "Ticket Farm 3 (Ultra Safe)",
+    Name = "Ticket Farm 2 (Smooth Underground)",
     Default = false,
     Callback = function(Value)
-        toggled = Value
+        _G.TicketFarmEnabled = Value -- Используем глобальную переменную для контроля цикла
 
-        if toggled then
+        if _G.TicketFarmEnabled then
             task.spawn(function()
                 local Players = game:GetService("Players")
+                local TweenService = game:GetService("TweenService")
                 local player = Players.LocalPlayer
-
+                
+                -- Папки игры
                 local gameFolder = workspace:WaitForChild("Game")
                 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
                 local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
                 local playersFolder = gameFolder:WaitForChild("Players")
 
-                -- --- НАСТРОЙКИ БЕЗОПАСНОСТИ ---
-                local WAIT_AT_ITEM = 1.5   -- Сколько стоять под тикетом
-                local SPAWN_DELAY = 3.0    -- Пауза ПОСЛЕ появления тикета перед ТП
-                local DANGER_RADIUS = 25   -- Радиус обнаружения других игроков
-                local ESCAPE_TIME = 2.0    -- Время побега в сейф-зону
-                local DISTANCE_BELOW = 10  -- Высота ПОД тикетом (под полом)
-                -- ------------------------------
-                
-                local platform = workspace:FindFirstChild("SafeZonePlatform") or Instance.new("Part")
-                platform.Name = "SafeZonePlatform"
-                platform.Size = Vector3.new(10, 1, 10)
-                platform.Anchored = true
-                platform.CanCollide = true
-                platform.Transparency = 0.8 -- Сделал прозрачнее, чтобы не палилось
-                platform.BrickColor = BrickColor.new("Bright blue")
-                platform.Parent = workspace
+                -- --- НАСТРОЙКИ ПЛАВНОСТИ И ПОДЗЕМЕЛЬЯ ---
+                local TWEEN_SPEED = 35      -- Скорость (30-40 самая безопасная)
+                local WAIT_AT_ITEM = 1.2    -- Задержка на самом тикете
+                local SPAWN_DELAY = 1.5     -- Пауза перед вылетом к новому тикету
+                local DISTANCE_BELOW = 12   -- Глубина под полом во время сбора
+                local SAFE_ZONE_Y = -60     -- Глубина базы ожидания
+                -- ---------------------------------------
 
-                local function getSafeZoneCFrame()
-                    -- Сейф-зона теперь тоже под картой (-50), а не в небе (500)
-                    return itemSpawns:GetPivot() * CFrame.new(0, -50, 0)
+                -- Создание невидимой платформы
+                local platform = workspace:FindFirstChild("SmoothUndergroundPart")
+                if not platform then
+                    platform = Instance.new("Part")
+                    platform.Name = "SmoothUndergroundPart"
+                    platform.Size = Vector3.new(10, 1, 10)
+                    platform.Anchored = true
+                    platform.CanCollide = true
+                    platform.Transparency = 1 -- Полностью невидима
+                    platform.Parent = workspace
                 end
 
-                local function isAnyoneNearby(myPart)
-                    for _, otherChar in ipairs(playersFolder:GetChildren()) do
-                        if otherChar:IsA("Model") and otherChar.Name ~= player.Name then
-                            local healthcare = otherChar:FindFirstChild("Humanoid")
-                            if healthcare and healthcare.Health > 0 then
-                                local otherRoot = otherChar:FindFirstChild("HumanoidRootPart") or healthcare.RootPart
-                                if otherRoot then
-                                    local dist = (myPart.Position - otherRoot.Position).Magnitude
-                                    if dist < DANGER_RADIUS then return true end
-                                end
+                -- Функция плавного движения
+                local function smoothMove(targetCFrame)
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if not root then return end
+
+                    local distance = (root.Position - targetCFrame.Position).Magnitude
+                    local duration = distance / TWEEN_SPEED
+
+                    local info = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                    local tween = TweenService:Create(root, info, {CFrame = targetCFrame})
+                    
+                    -- Платформа следует чуть ниже персонажа
+                    platform.CFrame = targetCFrame * CFrame.new(0, -1, 0)
+                    
+                    tween:Play()
+                    tween.Completed:Wait()
+                end
+
+                local lastTicket = nil
+
+                -- Основной цикл фарма
+                while _G.TicketFarmEnabled do
+                    local char = player.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChild("Humanoid")
+
+                    if root and hum and hum.Health > 0 then
+                        -- Поиск ближайшего тикета
+                        local target = nil
+                        for _, child in ipairs(ticketsFolder:GetChildren()) do
+                            if child.Name == "Visual" and child.Parent then
+                                target = child
+                                break
                             end
                         end
-                    end
-                    return false
-                end
 
-                local lastTicket = nil -- Переменная, чтобы знать, что тикет новый
+                        if target then
+                            -- Имитация реакции (ждем немного после появления)
+                            if lastTicket ~= target then
+                                task.wait(SPAWN_DELAY)
+                                lastTicket = target
+                            end
 
-                while toggled do 
-                    local character = player.Character
-                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = character and character:FindFirstChild("Humanoid")
-                    local safeCFrame = getSafeZoneCFrame()
+                            local targetPos = target:GetPivot().Position
+                            -- Цель: координаты тикета, но на 12 студов ниже (под полом)
+                            local targetCFrame = CFrame.new(targetPos.X, targetPos.Y - DISTANCE_BELOW, targetPos.Z)
 
-                    if rootPart and humanoid and humanoid.Health > 0 then
-                        if isAnyoneNearby(rootPart) then
-                            platform.CFrame = safeCFrame * CFrame.new(0, -1, 0)
-                            rootPart.CFrame = safeCFrame
-                            task.wait(ESCAPE_TIME)
+                            smoothMove(targetCFrame)
+
+                            -- Ожидание сбора
+                            local start = tick()
+                            while tick() - start < WAIT_AT_ITEM and _G.TicketFarmEnabled do
+                                if not target.Parent then break end
+                                task.wait(0.1)
+                            end
                         else
-                            local target = nil
-                            for _, child in ipairs(ticketsFolder:GetChildren()) do
-                                if child.Name == "Visual" then
-                                    target = child
-                                    break
-                                end
+                            -- Тикетов нет — плавно плывем в подземную сейф-зону
+                            local center = itemSpawns:GetPivot()
+                            local safeCFrame = CFrame.new(center.X, SAFE_ZONE_Y, center.Z)
+                            
+                            if (root.Position - safeCFrame.Position).Magnitude > 5 then
+                                smoothMove(safeCFrame)
                             end
-
-                            if target then
-                                -- Если это новый тикет, ждем перед телепортом
-                                if lastTicket ~= target then
-                                    task.wait(SPAWN_DELAY) 
-                                    lastTicket = target
-                                end
-
-                                local targetPos = target:GetPivot().Position
-                                -- Координата под тикетом
-                                local finalPosition = Vector3.new(targetPos.X, targetPos.Y - DISTANCE_BELOW, targetPos.Z)
-                                
-                                rootPart.CFrame = CFrame.new(finalPosition)
-                                platform.CFrame = CFrame.new(finalPosition - Vector3.new(0, 1, 0))
-                                
-                                local start = tick()
-                                while tick() - start < WAIT_AT_ITEM and toggled do
-                                    if isAnyoneNearby(rootPart) then break end
-                                    if not target.Parent then break end
-                                    task.wait(0.1)
-                                end
-                            else
-                                -- Если тикетов нет, сидим в сейф-зоне под картой
-                                platform.CFrame = safeCFrame * CFrame.new(0, -1, 0)
-                                if (rootPart.Position - safeCFrame.Position).Magnitude > 5 then
-                                    rootPart.CFrame = safeCFrame
-                                end
-                                lastTicket = nil
-                            end
+                            lastTicket = nil
                         end
                     end
-                    task.wait(0.2)
+                    task.wait(0.5)
                 end
-                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end 
+
+                -- Убираем платформу при выключении
+                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end
             end)
         end
     end    
 })
+ 
 
 Tab:AddToggle({
     Name = "XP FARM",
@@ -1216,6 +1218,7 @@ else
 end
   	end    
 })
+
 
 
 
