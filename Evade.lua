@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM1",
+    Name = "XP FARM",
     Default = false,
     Callback = function(Value)
         XPFARMFOREVENT = Value
@@ -383,32 +383,49 @@ Tab:AddToggle({
 })
 
 Tab:AddButton({
-	Name = "MAZE",
-	Callback = function()
-			local TextChatService = game:GetService("TextChatService")
+    Name = "MAZE",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local TextChatService = game:GetService("TextChatService")
+        local player = Players.LocalPlayer
 
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then channel:SendAsync(msg) end
-    else
-        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        local function sendMessage(msg)
+            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                if channel then channel:SendAsync(msg) end
+            else
+                local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+                if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+                    chatEvent.SayMessageRequest:FireServer(msg, "All")
+                end
+            end
         end
-    end
-end
 
-sendMessage("!map Maze")
-task.wait(17)
+        task.spawn(function()
+            sendMessage("!map Maze")
+            
+            task.wait(5)
 
-sendMessage("!specialround Plushie Hell")
-task.wait(1)
+            local success, timer = pcall(function()
+                return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
+            end)
 
-sendMessage("!Timer 1")
-
-print("Down")
-  	end    
+            if success and timer then
+                while not timer.Visible do
+                    task.wait(0.5)
+                end
+                
+                sendMessage("!specialround Plushie Hell")
+                task.wait(1)
+                sendMessage("!Timer 1")
+                print("MAZE Setup Complete")
+            else
+                warn("Путь к RoundTimer не найден! Проверь иерархию в Explorer.")
+            end
+        end)
+        
+        print("Button Clicked: Maze sequence started")
+    end    
 })
 
 Tab:AddButton({
@@ -653,32 +670,49 @@ Tab:AddToggle({
 })
 
 Tab:AddButton({
-	Name = "SET MAZE",
-	Callback = function()
-			local TextChatService = game:GetService("TextChatService")
+    Name = "MAZE",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local TextChatService = game:GetService("TextChatService")
+        local player = Players.LocalPlayer
 
-local function sendMessage(msg)
-    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-        if channel then channel:SendAsync(msg) end
-    else
-        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-            chatEvent.SayMessageRequest:FireServer(msg, "All")
+        local function sendMessage(msg)
+            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                if channel then channel:SendAsync(msg) end
+            else
+                local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+                if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+                    chatEvent.SayMessageRequest:FireServer(msg, "All")
+                end
+            end
         end
-    end
-end
 
-sendMessage("!map Maze")
-task.wait(17)
+        task.spawn(function()
+            sendMessage("!map Maze")
+            
+            task.wait(5)
 
-sendMessage("!specialround Plushie Hell")
-task.wait(1)
+            local success, timer = pcall(function()
+                return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
+            end)
 
-sendMessage("!Timer 1")
-
-print("Down")
-  	end    
+            if success and timer then
+                while not timer.Visible do
+                    task.wait(0.5)
+                end
+                
+                sendMessage("!specialround Plushie Hell")
+                task.wait(1)
+                sendMessage("!Timer 1")
+                print("MAZE Setup Complete")
+            else
+                warn("Путь к RoundTimer не найден! Проверь иерархию в Explorer.")
+            end
+        end)
+        
+        print("Button Clicked: Maze sequence started")
+    end    
 })
 
 local Section = Tab:AddSection({
@@ -1007,4 +1041,5 @@ Tab:AddToggle({
         end
     end    
 })
+
 
