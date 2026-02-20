@@ -15,7 +15,18 @@ Tab:AddToggle({
     Name = "Ticket Farm 1 (TP)",
     Default = false,
     Callback = function(Value)
+        if Value and _G.AnyFarmActive and not TICKETFARM1 then
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Внимание!",
+                Text = "Другой фарм уже запущен. Сначала выключите его!",
+                Duration = 3
+            })
+            
+            return 
+        end
+
         TICKETFARM1 = Value
+        _G.AnyFarmActive = Value 
 
         if TICKETFARM1 then
             task.spawn(function()
@@ -103,7 +114,10 @@ Tab:AddToggle({
                 end
 
                 if platform then platform.CFrame = CFrame.new(0, -1000, 0) end 
+                _G.AnyFarmActive = false
             end)
+        else
+            _G.AnyFarmActive = false
         end
     end    
 })
@@ -112,7 +126,17 @@ Tab:AddToggle({
     Name = "Ticket Farm 2 (TP)",
     Default = false,
     Callback = function(Value)
+        if Value and _G.AnyFarmActive and not TICKETFARM2 then
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Ошибка!",
+                Text = "Другой фарм уже запущен! Сначала выключите его.",
+                Duration = 3
+            })
+            return 
+        end
+
         TICKETFARM2 = Value
+        _G.AnyFarmActive = Value
 
         if TICKETFARM2 then
             task.spawn(function()
@@ -127,7 +151,6 @@ Tab:AddToggle({
                 local WAIT_AT_ITEM = 1.0
                 local DANGER_RADIUS = 20 
                 local ESCAPE_TIME = 2.0 
-                
                 local DISTANCE_BELOW = 8 
 
                 local platform = workspace:FindFirstChild("SafeZonePlatform2") or Instance.new("Part")
@@ -187,10 +210,9 @@ Tab:AddToggle({
                                 local finalPosition = Vector3.new(targetPos.X, targetPos.Y - DISTANCE_BELOW, targetPos.Z)
                                 
                                 rootPart.CFrame = CFrame.new(finalPosition)
-                                
                                 platform.CFrame = CFrame.new(finalPosition - Vector3.new(0, 3.5, 0))
                                 
-                               local start = tick()
+                                local start = tick()
                                 while tick() - start < WAIT_AT_ITEM and TICKETFARM2 do
                                     if isAnyoneNearby(rootPart) then break end
                                     if not target.Parent then break end
@@ -202,7 +224,7 @@ Tab:AddToggle({
                                 platform.CFrame = safeCFrame * CFrame.new(0, -3.5, 0)
                                 if (rootPart.Position - safeCFrame.Position).Magnitude > 10 then
                                     rootPart.CFrame = safeCFrame
-                              end
+                                end
                             end
                         end
                     end
@@ -210,16 +232,29 @@ Tab:AddToggle({
                 end
 
                 if platform then platform.CFrame = CFrame.new(0, -1000, 0) end 
+                _G.AnyFarmActive = false
             end)
+        else
+            _G.AnyFarmActive = false
         end
     end    
-})                          
+})               
 
 Tab:AddToggle({
     Name = "Ticket Farm 3 (TWEEN)",
     Default = false,
     Callback = function(Value)
+        if Value and _G.AnyFarmActive and not TICKETFARMTWEEN then
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Система",
+                Text = "Выключите текущий фарм перед запуском Tween-фарма!",
+                Duration = 3
+            })
+            return 
+        end
+
         TICKETFARMTWEEN = Value
+        _G.AnyFarmActive = Value
 
         if TICKETFARMTWEEN then
             task.spawn(function()
@@ -327,9 +362,10 @@ Tab:AddToggle({
 
                 stopTweens()
                 if platform then platform.CFrame = CFrame.new(0, -5000, 0) end
+                _G.AnyFarmActive = false 
             end)
         else
-            TICKETFARMTWEEN = false
+            _G.AnyFarmActive = false
         end
     end 
 })
