@@ -216,7 +216,7 @@ Tab:AddToggle({
 })                          
 
 Tab:AddToggle({
-    Name = "Ticket Farm 3 (TWEENТ)",
+    Name = "Ticket Farm 3 (TWEEN)",
     Default = false,
     Callback = function(Value)
         TICKETFARMTWEEN = Value
@@ -233,6 +233,7 @@ Tab:AddToggle({
                 
                 local BASE_SPEED = 50
                 local DISTANCE_BELOW = 10 
+                local currentTarget = nil
 
                 local platform = workspace:FindFirstChild("SafeZonePlatform")
                 if not platform then
@@ -246,20 +247,18 @@ Tab:AddToggle({
                     platform.Parent = workspace
                 end
 
-                local currentTarget = nil
-
                 local function smoothMove(targetPosition)
-                    local character = player.Character or player.CharacterAdded:Wait()
-                    local rootPart = character:WaitForChild("HumanoidRootPart", 5)
+                    local character = player.Character
+                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                     if not rootPart or not TICKETFARMTWEEN then return end
 
                     local charTargetPos = Vector3.new(targetPosition.X, targetPosition.Y - DISTANCE_BELOW, targetPosition.Z)
                     local platTargetPos = charTargetPos - Vector3.new(0, 3.5, 0)
 
                     local distance = (rootPart.Position - charTargetPos).Magnitude
-                    local randomSpeed = BASE_SPEED + math.random(-5, 5)
-                    local duration = distance / randomSpeed
+                    if distance < 1 then return end
 
+                    local duration = distance / (BASE_SPEED + math.random(-5, 5))
                     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                     
                     local charTween = TweenService:Create(rootPart, tweenInfo, {CFrame = CFrame.new(charTargetPos)})
@@ -271,66 +270,67 @@ Tab:AddToggle({
                     local startWait = tick()
                     repeat 
                         task.wait(0.1) 
-                    until (tick() - startWait) >= duration or not TICKETFARMTWEEN or not rootPart.Parent or not character:FindFirstChild("Humanoid") or character.Humanoid.Health <= 0
+                    until (tick() - startWait) >= duration or not TICKETFARMTWEEN or not rootPart.Parent
                     
-                    if not TICKETFARMTWEEN or (character.Humanoid and character.Humanoid.Health <= 0) then
+                    if not TICKETFARMTWEEN then
                         charTween:Cancel()
                         platTween:Cancel()
                     end
                 end
 
+                player.CharacterAdded:Connect(function(newCharacter)
+                    if TICKETFARMTWEEN then
+                        currentTarget = nil
+                        local newRoot = newCharacter:WaitForChild("HumanoidRootPart", 10)
+                        if newRoot then
+                            platform.CFrame = newRoot.CFrame - Vector3.new(0, 3.5 + DISTANCE_BELOW, 0)
+                        end
+                    end
+                end)
+
                 while TICKETFARMTWEEN do
                     local character = player.Character
-                    local humanoid = character and character:FindFirstChild("Humanoid")
                     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
                     
-                    if not rootPart or (humanoid and humanoid.Health <= 0) then
-                        currentTarget = nil
-                        task.wait(1)
-                        continue
-                    end
+                    if rootPart and humanoid and humanoid.Health > 0 then
+                        local ticket = nil
+                        local minDistance = math.huge
+                        
+                        for _, child in ipairs(ticketsFolder:GetChildren()) do
+                            if child.Name == "Visual" then
+                                local pos = child:GetPivot().Position
+                                local dist = (rootPart.Position - pos).Magnitude
+                                if dist < minDistance then
+                                    minDistance = dist
+                                    ticket = child
+                                end
+                            end
+                        end
 
-                    local ticket = nil
-                    local minDistance = math.huge
-                    
-                    for _, child in ipairs(ticketsFolder:GetChildren()) do
-                        if child.Name == "Visual" then
-                            local pos = child:GetPivot().Position
-                            local dist = (rootPart.Position - pos).Magnitude
-                            if dist < minDistance then
-                                minDistance = dist
-                                ticket = child
+                        if ticket then
+                            if currentTarget ~= ticket then
+                                currentTarget = ticket
+                                task.wait(0.5)
+                                if TICKETFARMTWEEN and ticket.Parent then
+                                    smoothMove(ticket:GetPivot().Position)
+                                end
+                            end
+                        else
+                            if currentTarget ~= "Spawn" then
+                                currentTarget = "Spawn"
+                                smoothMove(itemSpawns:GetPivot().Position)
                             end
                         end
                     end
-
-                    if ticket then
-                        if currentTarget ~= ticket then
-                            currentTarget = ticket
-                            task.wait(math.random(5, 15) / 10)
-                            
-                            if TICKETFARMTWEEN and ticket.Parent and humanoid.Health > 0 then
-                                smoothMove(ticket:GetPivot().Position)
-                            end
-                        end
-                    else
-                        if currentTarget ~= "Spawn" then
-                            currentTarget = "Spawn"
-                            smoothMove(itemSpawns:GetPivot().Position)
-                        end
-                    end
-                    task.wait(0.5)
+                    task.wait(1)
                 end
 
-                if platform then
-                    platform.CFrame = CFrame.new(0, -5000, 0)
-                end
-                currentTarget = nil
+                if platform then platform.CFrame = CFrame.new(0, -5000, 0) end
             end)
         end
     end    
 })
- 
 
 Tab:AddToggle({
     Name = "XP FARM",
@@ -463,7 +463,7 @@ shutdownServer()
 })
 
 Tab:AddToggle({
-    Name = "Disable 3D Rendering (CPU Saver)",
+    Name = "Disable 3D Rendering IMPORTANT",
     Default = false,
     Callback = function(Value)
         if Value then
@@ -479,22 +479,91 @@ Tab:AddToggle({
     Default = false,
     Callback = function(Value)
         if Value then
-            game:GetService("RunService"):Set3dRenderingEnabled(false)
-            
-            if setfpscap then
-                setfpscap(10) 
-            end
-            
-            print("on")
+            setfpscap(10)
         else
-            game:GetService("RunService"):Set3dRenderingEnabled(true)
-            if setfpscap then
-                setfpscap(60)
-            end
-            print("off")
+            setfpscap(60)
         end
     end    
 })
+
+Tab:AddButton({
+	Name = "Ghost Mode👻",
+	Callback = function()
+local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
+local LocalPlayer = Players.LocalPlayer
+
+local function notify(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then channel:DisplaySystemMessage("[SECURITY]: " .. msg) end
+    else
+        game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+            Text = "[SECURITY]: " .. msg,
+            Color = Color3.fromRGB(255, 170, 0),
+            Font = Enum.Font.SourceSansBold
+        })
+    end
+end
+
+notify("Система защиты активна. Мониторинг запущен.")
+
+local function performSecurityCheck()
+    local s, isScreenshotEnabled = pcall(function()
+        return settings():GetFFlag("ReportAnythingScreenshot")
+    end)
+    
+    if s and isScreenshotEnabled == true then
+        LocalPlayer:Kick("\n🚨 СИСТЕМА СКРИНШОТОВ АКТИВИРОВАНА\nRoblox начал мониторинг экрана. Фарм остановлен для безопасности.")
+        return true
+    end
+
+    local s2, isRAEnabled = pcall(function()
+        return settings():GetFFlag("ForceReportAnythingAnnotationEnabled")
+    end)
+    
+    if s2 and isRAEnabled == true then
+        LocalPlayer:Kick("\n🚨 IXP МОНИТОРИНГ ВКЛЮЧЕН\nОбнаружена глубокая проверка окружения (Report Anything).")
+        return true
+    end
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local success, rank = pcall(function() return player:GetRankInGroup(game.CreatorId) end)
+            
+            if (success and rank >= 200) or player.UserId < 0 then
+                LocalPlayer:Kick("\n🚨 АДМИН ОБНАРУЖЕН: " .. player.Name .. "\nФарм прерван во избежание ручного репорта.")
+                return true
+            end
+        end
+    end
+
+    local RobloxGui = game:GetService("CoreGui"):FindFirstChild("RobloxGui")
+    if RobloxGui then
+        local trustAndSafety = RobloxGui:FindFirstChild("TrustAndSafety")
+        if trustAndSafety and trustAndSafety.Enabled then
+             LocalPlayer:Kick("\n🚨 ОКНО БЕЗОПАСНОСТИ ОТКРЫТО\nСистема репортов была инициирована извне.")
+             return true
+        end
+    end
+
+    return false
+end
+
+task.spawn(function()
+    while true do
+        if performSecurityCheck() then break end
+        task.wait(3)
+    end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+    task.wait(1)
+    performSecurityCheck()
+end)
+  	end    
+})
+
 
 ----------------------------LVL---------------------------------
 local Tab = Window:MakeTab({
