@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM11",
+    Name = "XP FARM",
     Default = false,
     Callback = function(Value)
         XPFARMFOREVENT = Value
@@ -313,22 +313,6 @@ Tab:AddToggle({
                     local pg = player:FindFirstChild("PlayerGui")
                     local global = pg and pg:FindFirstChild("Global")
                     return global and global:FindFirstChild("Rewards")
-                end
-
-                local function waitForRoundStart()
-                    local roundPath = player:WaitForChild("PlayerGui")
-                        :WaitForChild("Shared")
-                        :WaitForChild("HUD")
-                        :WaitForChild("Overlay")
-                        :WaitForChild("Default")
-                        :WaitForChild("RoundOverlay")
-                        :WaitForChild("Round")
-                    
-                    local timer = roundPath:WaitForChild("RoundTimer")
-                    
-                    while XPFARMFOREVENT and not timer.Visible do
-                        task.wait(0.1)
-                    end
                 end
 
                 local function sendMessage(msg)
@@ -350,18 +334,14 @@ Tab:AddToggle({
                     if rewardsGui then rewardsGui.Visible = false end 
                     
                     if rewardCount == 2 then
-                        task.wait(1)
-                        sendMessage("!map Maze")
-                        
-                        waitForRoundStart()
-                        
+                        task.wait(8)
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
                     else
-
-                        waitForRoundStart()
-                        
+                        task.wait(1)
+                        sendMessage("!map Maze")
+                        task.wait(17)
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
@@ -389,44 +369,32 @@ Tab:AddToggle({
 })
 
 Tab:AddButton({
-    Name = "MAZE",
-    Callback = function()
-        local Players = game:GetService("Players")
-        local TextChatService = game:GetService("TextChatService")
-        local player = Players.LocalPlayer
+	Name = "MAZE",
+	Callback = function()
+			local TextChatService = game:GetService("TextChatService")
 
-        local function sendMessage(msg)
-            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-                local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-                if channel then channel:SendAsync(msg) end
-            else
-                local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-                if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-                    chatEvent.SayMessageRequest:FireServer(msg, "All")
-                end
-            end
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then channel:SendAsync(msg) end
+    else
+        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
         end
+    end
+end
 
-        sendMessage("!map Maze")
+sendMessage("!map Maze")
+task.wait(17)
 
-        local success, timer = pcall(function()
-            return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
-        end)
+sendMessage("!specialround Plushie Hell")
+task.wait(1)
 
-        if success and timer then
-            while not timer.Visible do
-                task.wait(0.1)
-            end
-            
-            sendMessage("!specialround Plushie Hell")
-            task.wait(1)
-            sendMessage("!Timer 1")
-        else
-            warn("Путь к RoundTimer не найден! Проверь GUI.")
-        end
+sendMessage("!Timer 1")
 
-        print("Down")
-    end    
+print("Down")
+  	end    
 })
 
 Tab:AddButton({
@@ -671,44 +639,32 @@ Tab:AddToggle({
 })
 
 Tab:AddButton({
-    Name = "MAZE",
-    Callback = function()
-        local Players = game:GetService("Players")
-        local TextChatService = game:GetService("TextChatService")
-        local player = Players.LocalPlayer
+	Name = "SET MAZE",
+	Callback = function()
+			local TextChatService = game:GetService("TextChatService")
 
-        local function sendMessage(msg)
-            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-                local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-                if channel then channel:SendAsync(msg) end
-            else
-                local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-                if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-                    chatEvent.SayMessageRequest:FireServer(msg, "All")
-                end
-            end
+local function sendMessage(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then channel:SendAsync(msg) end
+    else
+        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+            chatEvent.SayMessageRequest:FireServer(msg, "All")
         end
+    end
+end
 
-        sendMessage("!map Maze")
+sendMessage("!map Maze")
+task.wait(17)
 
-        local success, timer = pcall(function()
-            return player.PlayerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round.RoundTimer
-        end)
+sendMessage("!specialround Plushie Hell")
+task.wait(1)
 
-        if success and timer then
-            while not timer.Visible do
-                task.wait(0.1)
-            end
-            
-            sendMessage("!specialround Plushie Hell")
-            task.wait(1)
-            sendMessage("!Timer 1")
-        else
-            warn("Путь к RoundTimer не найден! Проверь GUI.")
-        end
+sendMessage("!Timer 1")
 
-        print("Down")
-    end    
+print("Down")
+  	end    
 })
 
 local Section = Tab:AddSection({
