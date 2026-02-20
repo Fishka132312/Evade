@@ -109,7 +109,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "Ticket Farm 22 (TP)",
+    Name = "Ticket Farm 2 (TP)",
     Default = false,
     Callback = function(Value)
         TICKETFARM2 = Value
@@ -234,6 +234,8 @@ Tab:AddToggle({
                 local BASE_SPEED = 50
                 local DISTANCE_BELOW = 10 
                 local currentTarget = nil
+                local activeTween = nil
+                local activePlatTween = nil
 
                 local platform = workspace:FindFirstChild("SafeZonePlatformTWEEN")
                 if not platform then
@@ -245,6 +247,11 @@ Tab:AddToggle({
                     platform.Transparency = 0.5
                     platform.BrickColor = BrickColor.new("Bright blue")
                     platform.Parent = workspace
+                end
+
+                local function stopTweens()
+                    if activeTween then activeTween:Cancel() end
+                    if activePlatTween then activePlatTween:Cancel() end
                 end
 
                 local function smoothMove(targetPosition)
@@ -263,31 +270,23 @@ Tab:AddToggle({
                     local duration = distance / BASE_SPEED
                     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                     
-                    local charTween = TweenService:Create(rootPart, tweenInfo, {CFrame = CFrame.new(charTargetPos)})
-                    local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(platTargetPos)})
+                    stopTweens()
+
+                    activeTween = TweenService:Create(rootPart, tweenInfo, {CFrame = CFrame.new(charTargetPos)})
+                    activePlatTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(platTargetPos)})
                     
-                    charTween:Play()
-                    platTween:Play()
+                    activeTween:Play()
+                    activePlatTween:Play()
                     
                     local startWait = tick()
                     while (tick() - startWait) < duration and TICKETFARMTWEEN do
-                        if not rootPart.Parent or not humanoid or humanoid.Health <= 0 then
-                            charTween:Cancel()
-                            platTween:Cancel()
+                        if not rootPart.Parent or not humanoid or humanoid.Health <= 0 or not TICKETFARMTWEEN then
+                            stopTweens()
                             return
                         end
                         task.wait(0.1)
                     end
-                    
-                    if not TICKETFARMTWEEN then
-                        charTween:Cancel()
-                        platTween:Cancel()
-                    end
                 end
-
-                player.CharacterAdded:Connect(function()
-                    currentTarget = nil
-                end)
 
                 while TICKETFARMTWEEN do
                     local character = player.Character
@@ -298,8 +297,9 @@ Tab:AddToggle({
                         local ticket = nil
                         local minDistance = math.huge
                         
-                        for _, child in ipairs(ticketsFolder:GetChildren()) do
-                            if child.Name == "Visual" then
+                        local allTickets = ticketsFolder:GetChildren()
+                        for _, child in ipairs(allTickets) do
+                            if child.Name == "Visual" and child.Parent then
                                 local pos = child:GetPivot().Position
                                 local dist = (rootPart.Position - pos).Magnitude
                                 if dist < minDistance then
@@ -310,25 +310,26 @@ Tab:AddToggle({
                         end
 
                         if ticket then
-                            if currentTarget ~= ticket then
-                                currentTarget = ticket
-                                task.wait(0.2)
-                                if TICKETFARMTWEEN and ticket.Parent and humanoid.Health > 0 then
-                                    smoothMove(ticket:GetPivot().Position)
-                                end
-                            end
+                            currentTarget = ticket
+                            smoothMove(ticket:GetPivot().Position)
                         else
                             if currentTarget ~= "Spawn" then
                                 currentTarget = "Spawn"
                                 smoothMove(itemSpawns:GetPivot().Position)
                             end
                         end
+                    else
+                        currentTarget = nil
+                        task.wait(1)
                     end
-                    task.wait(0.5)
+                    task.wait(0.2)
                 end
 
+                stopTweens()
                 if platform then platform.CFrame = CFrame.new(0, -5000, 0) end
             end)
+        else
+            TICKETFARMTWEEN = false
         end
     end 
 })
