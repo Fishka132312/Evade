@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM11",
+    Name = "XP FARM",
     Default = false,
     Callback = function(Value)
         XPFARMPV = Value
@@ -307,11 +307,10 @@ Tab:AddToggle({
                 local TextChatService = game:GetService("TextChatService")
                 local player = Players.LocalPlayer
                 
-                local IMAGE_ID = "rbxassetid://126150774709719"
-                local SAFE_POSITION = Vector3.new(0, 500, 0)
                 local isProcessing = false
                 local rewardCount = 0
 
+                -- Функция получения текста таймера (динамическая проверка пути)
                 local function getTimerText()
                     local pg = player:FindFirstChild("PlayerGui")
                     local timerObj = pg and pg:FindFirstChild("Shared") 
@@ -326,6 +325,7 @@ Tab:AddToggle({
                     return timerObj and timerObj.Text or ""
                 end
 
+                -- Функция отправки сообщений
                 local function sendMessage(msg)
                     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
                         local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
@@ -338,70 +338,52 @@ Tab:AddToggle({
                     end
                 end
 
-                local platform = workspace:FindFirstChild("SafeZoneWithDecal")
-                if not platform then
-                    platform = Instance.new("Part")
-                    platform.Name = "SafeZoneWithDecal"
-                    platform.Size = Vector3.new(20, 1, 20)
-                    platform.Position = SAFE_POSITION - Vector3.new(0, 3.5, 0)
-                    platform.Anchored = true
-                    platform.CanCollide = true
-                    platform.Parent = workspace
-                    local decal = Instance.new("Decal")
-                    decal.Texture = IMAGE_ID
-                    decal.Face = Enum.NormalId.Top 
-                    decal.Parent = platform
-                end
-
-                print("Autofarm: ON. Waiting for Rewards GUI...")
+                print("Autofarm: ON. Ожидание GUI наград...")
 
                 while XPFARMPV do
-                    local character = player.Character
-                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                    if rootPart and (rootPart.Position - SAFE_POSITION).Magnitude > 5 then
-                        rootPart.CFrame = CFrame.new(SAFE_POSITION)
-                    end
-
+                    -- Проверка появления GUI наград
                     local pg = player:FindFirstChild("PlayerGui")
                     local rewardsGui = pg and pg:FindFirstChild("Global") and pg.Global:FindFirstChild("Rewards")
 
                     if rewardsGui and rewardsGui.Visible == true and not isProcessing then
                         isProcessing = true
                         rewardCount = rewardCount + 1
-                        rewardsGui.Visible = false
+                        rewardsGui.Visible = false -- Скрываем, чтобы не мешало
                         print("Награда получена! Счетчик: " .. rewardCount)
 
+                        -- Проверка счетчика для смены карты
                         if rewardCount >= 2 then
                             task.wait(1)
                             sendMessage("!map Maze")
                             print("Счетчик 2: Карта Maze запрошена. Жду 0:29...")
-                            rewardCount = 0
+                            rewardCount = 0 
                         else
-                            print("Счетчик 1: Просто жду 0:29...")
+                            print("Счетчик 1: Жду появления таймера 0:29...")
                         end
 
+                        -- Цикл ожидания конкретного времени 0:29
                         while XPFARMPV do
                             local currentTimer = getTimerText()
                             if currentTimer == "0:29" then
-                                break
+                                break 
                             end
-                            task.wait(0.1)
+                            task.wait(0.1) -- Опрашиваем текст часто, чтобы не пропустить
                         end
 
+                        -- Финальные команды
                         if XPFARMPV then
                             sendMessage("!specialround Plushie Hell")
                             task.wait(1)
                             sendMessage("!Timer 1")
-                            print("Команды отправлены на 0:29!")
+                            print("Раунд настроен на 0:29")
                         end
 
                         isProcessing = false
                     end
 
-                    task.wait(0.5)
+                    task.wait(0.5) -- Обычная проверка появления GUI
                 end
-
-                if platform then platform:Destroy() end
+                
                 print("Autofarm: OFF")
             end)
         end
@@ -1087,5 +1069,6 @@ Tab:AddToggle({
         end
     end    
 })
+
 
 
