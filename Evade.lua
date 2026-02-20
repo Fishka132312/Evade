@@ -12,7 +12,7 @@ local Section = Tab:AddSection({
 })
 
 Tab:AddToggle({
-    Name = "Ticket Farm 1",
+    Name = "Ticket Farm 1 (TP)",
     Default = false,
     Callback = function(Value)
         TICKETFARM1 = Value
@@ -109,7 +109,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "Ticket Farm 2",
+    Name = "Ticket Farm 2 (TP)",
     Default = false,
     Callback = function(Value)
         TICKETFARM2 = Value
@@ -216,7 +216,7 @@ Tab:AddToggle({
 })                          
 
 Tab:AddToggle({
-    Name = "Ticket Farm 2 (Legit Speed)",
+    Name = "Ticket Farm 3 (TWEENТ)",
     Default = false,
     Callback = function(Value)
         TICKETFARMTWEEN = Value
@@ -231,8 +231,7 @@ Tab:AddToggle({
                 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
                 local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
                 
-                -- НАСТРОЙКИ СКОРОСТИ (как во втором скрипте)
-                local BASE_SPEED = 50 -- Чем выше, тем быстрее летит
+                local BASE_SPEED = 50
                 local DISTANCE_BELOW = 10 
 
                 local platform = workspace:FindFirstChild("SafeZonePlatform")
@@ -250,17 +249,15 @@ Tab:AddToggle({
                 local currentTarget = nil
 
                 local function smoothMove(targetPosition)
-                    local character = player.Character
-                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                    if not rootPart then return end
+                    local character = player.Character or player.CharacterAdded:Wait()
+                    local rootPart = character:WaitForChild("HumanoidRootPart", 5)
+                    if not rootPart or not TICKETFARMTWEEN then return end
 
-                    -- Рассчитываем позиции
                     local charTargetPos = Vector3.new(targetPosition.X, targetPosition.Y - DISTANCE_BELOW, targetPosition.Z)
                     local platTargetPos = charTargetPos - Vector3.new(0, 3.5, 0)
 
-                    -- РАСЧЕТ ВРЕМЕНИ (Дистанция / Скорость)
                     local distance = (rootPart.Position - charTargetPos).Magnitude
-                    local randomSpeed = BASE_SPEED + math.random(-5, 5) -- Добавляем немного рандома
+                    local randomSpeed = BASE_SPEED + math.random(-5, 5)
                     local duration = distance / randomSpeed
 
                     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
@@ -271,11 +268,12 @@ Tab:AddToggle({
                     charTween:Play()
                     platTween:Play()
                     
-                    -- Ждем окончания или пока выключат скрипт
                     local startWait = tick()
-                    repeat task.wait(0.1) until (tick() - startWait) >= duration or not TICKETFARMTWEEN
+                    repeat 
+                        task.wait(0.1) 
+                    until (tick() - startWait) >= duration or not TICKETFARMTWEEN or not rootPart.Parent or not character:FindFirstChild("Humanoid") or character.Humanoid.Health <= 0
                     
-                    if not TICKETFARMTWEEN then
+                    if not TICKETFARMTWEEN or (character.Humanoid and character.Humanoid.Health <= 0) then
                         charTween:Cancel()
                         platTween:Cancel()
                     end
@@ -283,46 +281,47 @@ Tab:AddToggle({
 
                 while TICKETFARMTWEEN do
                     local character = player.Character
+                    local humanoid = character and character:FindFirstChild("Humanoid")
                     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                     
-                    if rootPart then
-                        local ticket = nil
-                        -- Ищем ближайший тикет (как во втором скрипте)
-                        local minDistance = math.huge
-                        for _, child in ipairs(ticketsFolder:GetChildren()) do
-                            if child.Name == "Visual" then
-                                local pos = child:GetPivot().Position
-                                local dist = (rootPart.Position - pos).Magnitude
-                                if dist < minDistance then
-                                    minDistance = dist
-                                    ticket = child
-                                end
+                    if not rootPart or (humanoid and humanoid.Health <= 0) then
+                        currentTarget = nil
+                        task.wait(1)
+                        continue
+                    end
+
+                    local ticket = nil
+                    local minDistance = math.huge
+                    
+                    for _, child in ipairs(ticketsFolder:GetChildren()) do
+                        if child.Name == "Visual" then
+                            local pos = child:GetPivot().Position
+                            local dist = (rootPart.Position - pos).Magnitude
+                            if dist < minDistance then
+                                minDistance = dist
+                                ticket = child
                             end
                         end
+                    end
 
-                        if ticket then
-                            if currentTarget ~= ticket then
-                                currentTarget = ticket
-                                
-                                -- Небольшая задержка "реакции" перед полетом (0.5 - 1.5 сек)
-                                task.wait(math.random(5, 15) / 10)
-                                
-                                if TICKETFARMTWEEN and ticket.Parent then
-                                    smoothMove(ticket:GetPivot().Position)
-                                end
+                    if ticket then
+                        if currentTarget ~= ticket then
+                            currentTarget = ticket
+                            task.wait(math.random(5, 15) / 10)
+                            
+                            if TICKETFARMTWEEN and ticket.Parent and humanoid.Health > 0 then
+                                smoothMove(ticket:GetPivot().Position)
                             end
-                        else
-                            -- Если тикетов нет, летим к спавну (афк зона)
-                            if currentTarget ~= "Spawn" then
-                                currentTarget = "Spawn"
-                                smoothMove(itemSpawns:GetPivot().Position)
-                            end
+                        end
+                    else
+                        if currentTarget ~= "Spawn" then
+                            currentTarget = "Spawn"
+                            smoothMove(itemSpawns:GetPivot().Position)
                         end
                     end
                     task.wait(0.5)
                 end
 
-                -- Очистка при выключении
                 if platform then
                     platform.CFrame = CFrame.new(0, -5000, 0)
                 end
