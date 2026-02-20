@@ -8,7 +8,7 @@ local Tab = Window:MakeTab({
 })
 
 local Section = Tab:AddSection({
-	Name = "Event farm1"
+	Name = "Event farm"
 })
 
 Tab:AddToggle({
@@ -216,86 +216,92 @@ Tab:AddToggle({
 })                          
 
 Tab:AddToggle({
-    Name = "Ticket Farm 222 (Smooth Underground)",
+    Name = "Ticket Farm 2 (Tween Mode)",
     Default = false,
     Callback = function(Value)
-        TICKETTWEEN = Value
+        TICKETFARMTWEEN = Value
 
-        if TICKETTWEEN then
+        if TICKETFARMTWEEN then
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local TweenService = game:GetService("TweenService")
                 local player = Players.LocalPlayer
-
+                
                 local gameFolder = workspace:WaitForChild("Game")
-                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
                 local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
+                
+                local DISTANCE_BELOW = 10
+                local TWEEN_SPEED = 20
 
-                local TWEEN_SPEED = 30
-                local DISTANCE_BELOW = 12
-                local SAFE_ZONE_Y = -50
-
-                local platform = workspace:FindFirstChild("UndergroundPlatform") or Instance.new("Part")
-                platform.Name = "UndergroundPlatform"
-                platform.Size = Vector3.new(12, 1, 12)
-                platform.Anchored = true
-                platform.CanCollide = true
-                platform.Transparency = 1 
-                platform.Parent = workspace
-
-                local function smoothMove(targetCFrame)
-                    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                    if not root then return end
-
-                    local dist = (root.Position - targetCFrame.Position).Magnitude
-                    local duration = dist / TWEEN_SPEED
-                    local info = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                    
-                    platform.CFrame = targetCFrame * CFrame.new(0, -3.5, 0)
-                    
-                    local tween = TweenService:Create(root, info, {CFrame = targetCFrame})
-                    tween:Play()
-                    tween.Completed:Wait()
+                local platform = workspace:FindFirstChild("SafeZonePlatform")
+                if not platform then
+                    platform = Instance.new("Part")
+                    platform.Name = "SafeZonePlatform"
+                    platform.Size = Vector3.new(15, 1, 15)
+                    platform.Anchored = true
+                    platform.CanCollide = true
+                    platform.Transparency = 0.5
+                    platform.BrickColor = BrickColor.new("Bright blue")
+                    platform.Parent = workspace
                 end
 
-                while TICKETTWEEN do 
+                local function tweenTo(targetCFrame)
                     local character = player.Character
-                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                    
-                    if rootPart then
-                        if rootPart.Position.Y > -5 then
-                            smoothMove(CFrame.new(rootPart.Position.X, -DISTANCE_BELOW, rootPart.Position.Z))
-                        end
+                    local root = character and character:FindFirstChild("HumanoidRootPart")
+                    if not root then return end
 
-                        local target = nil
+                    local distance = (root.Position - targetCFrame.Position).Magnitude
+                    local duration = distance / TWEEN_SPEED
+                    
+                    local info = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                    local tween = TweenService:Create(root, info, {CFrame = targetCFrame})
+                    
+                    tween:Play()
+                    
+                    while tween.PlaybackState == Enum.PlaybackState.Playing and TICKETFARMTWEEN do
+                        platform.CFrame = root.CFrame * CFrame.new(0, -3.5, 0)
+                        task.wait()
+                    end
+                    
+                    if not TICKETFARMTWEEN then tween:Cancel() end
+                end
+
+                while TICKETFARMTWEEN do
+                    local character = player.Character
+                    local root = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChild("Humanoid")
+
+                    if root and humanoid and humanoid.Health > 0 then
+                        local targetTicket = nil
                         for _, child in ipairs(ticketsFolder:GetChildren()) do
-                            if child.Name == "Visual" and child.Parent then
-                                target = child
+                            if child.Name == "Visual" then
+                                targetTicket = child
                                 break
                             end
                         end
 
-                        if target then
-                            local targetPos = target:GetPivot().Position
-                            local targetCFrame = CFrame.new(targetPos.X, targetPos.Y - DISTANCE_BELOW, targetPos.Z)
+                        if targetTicket then
+                            local ticketPos = targetTicket:GetPivot().Position
+                            local goalCFrame = CFrame.new(ticketPos.X, ticketPos.Y - DISTANCE_BELOW, ticketPos.Z)
                             
-                            smoothMove(targetCFrame)
-                            task.wait(math.random(10, 20) / 10)
-                        else
-                            local mapPivot = itemSpawns:GetPivot()
-                            local safeCFrame = CFrame.new(mapPivot.X, SAFE_ZONE_Y, mapPivot.Z)
+                            tweenTo(goalCFrame)
                             
-                            if (rootPart.Position - safeCFrame.Position).Magnitude > 10 then
-                                smoothMove(safeCFrame)
+                            while targetTicket.Parent and TICKETFARMTWEEN do
+                                platform.CFrame = root.CFrame * CFrame.new(0, -3.5, 0)
+                                task.wait(0.1)
                             end
+                        else
+                            local currentPos = root.Position
+                            platform.CFrame = root.CFrame * CFrame.new(0, -3.5, 0)
                         end
                     end
-                    task.wait(0.5)
+                    task.wait(0.2)
                 end
-                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end 
+
+                if platform then platform.CFrame = CFrame.new(0, -1000, 0) end
             end)
         end
-    end    
+    end
 })
  
 
