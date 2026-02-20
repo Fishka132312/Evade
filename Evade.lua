@@ -8,7 +8,7 @@ local Tab = Window:MakeTab({
 })
 
 local Section = Tab:AddSection({
-	Name = "Event farm"
+	Name = "Ticket Farm"
 })
 
 Tab:AddToggle({
@@ -295,6 +295,11 @@ Tab:AddToggle({
 	end    
 })
 
+
+local Section = Tab:AddSection({
+	Name = "XP Farm"
+})
+
 Tab:AddToggle({
     Name = "XP FARM",
     Default = false,
@@ -336,6 +341,7 @@ Tab:AddToggle({
                     end
                 end
 
+                print("Autofarm: ON. Ожидание GUI наград...")
 
                 while XPFARMPV do
                     local pg = player:FindFirstChild("PlayerGui")
@@ -345,12 +351,15 @@ Tab:AddToggle({
                         isProcessing = true
                         rewardCount = rewardCount + 1
                         rewardsGui.Visible = false
+                        print("Награда получена! Счетчик: " .. rewardCount)
 
                         if rewardCount >= 2 then
                             task.wait(1)
                             sendMessage("!map Maze")
+                            print("Счетчик 2: Карта Maze запрошена. Жду 0:29...")
                             rewardCount = 0 
                         else
+                            print("Счетчик 1: Жду появления таймера 0:29...")
                         end
 
                         while XPFARMPV do
@@ -365,6 +374,7 @@ Tab:AddToggle({
                             sendMessage("!specialround Plushie Hell")
                             task.wait(1)
                             sendMessage("!Timer 1")
+                            print("Раунд настроен на 0:29")
                         end
 
                         isProcessing = false
@@ -373,9 +383,14 @@ Tab:AddToggle({
                     task.wait(0.5)
                 end
                 
+                print("Autofarm: OFF")
             end)
         end
     end     
+})
+
+local Section = Tab:AddSection({
+	Name = "Things"
 })
 
 Tab:AddButton({
@@ -430,32 +445,75 @@ Tab:AddButton({
     end    
 })
 
+Tab:AddToggle({
+    Name = "Fps Cap (POWER Saver)",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            setfpscap(10)
+        else
+            setfpscap(60)
+        end
+    end    
+})
+
 Tab:AddButton({
-	Name = "Shutdown Game if dev join",
+	Name = "Fps boost",
 	Callback = function()
-			local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local lighting = game:GetService("Lighting")
+local terrain = workspace:FindFirstChildOfClass("Terrain")
 
-local isScriptActive = true
-
-local function shutdownServer()
-    if isScriptActive and #Players:GetPlayers() > 1 then
-        game:Shutdown() 
-    end
-end
-
-Players.PlayerAdded:Connect(function()
-    shutdownServer()
-end)
+local active = true
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
-        isScriptActive = false
+        active = false
     end
 end)
 
-shutdownServer()
+settings().Rendering.QualityLevel = 1
+lighting.GlobalShadows = false
+lighting.FogEnd = 9e9
+lighting.Brightness = 1 
+
+if terrain then
+    terrain.WaterWaveSize = 0
+    terrain.WaterWaveSpeed = 0
+    terrain.WaterReflectance = 0
+    terrain.WaterTransparency = 0
+    terrain.Decoration = false 
+end
+
+local function cleanUp(v)
+    if not active then return end
+    
+    if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
+        v.Material = Enum.Material.SmoothPlastic
+        v.Reflectance = 0
+    elseif v:IsA("Decal") or v:IsA("Texture") then
+        v:Destroy()
+    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Explosion") then
+        v.Enabled = false
+    elseif v:IsA("PostEffect") or v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") then
+        v.Enabled = false
+    end
+end
+
+for _, v in pairs(game:GetDescendants()) do
+    cleanUp(v)
+end
+game.DescendantAdded:Connect(function(v)
+    if active then
+        cleanUp(v)
+    end
+end)
   	end    
+})
+
+local Section = Tab:AddSection({
+	Name = "IMPORTANT"
 })
 
 Tab:AddToggle({
@@ -466,18 +524,6 @@ Tab:AddToggle({
             game:GetService("RunService"):Set3dRenderingEnabled(false)
         else
             game:GetService("RunService"):Set3dRenderingEnabled(true)
-        end
-    end    
-})
-
-Tab:AddToggle({
-    Name = "Fps Cap (POWER Saver)",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            setfpscap(10)
-        else
-            setfpscap(60)
         end
     end    
 })
@@ -502,7 +548,7 @@ local function notify(msg)
     end
 end
 
-notify("Система защиты активна. Мониторинг запущен.")
+notify("The protection system is active.")
 
 local function performSecurityCheck()
     local s, isScreenshotEnabled = pcall(function()
@@ -510,7 +556,7 @@ local function performSecurityCheck()
     end)
     
     if s and isScreenshotEnabled == true then
-        LocalPlayer:Kick("\n🚨 СИСТЕМА СКРИНШОТОВ АКТИВИРОВАНА\nRoblox начал мониторинг экрана. Фарм остановлен для безопасности.")
+        LocalPlayer:Kick("\n🚨 THE SCREENSHOT SYSTEM IS ACTIVATED\nRoblox has started monitoring the screen. The farm is stopped for safety.")
         return true
     end
 
@@ -519,7 +565,7 @@ local function performSecurityCheck()
     end)
     
     if s2 and isRAEnabled == true then
-        LocalPlayer:Kick("\n🚨 IXP МОНИТОРИНГ ВКЛЮЧЕН\nОбнаружена глубокая проверка окружения (Report Anything).")
+        LocalPlayer:Kick("\n🚨 IXP MONITORING IS ENABLED\nDeep environment check (Report Anything) is detected.")
         return true
     end
 
@@ -528,7 +574,7 @@ local function performSecurityCheck()
             local success, rank = pcall(function() return player:GetRankInGroup(game.CreatorId) end)
             
             if (success and rank >= 200) or player.UserId < 0 then
-                LocalPlayer:Kick("\n🚨 АДМИН ОБНАРУЖЕН: " .. player.Name .. "\nФарм прерван во избежание ручного репорта.")
+                LocalPlayer:Kick("\n🚨 ADMIN DETECTED: " .. player.Name .. "\nThe farm was interrupted to avoid manual reporting.")
                 return true
             end
         end
@@ -538,7 +584,7 @@ local function performSecurityCheck()
     if RobloxGui then
         local trustAndSafety = RobloxGui:FindFirstChild("TrustAndSafety")
         if trustAndSafety and trustAndSafety.Enabled then
-             LocalPlayer:Kick("\n🚨 ОКНО БЕЗОПАСНОСТИ ОТКРЫТО\nСистема репортов была инициирована извне.")
+             LocalPlayer:Kick("\n🚨 THE SECURITY WINDOW IS OPEN\nThe reporting system was initiated from the outside.")
              return true
         end
     end
@@ -557,6 +603,34 @@ Players.PlayerAdded:Connect(function(player)
     task.wait(1)
     performSecurityCheck()
 end)
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Shutdown Game if dev join IMPORTANT",
+	Callback = function()
+			local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local isScriptActive = true
+
+local function shutdownServer()
+    if isScriptActive and #Players:GetPlayers() > 1 then
+        game:Shutdown() 
+    end
+end
+
+Players.PlayerAdded:Connect(function()
+    shutdownServer()
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
+        isScriptActive = false
+    end
+end)
+
+shutdownServer()
   	end    
 })
 
@@ -590,7 +664,7 @@ Tab:AddToggle({
                 local gameFolder = workspace:WaitForChild("Game")
                 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
                 
-                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-1000, 1000, 0) 
+                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-50, 5, 0) 
 
                 local platform = workspace:FindFirstChild("FarmSafeZone")
                 if not platform then
@@ -648,6 +722,7 @@ Tab:AddToggle({
                         isProcessing = true
                         rewardCount = rewardCount + 1
                         rewardsGui.Visible = false
+                        print("Награда получена! Счетчик: " .. rewardCount)
 
                         if rewardCount >= 2 then
                             task.wait(1)
@@ -676,6 +751,7 @@ Tab:AddToggle({
                 end
                 
                 if platform then platform:Destroy() end
+                print("Autofarm: OFF")
             end)
         end
     end     
@@ -753,7 +829,7 @@ Tab:AddToggle({
                 local gameFolder = workspace:WaitForChild("Game")
                 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
                 
-                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-1000, 1000, 0) 
+                local safePos = itemSpawns.WorldPivot.Position + Vector3.new(-500, 500, 0) 
 
                 local platform = workspace:FindFirstChild("FarmSafeZonePublic")
                 if not platform then
@@ -766,6 +842,8 @@ Tab:AddToggle({
                     platform.Transparency = 0.5
                     platform.Parent = workspace
                 end
+
+                print("Autofarm: ON. Сейф-зона активна.")
 
                 while XPFARMPV2 do
                     local character = player.Character
@@ -781,12 +859,14 @@ Tab:AddToggle({
 
                     if rewardsGui and rewardsGui.Visible == true then
                         rewardsGui.Visible = false
-					end
+                        print("GUI наград скрыто")
+                    end
 
                     task.wait(0.1)
                 end
                 
                 if platform then platform:Destroy() end
+                print("Autofarm: OFF")
             end)
         end
     end     
@@ -866,6 +946,10 @@ local Tab = Window:MakeTab({
 	PremiumOnly = false
 })
 
+local Section = Tab:AddSection({
+	Name = "Misc"
+})
+
 Tab:AddButton({
 	Name = "better dont click it!",
 	Callback = function()
@@ -923,7 +1007,6 @@ local function setCustomSky()
     newSky.SunTextureId = ""
     newSky.MoonTextureId = ""
     newSky.Parent = Lighting
-    warn("Система: Небо обновлено на " .. SKY_NAME)
 end
 
 task.spawn(function()
@@ -976,7 +1059,6 @@ local active = true
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
         active = false
-        print("FPS Boost turned")
     end
 end)
 
@@ -1027,36 +1109,131 @@ Tab:AddButton({
 })
 
 Tab:AddToggle({
-    Name = "Disable 3D Rendering (CPU Saver)",
+    Name = "Fps Cap (POWER Saver)",
     Default = false,
     Callback = function(Value)
         if Value then
-            game:GetService("RunService"):Set3dRenderingEnabled(false)
+            setfpscap(10)
         else
-            game:GetService("RunService"):Set3dRenderingEnabled(true)
+            setfpscap(60)
         end
     end    
 })
 
 Tab:AddToggle({
-    Name = "Fps Cap (POWER Saver",
+    Name = "Disable 3D Rendering",
     Default = false,
     Callback = function(Value)
         if Value then
             game:GetService("RunService"):Set3dRenderingEnabled(false)
-            
-            if setfpscap then
-                setfpscap(10) 
-            end
-            
-            print("on")
         else
             game:GetService("RunService"):Set3dRenderingEnabled(true)
-            if setfpscap then
-                setfpscap(60)
-            end
-            print("off")
         end
     end    
 })
 
+Tab:AddButton({
+	Name = "Ghost Mode👻",
+	Callback = function()
+local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
+local LocalPlayer = Players.LocalPlayer
+
+local function notify(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if channel then channel:DisplaySystemMessage("[SECURITY]: " .. msg) end
+    else
+        game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+            Text = "[SECURITY]: " .. msg,
+            Color = Color3.fromRGB(255, 170, 0),
+            Font = Enum.Font.SourceSansBold
+        })
+    end
+end
+
+notify("The protection system is active.")
+
+local function performSecurityCheck()
+    local s, isScreenshotEnabled = pcall(function()
+        return settings():GetFFlag("ReportAnythingScreenshot")
+    end)
+    
+    if s and isScreenshotEnabled == true then
+        LocalPlayer:Kick("\n🚨 THE SCREENSHOT SYSTEM IS ACTIVATED\nRoblox has started monitoring the screen. The farm is stopped for safety.")
+        return true
+    end
+
+    local s2, isRAEnabled = pcall(function()
+        return settings():GetFFlag("ForceReportAnythingAnnotationEnabled")
+    end)
+    
+    if s2 and isRAEnabled == true then
+        LocalPlayer:Kick("\n🚨 IXP MONITORING IS ENABLED\nDeep environment check (Report Anything) is detected.")
+        return true
+    end
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local success, rank = pcall(function() return player:GetRankInGroup(game.CreatorId) end)
+            
+            if (success and rank >= 200) or player.UserId < 0 then
+                LocalPlayer:Kick("\n🚨 ADMIN DETECTED: " .. player.Name .. "\nThe farm was interrupted to avoid manual reporting.")
+                return true
+            end
+        end
+    end
+
+    local RobloxGui = game:GetService("CoreGui"):FindFirstChild("RobloxGui")
+    if RobloxGui then
+        local trustAndSafety = RobloxGui:FindFirstChild("TrustAndSafety")
+        if trustAndSafety and trustAndSafety.Enabled then
+             LocalPlayer:Kick("\n🚨 THE SECURITY WINDOW IS OPEN\nThe reporting system was initiated from the outside.")
+             return true
+        end
+    end
+
+    return false
+end
+
+task.spawn(function()
+    while true do
+        if performSecurityCheck() then break end
+        task.wait(3)
+    end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+    task.wait(1)
+    performSecurityCheck()
+end)
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Shutdown Game if dev join",
+	Callback = function()
+			local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local isScriptActive = true
+
+local function shutdownServer()
+    if isScriptActive and #Players:GetPlayers() > 1 then
+        game:Shutdown() 
+    end
+end
+
+Players.PlayerAdded:Connect(function()
+    shutdownServer()
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
+        isScriptActive = false
+    end
+end)
+
+shutdownServer()
+  	end    
+})
