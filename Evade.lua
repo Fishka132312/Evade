@@ -8,18 +8,16 @@ local Tab = Window:MakeTab({
 })
 
 local Section = Tab:AddSection({
-	Name = "Event farm"
+	Name = "Event farm1"
 })
-
-local toggled = false
 
 Tab:AddToggle({
     Name = "Ticket Farm 1",
     Default = false,
     Callback = function(Value)
-        toggled = Value
+        TICKETFARM1 = Value
 
-        if toggled then
+        if TICKETFARM1 then
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local player = Players.LocalPlayer
@@ -64,7 +62,7 @@ Tab:AddToggle({
                     return false
                 end
 
-                while toggled do 
+                while TICKETFARM1 do 
                     local character = player.Character
                     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                     local humanoid = character and character:FindFirstChild("Humanoid")
@@ -89,7 +87,7 @@ Tab:AddToggle({
                                 rootPart.CFrame = target:GetPivot()
                                 
                                 local start = tick()
-                                while tick() - start < WAIT_AT_ITEM and toggled do
+                                while tick() - start < WAIT_AT_ITEM and TICKETFARM1 do
                                     if isAnyoneNearby(rootPart) then break end
                                     if not target.Parent then break end
                                     task.wait(0.1)
@@ -114,9 +112,9 @@ Tab:AddToggle({
     Name = "Ticket Farm 2",
     Default = false,
     Callback = function(Value)
-        toggled = Value
+        TICKETFARM2 = Value
 
-        if toggled then
+        if TICKETFARM2 then
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local player = Players.LocalPlayer
@@ -163,7 +161,7 @@ Tab:AddToggle({
                     return false
                 end
 
-                while toggled do 
+                while TICKETFARM2 do 
                     local character = player.Character
                     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                     local humanoid = character and character:FindFirstChild("Humanoid")
@@ -193,7 +191,7 @@ Tab:AddToggle({
                                 platform.CFrame = CFrame.new(finalPosition - Vector3.new(0, 3.5, 0))
                                 
                                local start = tick()
-                                while tick() - start < WAIT_AT_ITEM and toggled do
+                                while tick() - start < WAIT_AT_ITEM and TICKETFARM2 do
                                     if isAnyoneNearby(rootPart) then break end
                                     if not target.Parent then break end
                                     
@@ -221,9 +219,9 @@ Tab:AddToggle({
     Name = "Ticket Farm 222 (Smooth Underground)",
     Default = false,
     Callback = function(Value)
-        _G.TicketFarmEnabled = Value -- Используем уникальную переменную
+        TICKETTWEEN = Value
 
-        if _G.TicketFarmEnabled then
+        if TICKETTWEEN then
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local TweenService = game:GetService("TweenService")
@@ -233,12 +231,10 @@ Tab:AddToggle({
                 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
                 local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
 
-                -- НАСТРОЙКИ (Теперь только минус!)
                 local TWEEN_SPEED = 30
-                local DISTANCE_BELOW = 12 -- Глубина под тикетом
-                local SAFE_ZONE_Y = -50   -- Глубина зоны ожидания (ВМЕСТО 500)
+                local DISTANCE_BELOW = 12
+                local SAFE_ZONE_Y = -50
 
-                -- Создаем платформу (невидимку)
                 local platform = workspace:FindFirstChild("UndergroundPlatform") or Instance.new("Part")
                 platform.Name = "UndergroundPlatform"
                 platform.Size = Vector3.new(12, 1, 12)
@@ -247,7 +243,6 @@ Tab:AddToggle({
                 platform.Transparency = 1 
                 platform.Parent = workspace
 
-                -- Функция плавного движения
                 local function smoothMove(targetCFrame)
                     local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                     if not root then return end
@@ -256,7 +251,6 @@ Tab:AddToggle({
                     local duration = dist / TWEEN_SPEED
                     local info = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                     
-                    -- Платформу ставим заранее под цель
                     platform.CFrame = targetCFrame * CFrame.new(0, -3.5, 0)
                     
                     local tween = TweenService:Create(root, info, {CFrame = targetCFrame})
@@ -264,12 +258,11 @@ Tab:AddToggle({
                     tween.Completed:Wait()
                 end
 
-                while _G.TicketFarmEnabled do 
+                while TICKETTWEEN do 
                     local character = player.Character
                     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                     
                     if rootPart then
-                        -- ШАГ 1: Если мы выше уровня земли, сразу уходим вниз Твином
                         if rootPart.Position.Y > -5 then
                             smoothMove(CFrame.new(rootPart.Position.X, -DISTANCE_BELOW, rootPart.Position.Z))
                         end
@@ -283,14 +276,12 @@ Tab:AddToggle({
                         end
 
                         if target then
-                            -- Едем к ТИКЕТУ (под землю)
                             local targetPos = target:GetPivot().Position
                             local targetCFrame = CFrame.new(targetPos.X, targetPos.Y - DISTANCE_BELOW, targetPos.Z)
                             
                             smoothMove(targetCFrame)
-                            task.wait(math.random(10, 20) / 10) -- Случайная пауза 1-2 сек
+                            task.wait(math.random(10, 20) / 10)
                         else
-                            -- Едем в СЕЙФ-ЗОНУ (под землю, а не на 500!)
                             local mapPivot = itemSpawns:GetPivot()
                             local safeCFrame = CFrame.new(mapPivot.X, SAFE_ZONE_Y, mapPivot.Z)
                             
@@ -312,9 +303,9 @@ Tab:AddToggle({
     Name = "XP FARM",
     Default = false,
     Callback = function(Value)
-        _G.AutoFarmActive = Value
+        XPFARMFOREVENT = Value
         
-        if _G.AutoFarmActive then
+        if XPFARMFOREVENT then
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local TextChatService = game:GetService("TextChatService")
@@ -363,7 +354,7 @@ Tab:AddToggle({
                     isProcessing = false
                 end
 
-                while _G.AutoFarmActive do
+                while XPFARMFOREVENT do
                     local rewardsGui = getRewardsGui()
                     
                     if rewardsGui and rewardsGui.Visible == true and not isProcessing then
@@ -487,9 +478,9 @@ Tab:AddToggle({
 	Name = "XP FARM",
 	Default = false,
 	Callback = function(Value)
-		_G.AutoFarmActive = Value
+		XPFARMPV = Value
 		
-		if _G.AutoFarmActive then
+		if XPFARMPV then
 			task.spawn(function()
 				local Players = game:GetService("Players")
 				local TextChatService = game:GetService("TextChatService")
@@ -538,7 +529,7 @@ Tab:AddToggle({
 
 				print("Autofarm & SafeZone: ON")
 
-				while _G.AutoFarmActive do
+				while XPFARMPV do
 					local character = player.Character
 					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
 					if rootPart then
@@ -619,9 +610,9 @@ Tab:AddToggle({
     Name = "XP FARM",
     Default = false,
     Callback = function(Value)
-        toggled = Value
+        XPFARMPB = Value
 
-        if toggled then
+        if XPFARMPB then
             task.spawn(function()
                 local Players = game:GetService("Players")
                 local player = Players.LocalPlayer
@@ -645,7 +636,7 @@ Tab:AddToggle({
                     return itemSpawns:GetPivot() * CFrame.new(0, 500, 0)
                 end
 
-                while toggled do 
+                while XPFARMPB do 
                     local character = player.Character
                     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                     local humanoid = character and character:FindFirstChild("Humanoid")
@@ -949,10 +940,6 @@ local Section = Tab:AddSection({
 	Name = "Test"
 })
 
-local Section = Tab:AddSection({
-	Name = "Farm c to turn off"
-})
-
 Tab:AddButton({
 	Name = "Ticket (SAFEST METHOD)",
 	Callback = function()
@@ -1137,150 +1124,3 @@ task.spawn(function()
 end)
   	end    
 })
-
-Tab:AddButton({
-	Name = "Stop Farm if dev join (Only in pc)",
-	Callback = function()
-			local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-
-local isScriptActive = true
-
-local function pressKeyC()
-    if isScriptActive and #Players:GetPlayers() > 1 then
-        print("Игрок зашел! Имитирую нажатие 'C'...")
-        
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.C, false, game)
-        task.wait(0.1)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.C, false, game)
-    end
-end
-
-Players.PlayerAdded:Connect(function()
-    pressKeyC()
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
-        isScriptActive = false
-    end
-end)
-
-if #Players:GetPlayers() > 1 then
-    pressKeyC()
-end
-  	end    
-})
-
-
-Tab:AddButton({
-	Name = "Copy Cordinates",
-	Callback = function()
-			local player = game.Players.LocalPlayer
-local pos = player.Character.HumanoidRootPart.Position
-
-local x, y, z = math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z)
-local message = x .. ", " .. y .. ", " .. z
-
-game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync("My cord: " .. message)
-
-if setclipboard then
-    setclipboard(message)
-    print("Copied")
-else
-    print("Executor doesnt suppord copy")
-end
-  	end    
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
