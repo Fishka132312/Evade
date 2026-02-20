@@ -213,82 +213,92 @@ Tab:AddToggle({
             end)
         end
     end    
-})                          
+})                      
 
 Tab:AddToggle({
-    Name = "Ticket Farm 33 (TWEEN)",
-    Default = false,
-    Callback = function(Value)
-        _G.TicketFarmEnabled = Value -- Переключаем глобальную переменную
-        
-        -- Если выключили, удаляем платформу и выходим
-        if not Value then
-            if _G.SafeZonePart then
-                _G.SafeZonePart:Destroy()
-                _G.SafeZonePart = nil
-            end
-            return
-        end
+	Name = "Ticket Farm 3 (TWEEN)",
+	Default = false,
+	Callback = function(Value)
+		_G.TicketFarmEnabled = Value
+		
+		if not Value then
+			if _G.SafeZonePart then
+				_G.SafeZonePart:Destroy()
+				_G.SafeZonePart = nil
+			end
+			return
+		end
 
-        -- Основная логика в отдельном потоке, чтобы UI не завис
-        task.spawn(function()
-            local TweenService = game:GetService("TweenService")
-            local player = game:GetService("Players").LocalPlayer
-            
-            -- Создаем сейф-зону, если её еще нет
-            if not _G.SafeZonePart then
-                _G.SafeZonePart = Instance.new("Part")
-                _G.SafeZonePart.Name = "SafeZone_TicketFarm"
-                _G.SafeZonePart.Size = Vector3.new(10, 1, 10)
-                _G.SafeZonePart.Anchored = true
-                _G.SafeZonePart.CanCollide = true
-                _G.SafeZonePart.Transparency = 0.5
-                _G.SafeZonePart.BrickColor = BrickColor.new("Bright blue")
-            end
+		task.spawn(function()
+			local TweenService = game:GetService("TweenService")
+			local player = game:GetService("Players").LocalPlayer
+			
+			-- Функция для платного перемещения (Tween)
+			local function smoothMove(targetCFrame)
+				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if hrp then
+					local tween = TweenService:Create(hrp, TweenInfo.new(1, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+					tween:Play()
+					return tween
+				end
+			end
 
-            while _G.TicketFarmEnabled do
-                local char = player.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
+			-- Создаем платформу один раз
+			if not _G.SafeZonePart then
+				_G.SafeZonePart = Instance.new("Part")
+				_G.SafeZonePart.Size = Vector3.new(12, 1, 12)
+				_G.SafeZonePart.Anchored = true
+				_G.SafeZonePart.Transparency = 0.5
+				_G.SafeZonePart.BrickColor = BrickColor.new("Bright green")
+				_G.SafeZonePart.Parent = workspace
+			end
 
-                -- Проверка: жив ли игрок
-                if hrp and hum and hum.Health > 0 then
-                    local gameFolder = workspace:WaitForChild("Game")
-                    local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
-                    local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
+			while _G.TicketFarmEnabled do
+				local char = player.Character
+				local hrp = char and char:FindFirstChild("HumanoidRootPart")
+				local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-                    -- Ищем первый попавшийся тикет
-                    local targetTicket = ticketsFolder:FindFirstChildWhichIsA("BasePart") or ticketsFolder:FindFirstChildOfClass("Model")
+				if hrp and hum and hum.Health > 0 then
+					local gameFolder = workspace:WaitForChild("Game")
+					local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+					local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
 
-                    if targetTicket then
-                        -- Определяем позицию: под тикетом на 10 студов ниже
-                        local ticketCF = targetTicket:GetPivot()
-                        local targetPos = ticketCF.Position + Vector3.new(0, -10, 0)
+					-- Проверяем наличие тикетов
+					local targetTicket = ticketsFolder:FindFirstChildWhichIsA("BasePart") or ticketsFolder:FindFirstChildOfClass("Model")
 
-                        -- Перемещаем платформу под будущую точку
-                        _G.SafeZonePart.Parent = workspace
-                        _G.SafeZonePart.CFrame = CFrame.new(targetPos - Vector3.new(0, 1.5, 0))
+					if targetTicket then
+						-- ЛОГИКА 1: ТИКЕТ ЕСТЬ -> Летим к нему
+						local ticketPos = targetTicket:GetPivot().Position
+						local targetPos = ticketPos + Vector3.new(0, -10, 0)
 
-                        -- Твиним игрока к этой точке
-                        local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear)
-                        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
-                        tween:Play()
-                        tween.Completed:Wait()
+						_G.SafeZonePart.CFrame = CFrame.new(targetPos - Vector3.new(0, 1.5, 0))
+						local tw = smoothMove(CFrame.new(targetPos))
+						if tw then tw.Completed:Wait() end
 
-                        -- Ждем 2-4 секунды перед следующим тикетом
-                        task.wait(math.random(2, 4))
-                    else
-                        -- Если тикетов нет, просто ждем
-                        task.wait(1)
-                    end
-                else
-                    -- Если умер — ждем появления персонажа
-                    task.wait(2)
-                end
-                task.wait(0.1) -- Маленькая пауза для стабильности
-            end
-        end)
-    end    
+						task.wait(math.random(2, 4))
+					else
+						-- ЛОГИКА 2: ТИКЕТОВ НЕТ -> Проверяем позицию относительно спавнов
+						local closestSpawn = itemSpawns:FindFirstChildWhichIsA("BasePart")
+						if closestSpawn then
+							local spawnPos = closestSpawn.Position
+							local waitPos = spawnPos + Vector3.new(0, -10, 0)
+
+							-- Если мы еще не под спавном (дистанция больше 5 студов), летим туда заранее
+							if (hrp.Position - waitPos).Magnitude > 5 then
+								_G.SafeZonePart.CFrame = CFrame.new(waitPos - Vector3.new(0, 1.5, 0))
+								local tw = smoothMove(CFrame.new(waitPos))
+								if tw then tw.Completed:Wait() end
+							end
+						end
+						task.wait(0.5) -- Быстрая проверка появления тикетов
+					end
+				else
+					task.wait(2) -- Ждем респавна
+				end
+				task.wait(0.1)
+			end
+		end)
+	end    
 })
 
 Tab:AddToggle({
