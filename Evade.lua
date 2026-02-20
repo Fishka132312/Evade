@@ -31,8 +31,8 @@ Tab:AddToggle({
                 local DANGER_RADIUS = 20 
                 local ESCAPE_TIME = 2.0 
 
-                local platform = workspace:FindFirstChild("SafeZonePlatform") or Instance.new("Part")
-                platform.Name = "SafeZonePlatform"
+                local platform = workspace:FindFirstChild("SafeZonePlatform1") or Instance.new("Part")
+                platform.Name = "SafeZonePlatform1"
                 platform.Size = Vector3.new(20, 1, 20)
                 platform.Anchored = true
                 platform.CanCollide = true
@@ -109,7 +109,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "Ticket Farm 2 (TP)",
+    Name = "Ticket Farm 22 (TP)",
     Default = false,
     Callback = function(Value)
         TICKETFARM2 = Value
@@ -130,8 +130,8 @@ Tab:AddToggle({
                 
                 local DISTANCE_BELOW = 8 
 
-                local platform = workspace:FindFirstChild("SafeZonePlatform") or Instance.new("Part")
-                platform.Name = "SafeZonePlatform"
+                local platform = workspace:FindFirstChild("SafeZonePlatform2") or Instance.new("Part")
+                platform.Name = "SafeZonePlatform2"
                 platform.Size = Vector3.new(15, 1, 15)
                 platform.Anchored = true
                 platform.CanCollide = true
@@ -235,10 +235,10 @@ Tab:AddToggle({
                 local DISTANCE_BELOW = 10 
                 local currentTarget = nil
 
-                local platform = workspace:FindFirstChild("SafeZonePlatform")
+                local platform = workspace:FindFirstChild("SafeZonePlatformTWEEN")
                 if not platform then
                     platform = Instance.new("Part")
-                    platform.Name = "SafeZonePlatform"
+                    platform.Name = "SafeZonePlatformTWEEN"
                     platform.Size = Vector3.new(15, 1, 15)
                     platform.Anchored = true
                     platform.CanCollide = true
@@ -252,7 +252,6 @@ Tab:AddToggle({
                     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
                     
-                    -- Проверка: живой ли персонаж перед началом
                     if not rootPart or not humanoid or humanoid.Health <= 0 or not TICKETFARMTWEEN then return end
 
                     local charTargetPos = Vector3.new(targetPosition.X, targetPosition.Y - DISTANCE_BELOW, targetPosition.Z)
@@ -271,9 +270,7 @@ Tab:AddToggle({
                     platTween:Play()
                     
                     local startWait = tick()
-                    -- Цикл ожидания завершения твина с проверкой на смерть
                     while (tick() - startWait) < duration and TICKETFARMTWEEN do
-                        -- Если персонаж умер или исчез во время полета — отменяем всё
                         if not rootPart.Parent or not humanoid or humanoid.Health <= 0 then
                             charTween:Cancel()
                             platTween:Cancel()
@@ -288,7 +285,6 @@ Tab:AddToggle({
                     end
                 end
 
-                -- Сброс цели при респавне, чтобы не было рывка
                 player.CharacterAdded:Connect(function()
                     currentTarget = nil
                 end)
@@ -298,7 +294,6 @@ Tab:AddToggle({
                     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
                     
-                    -- Фармим только если персонаж полностью загружен и жив
                     if rootPart and humanoid and humanoid.Health > 0 then
                         local ticket = nil
                         local minDistance = math.huge
@@ -317,21 +312,19 @@ Tab:AddToggle({
                         if ticket then
                             if currentTarget ~= ticket then
                                 currentTarget = ticket
-                                -- Даем время на стабилизацию после респавна или предыдущего хода
                                 task.wait(0.2)
                                 if TICKETFARMTWEEN and ticket.Parent and humanoid.Health > 0 then
                                     smoothMove(ticket:GetPivot().Position)
                                 end
                             end
                         else
-                            -- Если билетов нет, летим к спавну (безопасная зона)
                             if currentTarget ~= "Spawn" then
                                 currentTarget = "Spawn"
                                 smoothMove(itemSpawns:GetPivot().Position)
                             end
                         end
                     end
-                    task.wait(0.5) -- Оптимизация частоты проверок
+                    task.wait(0.5)
                 end
 
                 if platform then platform.CFrame = CFrame.new(0, -5000, 0) end
@@ -717,7 +710,7 @@ local Section = Tab:AddSection({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM",
+    Name = "XP FARM PB",
     Default = false,
     Callback = function(Value)
         XPFARMPB = Value
@@ -730,10 +723,10 @@ Tab:AddToggle({
                 local gameFolder = workspace:WaitForChild("Game")
                 local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
 
-                local platform = workspace:FindFirstChild("SafeZonePlatform")
+                local platform = workspace:FindFirstChild("SafeZonePlatformPB")
                 if not platform then
                     platform = Instance.new("Part")
-                    platform.Name = "SafeZonePlatform"
+                    platform.Name = "SafeZonePlatformPB"
                     platform.Size = Vector3.new(20, 1, 20)
                     platform.Anchored = true
                     platform.CanCollide = true
