@@ -953,47 +953,59 @@ Tab:AddTextbox({
     Default = "",
     TextDisappear = true,
     Callback = function(Value)
-        -- Определяем игрока и его гуманоида
+        -- 1. Очищаем ввод: убираем лишние пробелы в начале/конце и переводим в нижний регистр для сравнения
+        local targetName = Value:match("^%s*(.-)%s*$"):lower()
+        if targetName == "" then return end
+
         local player = game.Players.LocalPlayer
         local character = player.Character
         if not character then return end
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         if not humanoid then return end
 
-        -- Ищем папку с эмоцией по названию, которое ты ввел (Value)
         local emotesRoot = game:GetService("ReplicatedStorage").Items.Emotes
-        local emoteFolder = emotesRoot:FindFirstChild(Value)
+        local emoteFolder = nil
+
+        -- 2. Ищем папку, игнорируя регистр букв
+        for _, folder in pairs(emotesRoot:GetChildren()) do
+            if folder.Name:lower() == targetName then
+                emoteFolder = folder
+                break
+            end
+        end
 
         if emoteFolder then
-            -- Выбираем правильный объект анимации (R15 или R6)
-            local animObject
+            local animObject = nil
+            
+            -- Проверяем наличие подпапки Animations (как в ValentineComputer)
+            local animDir = emoteFolder:FindFirstChild("Animations")
+            local searchIn = animDir or emoteFolder
+
+            -- 3. Выбираем анимацию в зависимости от типа Rig (R15 или R6)
             if humanoid.RigType == Enum.HumanoidRigType.R15 then
-                -- Пытаемся найти в подпапке Animations или в корне папки эмоции
-                animObject = (emoteFolder:FindFirstChild("Animations") and emoteFolder.Animations:FindFirstChild("Animation")) 
-                             or emoteFolder:FindFirstChild("Animation")
+                animObject = searchIn:FindFirstChild("Animation") or searchIn:FindFirstChild("R15")
             else
-                animObject = (emoteFolder:FindFirstChild("Animations") and emoteFolder.Animations:FindFirstChild("AnimationClassic")) 
-                             or emoteFolder:FindFirstChild("AnimationClassic")
+                animObject = searchIn:FindFirstChild("AnimationClassic") or searchIn:FindFirstChild("R6")
             end
 
-            if animObject then
-                -- Останавливаем все текущие анимации, чтобы они не смешивались
+            if animObject and animObject:IsA("Animation") then
+                -- Останавливаем текущие анимации
                 for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
                     track:Stop(0.1)
                 end
 
-                -- Загружаем и запускаем новую
+                -- 4. Загружаем и запускаем
                 local track = humanoid:LoadAnimation(animObject)
-                track.Priority = Enum.AnimationPriority.Action -- Ставим высокий приоритет
+                track.Priority = Enum.AnimationPriority.Action -- Приоритет выше обычных движений
                 track.Looped = true
                 track:Play()
                 
-                print("Успешно запущено: " .. Value)
+                print("Успешно запущено: " .. emoteFolder.Name)
             else
-                warn("В папке '" .. Value .. "' не найден объект Animation!")
+                warn("Объект Animation не найден в папке '" .. emoteFolder.Name .. "'")
             end
         else
-            warn("Эмоция '" .. Value .. "' не найдена в ReplicatedStorage.Items.Emotes")
+            warn("Эмоция '" .. Value .. "' не найдена. Проверь правильность названия.")
         end
     end     
 })
@@ -1332,6 +1344,7 @@ Tab:AddToggle({
         end
     end    
 })
+
 
 
 
