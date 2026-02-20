@@ -296,7 +296,7 @@ Tab:AddToggle({
 })
 
 Tab:AddToggle({
-    Name = "XP FARM",
+    Name = "XP FARM1",
     Default = false,
     Callback = function(Value)
         XPFARMFOREVENT = Value
@@ -333,18 +333,32 @@ Tab:AddToggle({
                     
                     if rewardsGui then rewardsGui.Visible = false end 
                     
+                    task.wait(5)
+                    
                     if rewardCount == 2 then
-                        task.wait(8)
+                        sendMessage("!map Maze")
+                        task.wait(1)
+                    end
+
+                    local playerGui = player:WaitForChild("PlayerGui")
+                    local timerPath = playerGui:FindFirstChild("Shared") 
+                        and playerGui.Shared:FindFirstChild("HUD")
+                        and playerGui.Shared.HUD:FindFirstChild("Overlay")
+                        and playerGui.Shared.HUD.Overlay:FindFirstChild("Default")
+                        and playerGui.Shared.HUD.Overlay.Default:FindFirstChild("RoundOverlay")
+                        and playerGui.Shared.HUD.Overlay.Default.RoundOverlay:FindFirstChild("Round")
+                        and playerGui.Shared.HUD.Overlay.Default.RoundOverlay.Round:FindFirstChild("RoundTimer")
+
+                    if timerPath then
+                        while XPFARMFOREVENT and timerPath.Visible == false do
+                            task.wait(0.5)
+                        end
+                        
                         sendMessage("!specialround Plushie Hell")
                         task.wait(1)
                         sendMessage("!Timer 1")
                     else
-                        task.wait(1)
-                        sendMessage("!map Maze")
-                        task.wait(17)
-                        sendMessage("!specialround Plushie Hell")
-                        task.wait(1)
-                        sendMessage("!Timer 1")
+                        warn("Критическая ошибка: Путь к RoundTimer не найден в PlayerGui!")
                     end
                     
                     isProcessing = false
@@ -993,3 +1007,4 @@ Tab:AddToggle({
         end
     end    
 })
+
