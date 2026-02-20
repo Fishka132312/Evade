@@ -354,12 +354,11 @@ Tab:AddToggle({
                         print("Награда получена! Счетчик: " .. rewardCount)
 
                         if rewardCount >= 2 then
-                            task.wait(1)
+                            task.wait(2)
                             sendMessage("!map Maze")
-                            print("Счетчик 2: Карта Maze запрошена. Жду 0:29...")
                             rewardCount = 0 
                         else
-                            print("Счетчик 1: Жду появления таймера 0:29...")
+                            print("waiting	")
                         end
 
                         while XPFARMPV do
@@ -1250,3 +1249,4 @@ Tab:AddToggle({
         end
     end    
 })
+
