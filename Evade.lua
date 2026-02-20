@@ -219,105 +219,76 @@ Tab:AddToggle({
     Name = "Ticket Farm 33 (TWEEN)",
     Default = false,
     Callback = function(Value)
-        TICKETFARMTWEEN = Value
-
-        if TICKETFARMTWEEN then
-            task.spawn(function()
-                local Players = game:GetService("Players")
-                local TweenService = game:GetService("TweenService")
-                local player = Players.LocalPlayer
-                
-                -- Настройки
-                local BASE_SPEED = 50
-                local DISTANCE_BELOW = 10 
-                local PLATFORM_OFFSET = 3.5 -- Расстояние от ног до платформы
-
-                -- Ссылка на папки (с проверкой)
-                local gameFolder = workspace:WaitForChild("Game", 10)
-                if not gameFolder then return end
-                local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
-                local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
-
-                -- Создание/Поиск платформы
-                local function getPlatform()
-                    local p = workspace:FindFirstChild("SafeZonePlatformTWEEN")
-                    if not p then
-                        p = Instance.new("Part")
-                        p.Name = "SafeZonePlatformTWEEN"
-                        p.Size = Vector3.new(15, 1, 15)
-                        p.Anchored = true
-                        p.CanCollide = true
-                        p.Transparency = 0.5
-                        p.BrickColor = BrickColor.new("Bright blue")
-                        p.Parent = workspace
-                    end
-                    return p
-                end
-
-                while TICKETFARMTWEEN do
-                    local char = player.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    local hum = char and char:FindFirstChildOfClass("Humanoid")
-
-                    if root and hum and hum.Health > 0 then
-                        local platform = getPlatform()
-                        
-                        -- Определяем целевой тикет
-                        local targetTicket = nil
-                        local minDistance = math.huge
-                        for _, child in ipairs(ticketsFolder:GetChildren()) do
-                            if child.Name == "Visual" then
-                                local dist = (root.Position - child:GetPivot().Position).Magnitude
-                                if dist < minDistance then
-                                    minDistance = dist
-                                    targetTicket = child
-                                end
-                            end
-                        end
-
-                        -- Определяем финальную позицию (X и Z от тикета или спавна, Y всегда фиксирован)
-                        local goalPoint = targetTicket and targetTicket:GetPivot().Position or itemSpawns:GetPivot().Position
-                        local targetY = itemSpawns:GetPivot().Position.Y - DISTANCE_BELOW
-                        
-                        local finalCharPos = Vector3.new(goalPoint.X, targetY, goalPoint.Z)
-                        local finalPlatPos = finalCharPos - Vector3.new(0, PLATFORM_OFFSET, 0)
-
-                        -- Проверка: если мы уже на месте (или очень близко), ничего не делаем
-                        local distToGoal = (Vector2.new(root.Position.X, root.Position.Z) - Vector2.new(finalCharPos.X, finalCharPos.Z)).Magnitude
-                        local verticalDist = math.abs(root.Position.Y - targetY)
-
-                        if distToGoal > 1 or verticalDist > 1 then
-                            local duration = distToGoal / BASE_SPEED
-                            if verticalDist > 5 then duration = 0.5 end -- Быстрый спуск вниз, если респавнулись
-
-                            local tInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                            
-                            local charTween = TweenService:Create(root, tInfo, {CFrame = CFrame.new(finalCharPos)})
-                            local platTween = TweenService:Create(platform, tInfo, {CFrame = CFrame.new(finalPlatPos)})
-
-                            charTween:Play()
-                            platTween:Play()
-
-                            -- Ждем либо окончания пути, либо появления нового тикета
-                            local startWait = tick()
-                            while tick() - startWait < duration and TICKETFARMTWEEN do
-                                -- Если появился новый тикет, который ближе текущего, прерываем твин
-                                task.wait(0.1)
-                                if targetTicket and not targetTicket.Parent then break end 
-                            end
-                            charTween:Cancel()
-                            platTween:Cancel()
-                        end
-                    end
-                    task.wait(0.2)
-                end
-
-                -- Очистка при выключении
-                local p = workspace:FindFirstChild("SafeZonePlatformTWEEN")
-                if p then p:Destroy() end
-            end)
+        _G.TicketFarmEnabled = Value -- Переключаем глобальную переменную
+        
+        -- Если выключили, удаляем платформу и выходим
+        if not Value then
+            if _G.SafeZonePart then
+                _G.SafeZonePart:Destroy()
+                _G.SafeZonePart = nil
+            end
+            return
         end
-    end 
+
+        -- Основная логика в отдельном потоке, чтобы UI не завис
+        task.spawn(function()
+            local TweenService = game:GetService("TweenService")
+            local player = game:GetService("Players").LocalPlayer
+            
+            -- Создаем сейф-зону, если её еще нет
+            if not _G.SafeZonePart then
+                _G.SafeZonePart = Instance.new("Part")
+                _G.SafeZonePart.Name = "SafeZone_TicketFarm"
+                _G.SafeZonePart.Size = Vector3.new(10, 1, 10)
+                _G.SafeZonePart.Anchored = true
+                _G.SafeZonePart.CanCollide = true
+                _G.SafeZonePart.Transparency = 0.5
+                _G.SafeZonePart.BrickColor = BrickColor.new("Bright blue")
+            end
+
+            while _G.TicketFarmEnabled do
+                local char = player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+                -- Проверка: жив ли игрок
+                if hrp and hum and hum.Health > 0 then
+                    local gameFolder = workspace:WaitForChild("Game")
+                    local itemSpawns = gameFolder:WaitForChild("Map"):WaitForChild("ItemSpawns")
+                    local ticketsFolder = gameFolder:WaitForChild("Effects"):WaitForChild("Tickets")
+
+                    -- Ищем первый попавшийся тикет
+                    local targetTicket = ticketsFolder:FindFirstChildWhichIsA("BasePart") or ticketsFolder:FindFirstChildOfClass("Model")
+
+                    if targetTicket then
+                        -- Определяем позицию: под тикетом на 10 студов ниже
+                        local ticketCF = targetTicket:GetPivot()
+                        local targetPos = ticketCF.Position + Vector3.new(0, -10, 0)
+
+                        -- Перемещаем платформу под будущую точку
+                        _G.SafeZonePart.Parent = workspace
+                        _G.SafeZonePart.CFrame = CFrame.new(targetPos - Vector3.new(0, 1.5, 0))
+
+                        -- Твиним игрока к этой точке
+                        local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear)
+                        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
+                        tween:Play()
+                        tween.Completed:Wait()
+
+                        -- Ждем 2-4 секунды перед следующим тикетом
+                        task.wait(math.random(2, 4))
+                    else
+                        -- Если тикетов нет, просто ждем
+                        task.wait(1)
+                    end
+                else
+                    -- Если умер — ждем появления персонажа
+                    task.wait(2)
+                end
+                task.wait(0.1) -- Маленькая пауза для стабильности
+            end
+        end)
+    end    
 })
 
 Tab:AddToggle({
