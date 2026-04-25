@@ -1187,6 +1187,31 @@ if character then
 end
   	end    
 })
+--------------------------------Shaders-----------------------------
+
+local Tab = Window:MakeTab({
+	Name = "Shaders",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+local Section = Tab:AddSection({
+	Name = "Shaders"
+})
+
+Tab:AddButton({
+	Name = "Shaders",
+	Callback = function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/coolgui/refs/heads/main/Things/shaders.lua'))()  
+  	end    
+})
+
+Tab:AddButton({
+	Name = "Cool Thing",
+	Callback = function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/coolgui/refs/heads/main/Things/coolthing.lua'))()  
+  	end    
+})
 
 --------------------------------MISC-----------------------------
 local Tab = Window:MakeTab({
