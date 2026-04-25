@@ -1082,7 +1082,7 @@ end
 
 -- UI
 Tab:AddDropdown({
-    Name = "Выберите косметику",
+    Name = "Choose Cosmetics",
     Default = "",
     Options = cosmeticNames,
     Callback = function(Value)
@@ -1092,7 +1092,7 @@ Tab:AddDropdown({
 })
 
 Tab:AddToggle({
-    Name = "Включить визуализацию",
+    Name = "Turn on cosmetics",
     Default = false,
     Callback = function(Value)
         _G.EquipCosmetic = Value
@@ -1103,6 +1103,24 @@ Tab:AddToggle({
         end
     end    
 })
+
+Tab:AddDropdown({
+	Name = "Choose Carry Cosmetics",
+	Default = "1",
+	Options = {"1", "2"},
+	Callback = function(Value)
+		print(Value)
+	end    
+})
+
+Tab:AddToggle({
+	Name = "Turn On Carry Cosmetics",
+	Default = false,
+	Callback = function(Value)
+		print(Value)
+	end    
+})
+
 Tab:AddTextbox({
     Name = "Type Emote",
     Default = "",
