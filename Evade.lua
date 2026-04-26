@@ -985,7 +985,6 @@ local folderNameInChar = "VisualCosmetic_Attached"
 _G.SelectedCosmetic = "" 
 _G.EquipCosmetic = false 
 
--- Список стандартных имен для жесткой сцепки
 local bodyPartsNames = {
     "Head", "Torso", "UpperTorso", "LowerTorso", "HumanoidRootPart",
     "Left Arm", "Right Arm", "Left Leg", "Right Leg",
@@ -1018,7 +1017,6 @@ local function applyVisualSkin()
 
     local function processFolder(folder)
         for _, piece in ipairs(folder:GetChildren()) do
-            -- 1. ЕСЛИ ЭТО БАЗОВАЯ ЧАСТЬ ТЕЛА
             if piece:IsA("BasePart") and table.find(bodyPartsNames, piece.Name) then
                 local targetPart = char:FindFirstChild(piece.Name)
                 if targetPart then
@@ -1027,9 +1025,8 @@ local function applyVisualSkin()
                     clone.CanTouch = false
                     clone.CanQuery = false
                     clone.Massless = true
-                    clone.Transparency = 1 -- Коробка-основа всегда невидима
+                    clone.Transparency = 1
                     
-                    -- Умная очистка скриптов (не трогаем те, что отвечают за вращение/spins)
                     for _, extra in ipairs(clone:GetDescendants()) do
                         if extra:IsA("Script") or extra:IsA("LocalScript") then
                             local isAnimScript = false
@@ -1048,23 +1045,19 @@ local function applyVisualSkin()
                     clone.Parent = visualFolder
                     clone.CFrame = targetPart.CFrame
                     
-                    -- Жесткая сварка для основных частей
                     local weld = Instance.new("WeldConstraint")
                     weld.Part0 = clone
                     weld.Part1 = targetPart
                     weld.Parent = clone
                 end
             
-            -- 2. ЕСЛИ ЭТО ДЕКОР (летающие штуки, папки с эффектами)
             else
                 local clone = piece:Clone()
                 clone.Parent = visualFolder
                 
-                -- Если это деталь, которая должна летать рядом
                 if clone:IsA("BasePart") then
                     local root = char:FindFirstChild("HumanoidRootPart")
                     if root then
-                        -- Используем обычный Weld, чтобы скрипты вращения могли работать
                         local weld = Instance.new("Weld")
                         weld.Part0 = root
                         weld.Part1 = clone
@@ -1076,7 +1069,6 @@ local function applyVisualSkin()
         end
     end
 
-    -- Проходим по всем папкам Character...
     for _, child in ipairs(source:GetChildren()) do
         if (child:IsA("Folder") or child:IsA("Model")) and string.sub(child.Name, 1, 9) == "Character" then
             processFolder(child)
@@ -1084,16 +1076,14 @@ local function applyVisualSkin()
     end
 end
 
--- Авто-надевание при респавне
 player.CharacterAdded:Connect(function(newChar)
     newChar:WaitForChild("Humanoid")
-    task.wait(0.6) -- Чуть больше задержка для прогрузки анимаций
+    task.wait(0.6)
     if _G.EquipCosmetic then
         applyVisualSkin()
     end
 end)
 
--- Проверка наличия контента для списка
 local function hasVisualParts(item)
     for _, child in ipairs(item:GetChildren()) do
         if string.sub(child.Name, 1, 9) == "Character" then
@@ -1154,7 +1144,6 @@ Tab:AddTextbox({
     Default = "",
     TextDisappear = true,
     Callback = function(Value)
-        -- 1. Очищаем ввод: убираем лишние пробелы в начале/конце и переводим в нижний регистр для сравнения
         local targetName = Value:match("^%s*(.-)%s*$"):lower()
         if targetName == "" then return end
 
@@ -1167,7 +1156,6 @@ Tab:AddTextbox({
         local emotesRoot = game:GetService("ReplicatedStorage").Items.Emotes
         local emoteFolder = nil
 
-        -- 2. Ищем папку, игнорируя регистр букв
         for _, folder in pairs(emotesRoot:GetChildren()) do
             if folder.Name:lower() == targetName then
                 emoteFolder = folder
@@ -1178,11 +1166,9 @@ Tab:AddTextbox({
         if emoteFolder then
             local animObject = nil
             
-            -- Проверяем наличие подпапки Animations (как в ValentineComputer)
             local animDir = emoteFolder:FindFirstChild("Animations")
             local searchIn = animDir or emoteFolder
 
-            -- 3. Выбираем анимацию в зависимости от типа Rig (R15 или R6)
             if humanoid.RigType == Enum.HumanoidRigType.R15 then
                 animObject = searchIn:FindFirstChild("Animation") or searchIn:FindFirstChild("R15")
             else
@@ -1190,14 +1176,12 @@ Tab:AddTextbox({
             end
 
             if animObject and animObject:IsA("Animation") then
-                -- Останавливаем текущие анимации
                 for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
                     track:Stop(0.1)
                 end
 
-                -- 4. Загружаем и запускаем
                 local track = humanoid:LoadAnimation(animObject)
-                track.Priority = Enum.AnimationPriority.Action -- Приоритет выше обычных движений
+                track.Priority = Enum.AnimationPriority.Action
                 track.Looped = true
                 track:Play()
                 
@@ -1218,15 +1202,11 @@ Tab:AddButton({
 if character then
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     if humanoid then
-        -- Находим все анимации, которые проигрываются в данный момент
         local activeTracks = humanoid:GetPlayingAnimationTracks()
         
         for _, t in pairs(activeTracks) do
-            -- Можно остановить вообще всё
             t:Stop()
             
-            -- Или, если хочешь остановить только свою (по ID):
-            -- if t.Animation.AnimationId == "rbxassetid://ТВОЙ_ID" then t:Stop() end
         end
         print("Все локальные анимации остановлены!")
     end
