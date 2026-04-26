@@ -1262,8 +1262,79 @@ Tab:AddButton({
 Tab:AddButton({
 	Name = "Cool Thing",
 	Callback = function()
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/coolgui/refs/heads/main/Things/coolthing.lua'))()  
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/coolgui/refs/heads/main/Things/Shaders/coolthing.lua'))()
   	end    
+})
+
+-------------------------Custom Skin---------------------------
+
+local Tab = Window:MakeTab({
+	Name = "Custom Skin",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+local Section = Tab:AddSection({
+	Name = "Free Skins"
+})
+
+local selectedSkin = "None" 
+
+local SkinSelector = Tab:AddDropdown({
+    Name = "Choose skin",
+    Default = "None",
+    Options = {"Loading..."},
+    Callback = function(Value)
+        selectedSkin = Value
+        _G.CurrentSkinName = Value
+        
+        if _G.IsSkinActive and selectedSkin ~= "None" and selectedSkin ~= "Loading..." and selectedSkin ~= "Ошибка базы" then
+            if _G.ApplySkin then
+                _G.ApplySkin(selectedSkin)
+            end
+        end
+    end     
+})
+
+task.spawn(function()
+    local timeout = 0
+    while (not _G.SkinNames or #_G.SkinNames == 0) and timeout < 10 do
+        task.wait(0.5)
+        timeout = timeout + 0.5
+    end
+
+    if _G.SkinNames and #_G.SkinNames > 0 then
+        local options = {"None"}
+        for _, name in ipairs(_G.SkinNames) do
+            table.insert(options, name)
+        end
+        SkinSelector:Refresh(options, true)
+    else
+        SkinSelector:Refresh({"Error: No Skins Found"}, true)
+    end
+end)
+
+Tab:AddToggle({
+    Name = "Enable Skin Changer",
+    Default = false,
+    Callback = function(Value)
+        _G.IsSkinActive = Value 
+        
+        if Value then
+            if selectedSkin and selectedSkin ~= "None" and selectedSkin ~= "Loading..." and selectedSkin ~= "Error: No Skins Found" then
+                if _G.ApplySkin then
+                    _G.ApplySkin(selectedSkin)
+                end
+            else
+                warn("Скин не выбран!")
+                _G.IsSkinActive = false
+            end
+        else
+            if _G.RestoreOriginal then
+                _G.RestoreOriginal()
+            end
+        end
+    end    
 })
 
 --------------------------------MISC-----------------------------
