@@ -1,3 +1,5 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 local TARGET_FOLDER = workspace:WaitForChild("Game"):WaitForChild("Players")
 local HIGHLIGHT_NAME = "Downed"
 
@@ -8,6 +10,10 @@ for _, item in pairs(TARGET_FOLDER:GetDescendants()) do
 end
 
 local function updateHighlight(model)
+    if LocalPlayer.Character and model == LocalPlayer.Character then 
+        return 
+    end
+
     local isDowned = model:GetAttribute("Downed") == true
     local isCarried = model:GetAttribute("Carried") == true
     
@@ -30,6 +36,10 @@ end
 
 local function setupModel(model)
     if not model:IsA("Model") then return end
+    
+    if LocalPlayer.Character and model == LocalPlayer.Character then
+        return
+    end
     
     model.AttributeChanged:Connect(function()
         updateHighlight(model)
@@ -59,4 +69,4 @@ task.spawn(function()
     end
 end)
 
-print("ESP Downed Script Loaded!")
+print("ESP Downed Script Loaded (LocalPlayer Ignored)!")
