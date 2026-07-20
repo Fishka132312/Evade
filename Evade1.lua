@@ -1,14 +1,14 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Fishka132312/MeowlGui/refs/heads/main/source/library.lua"))()
-local CheatName = "Violence District"
+local CheatName = "Evade"
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 local scripts = {
-  '',
+  'Autofarm/AutoFarmEvent.lua',
 }
 
-local baseUrl = 'https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Thing/'
+local baseUrl = 'https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/'
 
 for i, scriptName in ipairs(scripts) do
     local fullUrl = baseUrl .. scriptName
@@ -52,13 +52,22 @@ local Window = Library:Window({
 
 local MainCat = Window:Category("Main")
 local MainPage = Window:Page({
-		Name = "Main",
+		Name = "Auto Farm (Event)",
 		Icon = "7539983773",
 		Category = MainCat
 })
 
---PlayerInfo--
-local MainSection = MainPage:Section({Name = "Show Player Info", Side = 1})
+--Summer Event--
+local SummerEventSection = MainPage:Section({Name = "Summer Event", Side = 1})
+
+local EventFarmToggle = SummerEventSection:Toggle({
+    Name = "Bubbles Farm",
+    Flag = "Ticket Farm",
+    Default = false,
+    Callback = function(Value)
+        _G.FarmEvent = Value
+    end
+})
 
 
 local SettingsCat = Window:Category("Settings")
