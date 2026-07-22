@@ -64,7 +64,7 @@ local SummerEventSection = EventPage:Section({Name = "Summer Event", Side = 1})
 
 local EventFarmToggle = SummerEventSection:Toggle({
     Name = "Bubbles Farm",
-    Flag = "Ticket Farm",
+    Flag = "TicketFarm",
     Default = false,
     Callback = function(Value)
         _G.FarmEvent = Value
@@ -73,7 +73,7 @@ local EventFarmToggle = SummerEventSection:Toggle({
 
 local EventFarmToggle = SummerEventSection:Toggle({
     Name = "PV FARM (USE IT ON PRIVATE SERVER)",
-    Flag = "Ticket Farm",
+    Flag = "PVXPFarm",
     Default = false,
     Callback = function(Value)
         _G.XPFARMPV = Value
@@ -94,7 +94,7 @@ local ThingsSection = MainPage:Section({Name = "Things", Side = 2})
 
 local ThingsToggle = ThingsSection:Toggle({
     Name = "Evoid NPC",
-    Flag = "Ticket Farm",
+    Flag = "EvoidNPC",
     Default = false,
     Callback = function(Value)
         _G.AvoidNPC = Value
