@@ -1,4 +1,4 @@
--- ==================== NPC ESP SCRIPT (Улучшенный) ====================
+-- ==================== NPC ESP SCRIPT (Видимые части) ====================
 if _G.NPCEspScriptLoaded then
     print("✅ NPC ESP скрипт уже запущен!")
     return
@@ -7,11 +7,8 @@ end
 _G.NPCEspScriptLoaded = true
 _G.EspNPC = _G.EspNPC or false
 
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-
-local highlights = {}  -- [model] = Highlight
+local highlights = {}  -- [model] = {highlight1, highlight2, ...}
 
 local function isNPC(model)
     if not model or not model:FindFirstChild("HumanoidRootPart") then
@@ -20,31 +17,55 @@ local function isNPC(model)
     return model:GetAttribute("AI") == true
 end
 
-local function createHighlight(model)
-    if highlights[model] then return highlights[model] end
-
-    local root = model:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "NPCEspHighlight"
-    highlight.FillColor = Color3.fromRGB(255, 50, 50)
-    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-    highlight.FillTransparency = 0.7
-    highlight.OutlineTransparency = 0
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+local function createHighlights(model)
+    if highlights[model] then return end
     
-    -- Главное изменение — подсвечиваем HumanoidRootPart
-    highlight.Adornee = root
-    highlight.Parent = model
+    highlights[model] = {}
+    local partsHighlighted = 0
 
-    highlights[model] = highlight
-    return highlight
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") or part:IsA("MeshPart") then
+            -- Пропускаем полностью прозрачные части
+            if part.Transparency < 0.95 then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "NPCEspHighlight"
+                highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                highlight.OutlineColor = Color3.fromRGB(255, 80, 80)
+                highlight.FillTransparency = 0.6
+                highlight.OutlineTransparency = 0
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                highlight.Adornee = part
+                highlight.Parent = model
+                
+                table.insert(highlights[model], highlight)
+                partsHighlighted += 1
+            end
+        end
+    end
+
+    if partsHighlighted == 0 then
+        -- Если ничего не нашлось — подсвечиваем хотя бы RootPart
+        local root = model:FindFirstChild("HumanoidRootPart")
+        if root then
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "NPCEspHighlight"
+            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.OutlineColor = Color3.fromRGB(255, 100, 100)
+            highlight.FillTransparency = 0.7
+            highlight.OutlineTransparency = 0
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.Adornee = root
+            highlight.Parent = model
+            table.insert(highlights[model], highlight)
+        end
+    end
 end
 
-local function removeHighlight(model)
+local function removeHighlights(model)
     if highlights[model] then
-        highlights[model]:Destroy()
+        for _, hl in ipairs(highlights[model]) do
+            hl:Destroy()
+        end
         highlights[model] = nil
     end
 end
@@ -56,17 +77,17 @@ local function updateESP()
     for _, model in ipairs(playersFolder:GetChildren()) do
         if isNPC(model) then
             if _G.EspNPC then
-                createHighlight(model)
+                createHighlights(model)
             else
-                removeHighlight(model)
+                removeHighlights(model)
             end
         end
     end
 
-    -- Очистка
-    for model, hl in pairs(highlights) do
+    -- Очистка удалённых NPC
+    for model, _ in pairs(highlights) do
         if not model.Parent or not isNPC(model) then
-            removeHighlight(model)
+            removeHighlights(model)
         end
     end
 end
@@ -74,12 +95,12 @@ end
 RunService.Heartbeat:Connect(function()
     if not _G.EspNPC then
         for model, _ in pairs(highlights) do
-            removeHighlight(model)
+            removeHighlights(model)
         end
         return
     end
     updateESP()
 end)
 
-print("✅ NPC ESP скрипт обновлён (MeshPart версия)")
-print("   _G.EspNPC = true / false — для управления")
+print("✅ NPC ESP (многочастевой) загружен!")
+print("   _G.EspNPC = true / false — управление")
