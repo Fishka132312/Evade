@@ -1,11 +1,11 @@
--- ==================== NPC ESP SCRIPT ====================
+-- ==================== NPC ESP SCRIPT (Улучшенный) ====================
 if _G.NPCEspScriptLoaded then
     print("✅ NPC ESP скрипт уже запущен!")
     return
 end
 
 _G.NPCEspScriptLoaded = true
-_G.EspNPC = _G.EspNPC or false  -- ← можно менять из другого скрипта
+_G.EspNPC = _G.EspNPC or false
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -22,17 +22,22 @@ end
 
 local function createHighlight(model)
     if highlights[model] then return highlights[model] end
-    
+
+    local root = model:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
     local highlight = Instance.new("Highlight")
     highlight.Name = "NPCEspHighlight"
-    highlight.FillColor = Color3.fromRGB(255, 0, 0)      -- красный
-    highlight.OutlineColor = Color3.fromRGB(255, 100, 100)
-    highlight.FillTransparency = 0.5
+    highlight.FillColor = Color3.fromRGB(255, 50, 50)
+    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+    highlight.FillTransparency = 0.7
     highlight.OutlineTransparency = 0
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Adornee = model
-    highlight.Parent = model
     
+    -- Главное изменение — подсвечиваем HumanoidRootPart
+    highlight.Adornee = root
+    highlight.Parent = model
+
     highlights[model] = highlight
     return highlight
 end
@@ -48,7 +53,6 @@ local function updateESP()
     local playersFolder = workspace:FindFirstChild("Players")
     if not playersFolder then return end
 
-    -- Добавляем подсветку новым NPC
     for _, model in ipairs(playersFolder:GetChildren()) do
         if isNPC(model) then
             if _G.EspNPC then
@@ -59,7 +63,7 @@ local function updateESP()
         end
     end
 
-    -- Удаляем подсветку у тех, кого больше нет
+    -- Очистка
     for model, hl in pairs(highlights) do
         if not model.Parent or not isNPC(model) then
             removeHighlight(model)
@@ -67,18 +71,15 @@ local function updateESP()
     end
 end
 
--- Основной цикл
 RunService.Heartbeat:Connect(function()
     if not _G.EspNPC then
-        -- Если ESP выключен — чистим всё
         for model, _ in pairs(highlights) do
             removeHighlight(model)
         end
         return
     end
-
     updateESP()
 end)
 
-print("✅ NPC ESP скрипт успешно загружен!")
-print("   Используй _G.EspNPC = true / false для включения/выключения")
+print("✅ NPC ESP скрипт обновлён (MeshPart версия)")
+print("   _G.EspNPC = true / false — для управления")
