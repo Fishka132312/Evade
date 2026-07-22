@@ -7,6 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 local scripts = {
   'Autofarm/AutoFarmEvent.lua',
   'Autofarm/XPFARMPV.lua',
+  'Main/AvoidNPC.lua',
 }
 
 local baseUrl = 'https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/'
@@ -44,22 +45,22 @@ Library.Theme.AccentGradient = Gradient
 Library:ChangeTheme("Accent", Accent)
 Library:ChangeTheme("AccentGradient", Gradient)
 local Window = Library:Window({
-    Name = "Violence-District",
+    Name = "Evade [🌊]",
     SubName = "Meowl Sploit",
     Logo = "129442179713871"
 })
 
--------------------------Main-----------------------
+-------------------------Event-----------------------
 
-local MainCat = Window:Category("Main")
-local MainPage = Window:Page({
+local EventCat = Window:Category("Main")
+local EventPage = Window:Page({
 		Name = "Auto Farm (Event)",
 		Icon = "7539983773",
-		Category = MainCat
+		Category = EventCat
 })
 
 --Summer Event--
-local SummerEventSection = MainPage:Section({Name = "Summer Event", Side = 1})
+local SummerEventSection = EventPage:Section({Name = "Summer Event", Side = 1})
 
 local EventFarmToggle = SummerEventSection:Toggle({
     Name = "Bubbles Farm",
@@ -79,6 +80,26 @@ local EventFarmToggle = SummerEventSection:Toggle({
     end
 })
 
+-------------------------Main-----------------------
+
+local MainCat = Window:Category("Main")
+local MainPage = Window:Page({
+		Name = "Main",
+		Icon = "7539983773",
+		Category = MainCat
+})
+
+--Things--
+local ThingsSection = MainPage:Section({Name = "Things", Side = 2})
+
+local ThingsToggle = ThingsSection:Toggle({
+    Name = "Evoid NPC",
+    Flag = "Ticket Farm",
+    Default = false,
+    Callback = function(Value)
+        _G.AvoidNPC = Value
+    end
+})
 
 local SettingsCat = Window:Category("Settings")
 local SettingsPage = Library:CreateSettingsPage(Window, KeybindList)
