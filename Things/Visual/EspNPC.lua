@@ -1,4 +1,4 @@
--- ==================== NPC ESP SCRIPT (Видимые части) ====================
+-- ==================== NPC ESP (BillboardGui Version) ====================
 if _G.NPCEspScriptLoaded then
     print("✅ NPC ESP скрипт уже запущен!")
     return
@@ -8,66 +8,59 @@ _G.NPCEspScriptLoaded = true
 _G.EspNPC = _G.EspNPC or false
 
 local RunService = game:GetService("RunService")
-local highlights = {}  -- [model] = {highlight1, highlight2, ...}
+local highlights = {}   -- [npcModel] = true
 
 local function isNPC(model)
-    if not model or not model:FindFirstChild("HumanoidRootPart") then
-        return false
-    end
+    if not model then return false end
+    local root = model:FindFirstChild("HumanoidRootPart")
+    if not root then return false end
     return model:GetAttribute("AI") == true
 end
 
-local function createHighlights(model)
+local function applyESP(model)
     if highlights[model] then return end
     
-    highlights[model] = {}
-    local partsHighlighted = 0
+    local root = model:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    local billboard = root:FindFirstChild("BillboardGui")
+    if not billboard then return end
+    
+    local icon = billboard:FindFirstChild("Icon")
+    if not icon then return end
+    
+    -- Создаём красную обводку вокруг иконки
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "EspStroke"
+    stroke.Color = Color3.fromRGB(255, 0, 0)
+    stroke.Thickness = 2.5
+    stroke.Transparency = 0
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = icon
+    
+    -- Делаем иконку чуть ярче + красный оттенок
+    icon.ImageColor3 = Color3.fromRGB(255, 100, 100)
+    
+    highlights[model] = true
+end
 
-    for _, part in ipairs(model:GetDescendants()) do
-        if part:IsA("BasePart") or part:IsA("MeshPart") then
-            -- Пропускаем полностью прозрачные части
-            if part.Transparency < 0.95 then
-                local highlight = Instance.new("Highlight")
-                highlight.Name = "NPCEspHighlight"
-                highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                highlight.OutlineColor = Color3.fromRGB(255, 80, 80)
-                highlight.FillTransparency = 0.6
-                highlight.OutlineTransparency = 0
-                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                highlight.Adornee = part
-                highlight.Parent = model
-                
-                table.insert(highlights[model], highlight)
-                partsHighlighted += 1
+local function removeESP(model)
+    if not highlights[model] then return end
+    
+    local root = model:FindFirstChild("HumanoidRootPart")
+    if root then
+        local billboard = root:FindFirstChild("BillboardGui")
+        if billboard then
+            local icon = billboard:FindFirstChild("Icon")
+            if icon then
+                local stroke = icon:FindFirstChild("EspStroke")
+                if stroke then stroke:Destroy() end
+                icon.ImageColor3 = Color3.fromRGB(255, 255, 255) -- возвращаем оригинальный цвет
             end
         end
     end
-
-    if partsHighlighted == 0 then
-        -- Если ничего не нашлось — подсвечиваем хотя бы RootPart
-        local root = model:FindFirstChild("HumanoidRootPart")
-        if root then
-            local highlight = Instance.new("Highlight")
-            highlight.Name = "NPCEspHighlight"
-            highlight.FillColor = Color3.fromRGB(255, 0, 0)
-            highlight.OutlineColor = Color3.fromRGB(255, 100, 100)
-            highlight.FillTransparency = 0.7
-            highlight.OutlineTransparency = 0
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Adornee = root
-            highlight.Parent = model
-            table.insert(highlights[model], highlight)
-        end
-    end
-end
-
-local function removeHighlights(model)
-    if highlights[model] then
-        for _, hl in ipairs(highlights[model]) do
-            hl:Destroy()
-        end
-        highlights[model] = nil
-    end
+    
+    highlights[model] = nil
 end
 
 local function updateESP()
@@ -77,17 +70,17 @@ local function updateESP()
     for _, model in ipairs(playersFolder:GetChildren()) do
         if isNPC(model) then
             if _G.EspNPC then
-                createHighlights(model)
+                applyESP(model)
             else
-                removeHighlights(model)
+                removeESP(model)
             end
         end
     end
 
-    -- Очистка удалённых NPC
+    -- Очистка
     for model, _ in pairs(highlights) do
         if not model.Parent or not isNPC(model) then
-            removeHighlights(model)
+            removeESP(model)
         end
     end
 end
@@ -95,12 +88,12 @@ end
 RunService.Heartbeat:Connect(function()
     if not _G.EspNPC then
         for model, _ in pairs(highlights) do
-            removeHighlights(model)
+            removeESP(model)
         end
         return
     end
     updateESP()
 end)
 
-print("✅ NPC ESP (многочастевой) загружен!")
-print("   _G.EspNPC = true / false — управление")
+print("✅ NPC ESP через BillboardGui загружен!")
+print("   Управление: _G.EspNPC = true / false")
