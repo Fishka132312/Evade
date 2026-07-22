@@ -1,4 +1,4 @@
-if _G.FarmScriptLoaded then
+if _G.FarmScriptLoaded then --------54353
     print("Скрипт уже запущен!")
     return
 end
@@ -8,82 +8,126 @@ _G.FarmEvent = false
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+-- Платформы (делаем их почти невидимыми)
+local safePlatform = Instance.new("Part")
+safePlatform.Size = Vector3.new(20, 1, 20)
+safePlatform.Anchored = true
+safePlatform.Transparency = 0.7
+safePlatform.CanCollide = false
+safePlatform.Parent = workspace
+
+local ticketPlatform = Instance.new("Part")
+ticketPlatform.Size = Vector3.new(10, 1, 10)
+ticketPlatform.Anchored = true
+ticketPlatform.Transparency = 0.7
+ticketPlatform.CanCollide = false
+ticketPlatform.Parent = workspace
+
+local lastTeleportTime = 0
+local TELEPORT_COOLDOWN = 0.35 -- анти-спам телепортов
 
 local function getRootPart()
     local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        return char.HumanoidRootPart
+    if char then
+        return char:FindFirstChild("HumanoidRootPart")
     end
     return nil
 end
 
 local function getRandomSpawn()
-    local spawnsFolder = workspace:FindFirstChild("Map") 
-        and workspace.Map:FindFirstChild("Parts") 
-        and workspace.Map.Parts:FindFirstChild("Spawns")
-    
-    if spawnsFolder then
-        local spawns = spawnsFolder:GetChildren()
-        if #spawns > 0 then
-            return spawns[math.random(1, #spawns)]
+    local spawns = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Parts") and workspace.Map.Parts:FindFirstChild("Spawns")
+    if spawns then
+        local children = spawns:GetChildren()
+        if #children > 0 then
+            return children[math.random(1, #children)]
         end
     end
     return nil
 end
 
-local lastTeleport = 0
-local TELEPORT_COOLDOWN = 0.8  -- секунды между телепортами
+local function isEnemyNear(myPos)
+    local playersFolder = workspace:FindFirstChild("Players")
+    if not playersFolder then return false end
 
-task.spawn(function()
-    while task.wait(0.3) do  -- увеличил интервал, меньше спама
-        if not _G.FarmEvent then
-            -- Выключили фарм — возвращаемся на спавн
-            local root = getRootPart()
-            local spawnPoint = getRandomSpawn()
-            if root and spawnPoint and tick() - lastTeleport > TELEPORT_COOLDOWN then
-                root.CFrame = CFrame.new(spawnPoint:GetPivot().Position + Vector3.new(0, 5, 0))
-                lastTeleport = tick()
+    for _, model in ipairs(playersFolder:GetChildren()) do
+        if model.Name ~= LocalPlayer.Name and model:FindFirstChild("HumanoidRootPart") then
+            local dist = (model.HumanoidRootPart.Position - myPos).Magnitude
+            if dist <= 22 then -- чуть увеличил зону
+                return true
             end
-            continue
+        end
+    end
+    return false
+end
+
+-- Основной цикл
+RunService.Heartbeat:Connect(function()
+    local root = getRootPart()
+    if not root then return end
+
+    -- Выход из фарма
+    if wasFarming and not _G.FarmEvent then
+        wasFarming = false
+        safePlatform.CFrame = CFrame.new(0, -10000, 0)
+        ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
+
+        local spawnPoint = getRandomSpawn()
+        if spawnPoint then
+            root.CFrame = CFrame.new(spawnPoint:GetPivot().Position + Vector3.new(0, 5, 0))
+        end
+        return
+    end
+
+    wasFarming = _G.FarmEvent
+
+    if not _G.FarmEvent then return end
+
+    local now = tick()
+    local enemyNear = isEnemyNear(root.Position)
+
+    local safeZoneMap = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("SafeZones")
+    local safePos = safeZoneMap and safeZoneMap:GetPivot().Position or Vector3.new(0, 1000, 0)
+    local highCFrame = CFrame.new(safePos + Vector3.new(0, 1000, 0))
+
+    if enemyNear then
+        -- === ВРАГ РЯДОМ — уходим в безопаску ===
+        safePlatform.CFrame = highCFrame - Vector3.new(0, 3.5, 0)
+        ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
+
+        if (root.Position - highCFrame.Position).Magnitude > 18 and now - lastTeleportTime > TELEPORT_COOLDOWN then
+            root.CFrame = highCFrame
+            lastTeleportTime = now
         end
 
-        local root = getRootPart()
-        if not root then continue end
-
-        local currentTime = tick()
-        if currentTime - lastTeleport < TELEPORT_COOLDOWN then
-            continue
-        end
-
-        -- Ищем тикет
-        local ticketsFolder = workspace:FindFirstChild("Effects") 
-            and workspace.Effects:FindFirstChild("Tickets")
-        
+    else
+        -- === Фармим тикеты ===
+        local ticketsFolder = workspace:FindFirstChild("Effects") and workspace.Effects:FindFirstChild("Tickets")
         local targetTicket = ticketsFolder and ticketsFolder:GetChildren()[1]
 
         if targetTicket then
-            -- === ТЕЛЕПОРТ К ТИКЕТУ ===
             local ticketPos = targetTicket:GetPivot().Position
-            local farmCFrame = CFrame.new(ticketPos + Vector3.new(0, 3, 0))  -- чуть выше
-            
-            root.CFrame = farmCFrame
-            lastTeleport = currentTime
-            print("Телепорт к тикету")
-            
+            local farmCFrame = CFrame.new(ticketPos - Vector3.new(0, 4.5, 0))
+
+            ticketPlatform.CFrame = farmCFrame - Vector3.new(0, 3.5, 0)
+            safePlatform.CFrame = CFrame.new(0, -10000, 0)
+
+            if (root.Position - farmCFrame.Position).Magnitude > 4 and now - lastTeleportTime > TELEPORT_COOLDOWN then
+                root.CFrame = farmCFrame
+                lastTeleportTime = now
+            end
         else
-            -- === ТЕЛЕПОРТ В БЕЗОПАСНУЮ ЗОНУ ===
-            local safeZoneMap = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("SafeZones")
-            local safePos = safeZoneMap and safeZoneMap:GetPivot().Position or Vector3.new(0, 500, 0)
-            
-            local highCFrame = CFrame.new(safePos + Vector3.new(0, 50, 0))
-            
-            if (root.Position - highCFrame.Position).Magnitude > 20 then
+            -- Нет тикетов — стоим в безопаске
+            safePlatform.CFrame = highCFrame - Vector3.new(0, 3.5, 0)
+            ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
+
+            if (root.Position - highCFrame.Position).Magnitude > 18 and now - lastTeleportTime > TELEPORT_COOLDOWN then
                 root.CFrame = highCFrame
-                lastTeleport = currentTime
-                print("Телепорт в безопасную зону")
+                lastTeleportTime = now
             end
         end
     end
 end)
 
-print("✅ Фарм-скрипт загружен (упрощённая версия)")
+print("✅ Фарм-скрипт загружен и оптимизирован!")
