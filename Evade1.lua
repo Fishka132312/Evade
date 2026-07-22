@@ -6,6 +6,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local scripts = {
   'Autofarm/AutoFarmEvent.lua',
+  'Autofarm/XPFARM.lua',
 }
 
 local baseUrl = 'https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/'
@@ -66,6 +67,15 @@ local EventFarmToggle = SummerEventSection:Toggle({
     Default = false,
     Callback = function(Value)
         _G.FarmEvent = Value
+    end
+})
+
+local EventFarmToggle = SummerEventSection:Toggle({
+    Name = "PV FARM (USE IT ON PRIVATE SERVER)",
+    Flag = "Ticket Farm",
+    Default = false,
+    Callback = function(Value)
+        _G.XPFARMPV = Value
     end
 })
 
