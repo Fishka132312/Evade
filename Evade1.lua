@@ -8,6 +8,7 @@ local scripts = {
   'Autofarm/AutoFarmEvent.lua',
   'Autofarm/XPFARMPV.lua',
   'Main/AvoidNPC.lua',
+  'Visual/EspNPC.lua',
 }
 
 local baseUrl = 'https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/'
@@ -37,8 +38,8 @@ Library.Folders = {
     Assets = CheatName .. "/Assets",
 }
 
-local Accent = Color3.fromRGB(255, 65, 85)
-local Gradient = Color3.fromRGB(140, 10, 45)
+local Accent = Color3.fromRGB(0, 162, 255)
+local Gradient = Color3.fromRGB(0, 80, 180)
 
 Library.Theme.Accent = Accent
 Library.Theme.AccentGradient = Gradient
@@ -98,6 +99,27 @@ local ThingsToggle = ThingsSection:Toggle({
     Default = false,
     Callback = function(Value)
         _G.AvoidNPC = Value
+    end
+})
+
+-------------------------Visual-----------------------
+
+local VisualCat = Window:Category("Main")
+local VisualPage = Window:Page({
+		Name = "Visual",
+		Icon = "7539983773",
+		Category = VisualCat
+})
+
+--Visual--
+local VisualSection = VisualPage:Section({Name = "Visual", Side = 2})
+
+local ThingsToggle = VisualSection:Toggle({
+    Name = "Esp NPC",
+    Flag = "EspNPC",
+    Default = false,
+    Callback = function(Value)
+        _G.EspNPC = Value
     end
 })
 
