@@ -6,7 +6,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local scripts = {
   'Autofarm/AutoFarmEvent.lua',
-  'Autofarm/XPFARM.lua',
+  'Autofarm/XPFARMPV.lua',
 }
 
 local baseUrl = 'https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/'
