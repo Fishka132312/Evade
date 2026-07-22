@@ -1,4 +1,4 @@
-if _G.FarmScriptLoaded then  -----------5543543
+if _G.FarmScriptLoaded then 
     print("Скрипт уже запущен!") 
     return 
 end
@@ -10,26 +10,44 @@ local wasFarming = false
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Безопасная платформа
+-- Создаем платформы
 local safePlatform = Instance.new("Part")
 safePlatform.Size = Vector3.new(20, 1, 20)
 safePlatform.Anchored = true
 safePlatform.Transparency = 0.5
 safePlatform.Parent = workspace
 
--- Платформа под тикетом
 local ticketPlatform = Instance.new("Part")
 ticketPlatform.Size = Vector3.new(10, 1, 10)
 ticketPlatform.Anchored = true
 ticketPlatform.Transparency = 0.5
 ticketPlatform.Parent = workspace
 
-local function getRootPart()
+-- Безопасное укрытие платформ (не отправляем в Void, чтобы движок их не удалял)
+local function hidePlatforms()
+    safePlatform.CanCollide = false
+    safePlatform.CFrame = CFrame.new(0, 20000, 0)
+    ticketPlatform.CanCollide = false
+    ticketPlatform.CFrame = CFrame.new(0, 20000, 0)
+end
+
+hidePlatforms()
+
+local function getCharacterAndRoot()
     local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        return char.HumanoidRootPart
+    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
+        if char.Humanoid.Health > 0 then
+            return char, char.HumanoidRootPart
+        end
     end
-    return nil
+    return nil, nil
+end
+
+-- Безопасная телепортация со сбросом инерции
+local function safeTeleport(char, root, targetCFrame)
+    root.AssemblyLinearVelocity = Vector3.zero
+    root.AssemblyAngularVelocity = Vector3.zero
+    char:PivotTo(targetCFrame)
 end
 
 local function getRandomSpawn()
@@ -47,13 +65,13 @@ local function getRandomSpawn()
 end
 
 local function isEnemyNear(myPos)
-    local playersFolder = workspace:FindFirstChild("Players")
-    if not playersFolder then return false end
+    local playersFolder = workspace:FindFirstChild("Players") or workspace
     
     for _, model in ipairs(playersFolder:GetChildren()) do
         if model.Name ~= LocalPlayer.Name and model:IsA("Model") then
             local otherRoot = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
-            if otherRoot then
+            local hum = model:FindFirstChildOfClass("Humanoid")
+            if otherRoot and hum and hum.Health > 0 then
                 local distance = (otherRoot.Position - myPos).Magnitude
                 if distance <= 20 then
                     return true
@@ -64,23 +82,19 @@ local function isEnemyNear(myPos)
     return false
 end
 
--- Вспомогательная функция безопасного телепорта
-local function safeTeleport(root, targetCFrame)
-    root.AssemblyLinearVelocity = Vector3.zero -- Сбрасываем скорость падения
-    root.CFrame = targetCFrame
-end
-
 task.spawn(function()
     while task.wait(0.1) do
+        local char, root = getCharacterAndRoot()
+        if not char or not root then continue end
+
+        -- Если фарм выключился — возвращаем на спавн
         if wasFarming and not _G.FarmEvent then
             wasFarming = false
-            safePlatform.CFrame = CFrame.new(0, -10000, 0)
-            ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
+            hidePlatforms()
             
-            local root = getRootPart()
             local spawnPoint = getRandomSpawn()
-            if root and spawnPoint then
-                safeTeleport(root, CFrame.new(spawnPoint:GetPivot().Position + Vector3.new(0, 5, 0)))
+            if spawnPoint then
+                safeTeleport(char, root, CFrame.new(spawnPoint:GetPivot().Position + Vector3.new(0, 5, 0)))
             end
             continue
         end
@@ -88,44 +102,48 @@ task.spawn(function()
         wasFarming = _G.FarmEvent
 
         if _G.FarmEvent then
-            local root = getRootPart()
-            if not root then continue end
-
             local enemyNear = isEnemyNear(root.Position)
 
             local safeZoneMap = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("SafeZones")
-            local safePos = safeZoneMap and safeZoneMap:GetPivot().Position or Vector3.new(0, 100, 0)
-            -- Уменьшили высоту до +150, чтобы не кикало и не вылетало за карту
-            local highCFrame = CFrame.new(safePos + Vector3.new(0, 150, 0)) 
+            local safePos = safeZoneMap and safeZoneMap:GetPivot().Position or Vector3.new(0, 300, 0)
+            local highCFrame = CFrame.new(safePos + Vector3.new(0, 200, 0))
 
+            -- Если рядом враг — уходим на безопасную высоту
             if enemyNear then
+                safePlatform.CanCollide = true
                 safePlatform.CFrame = highCFrame - Vector3.new(0, 3, 0)
-                if (root.Position - highCFrame.Position).Magnitude > 15 then
-                    safeTeleport(root, highCFrame)
+                
+                if (root.Position - highCFrame.Position).Magnitude > 5 then
+                    safeTeleport(char, root, highCFrame)
                 end
                 continue
             end
 
+            -- Ищем билет
             local ticketsFolder = workspace:FindFirstChild("Effects") and workspace.Effects:FindFirstChild("Tickets")
             local targetTicket = ticketsFolder and ticketsFolder:GetChildren()[1]
 
             if targetTicket then
                 local ticketPos = targetTicket:GetPivot().Position
-                -- Телепортируем персонажа НА 3 блока ВЫШЕ тикета
-                local farmCFrame = CFrame.new(ticketPos + Vector3.new(0, 3, 0)) 
+                -- Телепортируем НАД билетом, а не ПОД него
+                local farmCFrame = CFrame.new(ticketPos + Vector3.new(0, 1.5, 0))
                 
-                -- Платформу ставим ровно под ноги (на 1 блок ниже тикета)
-                ticketPlatform.CFrame = CFrame.new(ticketPos - Vector3.new(0, 1, 0))
+                ticketPlatform.CanCollide = true
+                ticketPlatform.CFrame = farmCFrame - Vector3.new(0, 3, 0)
                 
-                if (root.Position - farmCFrame.Position).Magnitude > 3 then
-                    safeTeleport(root, farmCFrame)
+                if (root.Position - farmCFrame.Position).Magnitude > 4 then
+                    safeTeleport(char, root, farmCFrame)
                 end
             else
+                -- Если билетов нет — ждем в безопасной зоне
+                safePlatform.CanCollide = true
                 safePlatform.CFrame = highCFrame - Vector3.new(0, 3, 0)
-                ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
                 
-                if (root.Position - highCFrame.Position).Magnitude > 15 then
-                    safeTeleport(root, highCFrame)
+                ticketPlatform.CanCollide = false
+                ticketPlatform.CFrame = CFrame.new(0, 20000, 0)
+                
+                if (root.Position - highCFrame.Position).Magnitude > 5 then
+                    safeTeleport(char, root, highCFrame)
                 end
             end
         end
