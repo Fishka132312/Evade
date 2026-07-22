@@ -1,4 +1,4 @@
-if _G.FarmScriptLoaded then --------54353
+if _G.FarmScriptLoaded then
     print("Скрипт уже запущен!")
     return
 end
@@ -15,7 +15,7 @@ local safePlatform = Instance.new("Part")
 safePlatform.Size = Vector3.new(20, 1, 20)
 safePlatform.Anchored = true
 safePlatform.Transparency = 0.7
-safePlatform.CanCollide = false
+safePlatform.CanCollide = true
 safePlatform.Parent = workspace
 
 local ticketPlatform = Instance.new("Part")
