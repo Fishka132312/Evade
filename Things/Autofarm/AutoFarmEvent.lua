@@ -1,16 +1,18 @@
-if _G.FarmScriptLoaded then 
-    print("Скрипт уже запущен!") 
-    return 
+if _G.FarmScriptLoaded then ---------11
+    print("Скрипт уже запущен!")
+    return
 end
-_G.FarmScriptLoaded = true
 
+_G.FarmScriptLoaded = true
 _G.FarmEvent = false
-local wasFarming = false
 
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
--- Создаем платформы
+local TELEPORT_COOLDOWN = 0.6  -- Основной кулдаун (можно менять)
+local lastTeleportTime = 0
+
 local safePlatform = Instance.new("Part")
 safePlatform.Size = Vector3.new(20, 1, 20)
 safePlatform.Anchored = true
@@ -23,57 +25,34 @@ ticketPlatform.Anchored = true
 ticketPlatform.Transparency = 0.5
 ticketPlatform.Parent = workspace
 
--- Безопасное укрытие платформ (не отправляем в Void, чтобы движок их не удалял)
-local function hidePlatforms()
-    safePlatform.CanCollide = false
-    safePlatform.CFrame = CFrame.new(0, 20000, 0)
-    ticketPlatform.CanCollide = false
-    ticketPlatform.CFrame = CFrame.new(0, 20000, 0)
-end
-
-hidePlatforms()
-
-local function getCharacterAndRoot()
+local function getRootPart()
     local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") then
-        if char.Humanoid.Health > 0 then
-            return char, char.HumanoidRootPart
-        end
+    if char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+        return char:FindFirstChild("HumanoidRootPart")
     end
-    return nil, nil
-end
-
--- Безопасная телепортация со сбросом инерции
-local function safeTeleport(char, root, targetCFrame)
-    root.AssemblyLinearVelocity = Vector3.zero
-    root.AssemblyAngularVelocity = Vector3.zero
-    char:PivotTo(targetCFrame)
+    return nil
 end
 
 local function getRandomSpawn()
-    local spawnsFolder = workspace:FindFirstChild("Map") 
-        and workspace.Map:FindFirstChild("Parts") 
-        and workspace.Map.Parts:FindFirstChild("Spawns")
-    
-    if spawnsFolder then
-        local spawns = spawnsFolder:GetChildren()
-        if #spawns > 0 then
-            return spawns[math.random(1, #spawns)]
+    local spawns = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Parts") and workspace.Map.Parts:FindFirstChild("Spawns")
+    if spawns then
+        local children = spawns:GetChildren()
+        if #children > 0 then
+            return children[math.random(1, #children)]
         end
     end
     return nil
 end
 
 local function isEnemyNear(myPos)
-    local playersFolder = workspace:FindFirstChild("Players") or workspace
+    local playersFolder = workspace:FindFirstChild("Players")
+    if not playersFolder then return false end
     
     for _, model in ipairs(playersFolder:GetChildren()) do
         if model.Name ~= LocalPlayer.Name and model:IsA("Model") then
-            local otherRoot = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
-            local hum = model:FindFirstChildOfClass("Humanoid")
-            if otherRoot and hum and hum.Health > 0 then
-                local distance = (otherRoot.Position - myPos).Magnitude
-                if distance <= 20 then
+            local root = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+            if root then
+                if (root.Position - myPos).Magnitude <= 25 then
                     return true
                 end
             end
@@ -82,70 +61,79 @@ local function isEnemyNear(myPos)
     return false
 end
 
-task.spawn(function()
-    while task.wait(0.1) do
-        local char, root = getCharacterAndRoot()
-        if not char or not root then continue end
+local function safeTeleport(root, targetCFrame)
+    local now = tick()
+    if now - lastTeleportTime < TELEPORT_COOLDOWN then
+        return false
+    end
+    
+    -- Плавный твин (меньше шансов на смерть)
+    local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(root, tweenInfo, {CFrame = targetCFrame})
+    tween:Play()
+    
+    lastTeleportTime = now
+    return true
+end
 
-        -- Если фарм выключился — возвращаем на спавн
+task.spawn(function()
+    while task.wait(0.3) do  -- Увеличил интервал
+        local root = getRootPart()
+        if not root then continue end
+
         if wasFarming and not _G.FarmEvent then
             wasFarming = false
-            hidePlatforms()
+            safePlatform.CFrame = CFrame.new(0, -10000, 0)
+            ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
             
             local spawnPoint = getRandomSpawn()
             if spawnPoint then
-                safeTeleport(char, root, CFrame.new(spawnPoint:GetPivot().Position + Vector3.new(0, 5, 0)))
+                safeTeleport(root, CFrame.new(spawnPoint:GetPivot().Position + Vector3.new(0, 5, 0)))
             end
             continue
         end
-        
+
         wasFarming = _G.FarmEvent
+        if not _G.FarmEvent then continue end
 
-        if _G.FarmEvent then
-            local enemyNear = isEnemyNear(root.Position)
+        local enemyNear = isEnemyNear(root.Position)
+        local safeZoneMap = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("SafeZones")
+        local safePos = safeZoneMap and safeZoneMap:GetPivot().Position or Vector3.new(0, 1000, 0)
 
-            local safeZoneMap = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("SafeZones")
-            local safePos = safeZoneMap and safeZoneMap:GetPivot().Position or Vector3.new(0, 300, 0)
-            local highCFrame = CFrame.new(safePos + Vector3.new(0, 200, 0))
-
-            -- Если рядом враг — уходим на безопасную высоту
-            if enemyNear then
-                safePlatform.CanCollide = true
-                safePlatform.CFrame = highCFrame - Vector3.new(0, 3, 0)
-                
-                if (root.Position - highCFrame.Position).Magnitude > 5 then
-                    safeTeleport(char, root, highCFrame)
-                end
-                continue
+        if enemyNear then
+            local highCFrame = CFrame.new(safePos + Vector3.new(0, 1000, 0))
+            safePlatform.CFrame = highCFrame - Vector3.new(0, 3.5, 0)
+            ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
+            
+            if (root.Position - highCFrame.Position).Magnitude > 20 then
+                safeTeleport(root, highCFrame)
             end
-
-            -- Ищем билет
+        else
             local ticketsFolder = workspace:FindFirstChild("Effects") and workspace.Effects:FindFirstChild("Tickets")
             local targetTicket = ticketsFolder and ticketsFolder:GetChildren()[1]
 
             if targetTicket then
                 local ticketPos = targetTicket:GetPivot().Position
-                -- Телепортируем НАД билетом, а не ПОД него
-                local farmCFrame = CFrame.new(ticketPos + Vector3.new(0, 1.5, 0))
+                local farmCFrame = CFrame.new(ticketPos - Vector3.new(0, 4, 0))
                 
-                ticketPlatform.CanCollide = true
-                ticketPlatform.CFrame = farmCFrame - Vector3.new(0, 3, 0)
+                ticketPlatform.CFrame = farmCFrame - Vector3.new(0, 3.5, 0)
+                safePlatform.CFrame = CFrame.new(0, -10000, 0)
                 
                 if (root.Position - farmCFrame.Position).Magnitude > 4 then
-                    safeTeleport(char, root, farmCFrame)
+                    safeTeleport(root, farmCFrame)
                 end
             else
-                -- Если билетов нет — ждем в безопасной зоне
-                safePlatform.CanCollide = true
-                safePlatform.CFrame = highCFrame - Vector3.new(0, 3, 0)
+                -- Нет тикетов — уходим в безопасную зону
+                local highCFrame = CFrame.new(safePos + Vector3.new(0, 1000, 0))
+                safePlatform.CFrame = highCFrame - Vector3.new(0, 3.5, 0)
+                ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
                 
-                ticketPlatform.CanCollide = false
-                ticketPlatform.CFrame = CFrame.new(0, 20000, 0)
-                
-                if (root.Position - highCFrame.Position).Magnitude > 5 then
-                    safeTeleport(char, root, highCFrame)
+                if (root.Position - highCFrame.Position).Magnitude > 20 then
+                    safeTeleport(root, highCFrame)
                 end
             end
         end
     end
 end)
+
+print("Фарм-скрипт загружен (улучшенная версия)")
