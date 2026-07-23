@@ -82,7 +82,20 @@ local EventFarmToggle = SummerEventSection:Toggle({
     end
 })
 
-local ThingsToggle = SummerEventSection:Toggle({
+local Things1Section = EventPage:Section({Name = "Things", Side = 2})
+
+local EventFarmToggle = Things1Section:Toggle({
+    Name = "Disable 3d Render",
+    Flag = "Disable3d",
+    Default = false,
+    Callback = function(Value)
+       local RunService = game:GetService("RunService")
+        RunService:Set3dRenderingEnabled(not Value)
+    end
+})
+
+
+local ThingsToggle = Things1Section:Toggle({
     Name = "Esp Bubbles",
     Flag = "EspBubbles",
     Default = false,
@@ -90,6 +103,7 @@ local ThingsToggle = SummerEventSection:Toggle({
         _G.EspTickets = Value
     end
 })
+
 
 -------------------------Main-----------------------
 
