@@ -9,6 +9,8 @@ local scripts = {
   'Autofarm/XPFARMPV.lua',
   'Main/AvoidNPC.lua',
   'Visual/EspNPC.lua',
+  'Visual/DownedEsp.lua',
+  'Visual/TicketESP.lua',
 }
 
 local baseUrl = 'https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/'
@@ -81,6 +83,15 @@ local EventFarmToggle = SummerEventSection:Toggle({
     end
 })
 
+local ThingsToggle = SummerEventSection:Toggle({
+    Name = "Esp Bubbles",
+    Flag = "EspBubbles",
+    Default = false,
+    Callback = function(Value)
+        _G.EspTickets = Value
+    end
+})
+
 -------------------------Main-----------------------
 
 local MainCat = Window:Category("Main")
@@ -112,7 +123,7 @@ local VisualPage = Window:Page({
 })
 
 --Visual--
-local VisualSection = VisualPage:Section({Name = "Visual", Side = 2})
+local VisualSection = VisualPage:Section({Name = "Visual", Side = 1})
 
 local ThingsToggle = VisualSection:Toggle({
     Name = "Esp NPC",
@@ -120,6 +131,27 @@ local ThingsToggle = VisualSection:Toggle({
     Default = false,
     Callback = function(Value)
         _G.EspNPC = Value
+    end
+})
+
+local ThingsToggle = VisualSection:Toggle({
+    Name = "Esp NPC",
+    Flag = "DownedEsp",
+    Default = false,
+    Callback = function(Value)
+        _G.EspDowned = Value
+    end
+})
+
+--Things--
+local VisualSection = VisualPage:Section({Name = "Things", Side = 2})
+
+local ThingsToggle = VisualSection:Toggle({
+    Name = "Esp Tickets",
+    Flag = "EspTickets",
+    Default = false,
+    Callback = function(Value)
+        _G.EspTickets = Value
     end
 })
 
