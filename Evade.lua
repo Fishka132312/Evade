@@ -9,7 +9,6 @@ local scripts = {
   'Autofarm/XPFARMPV.lua',
   'Main/AvoidNPC.lua',
   'Visual/EspNPC.lua',
-  'Visual/DownedEsp.lua',
   'Visual/TicketESP.lua',
 }
 
@@ -135,7 +134,7 @@ local ThingsToggle = VisualSection:Toggle({
 })
 
 local ThingsToggle = VisualSection:Toggle({
-    Name = "Esp NPC",
+    Name = "Esp Downed",
     Flag = "DownedEsp",
     Default = false,
     Callback = function(Value)
