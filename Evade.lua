@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Fishka132312/MeowlGui/refs/heads/main/source/library.lua"))() -----1
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Fishka132312/MeowlGui/refs/heads/main/source/library.lua"))() -----2
 local CheatName = "Evade"
 
 local Players = game:GetService("Players")
@@ -59,7 +59,7 @@ local Window = Library:Window({
 local EventCat = Window:Category("Event")
 local EventPage = Window:Page({
 		Name = "Summer Event 🫧",
-		Icon = "https://cdn-icons-png.flaticon.com/128/839/839888.png",
+		Icon = "https://i.postimg.cc/50MptwR4/Bez-imeni-2.png",
 		Category = EventCat
 })
 
