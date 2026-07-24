@@ -59,7 +59,7 @@ local Window = Library:Window({
 local EventCat = Window:Category("Event")
 local EventPage = Window:Page({
 		Name = "Summer Event 🫧",
-		Icon = "7539983773",
+		Icon = "https://static.wikia.nocookie.net/floppa/images/e/e0/%D0%9A%D0%BE%D0%BC%D0%B0%D1%80%D1%83%D1%81%D0%BE%D0%BB%D0%B4%D0%B0%D1%82.webp/revision/latest/scale-to-width-down/250?cb=20260104120905&path-prefix=ru",
 		Category = EventCat
 })
 
