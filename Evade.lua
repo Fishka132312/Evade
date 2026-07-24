@@ -59,12 +59,19 @@ local Window = Library:Window({
 local EventCat = Window:Category("Event")
 local EventPage = Window:Page({
 		Name = "Summer Event 🫧",
-		Icon = "https://static.wikia.nocookie.net/floppa/images/e/e0/%D0%9A%D0%BE%D0%BC%D0%B0%D1%80%D1%83%D1%81%D0%BE%D0%BB%D0%B4%D0%B0%D1%82.webp/revision/latest/scale-to-width-down/250?cb=20260104120905&path-prefix=ru",
+		Icon = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTKm0YLnnUO9uknFdZGSUt_xb7R3Cqfc3uP2poBZduIYBA06uJpaHHkAiw&s=10",
 		Category = EventCat
 })
 
 --AutoFarm Event--
-local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1})
+local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://cdn-icons-png.flaticon.com/512/8188/8188078.png"})
+
+AutoFarmEventSection:Button({
+    Name = "test",
+    Callback = function()
+        print("нажали")
+    end
+})
 
 local BubblesFarmToggle = AutoFarmEventSection:Toggle({
     Name = "Bubbles Farm",
@@ -151,7 +158,7 @@ local ThingsToggle = ThingsMainSection:Toggle({
 
 local VisualPage = Window:Page({
 		Name = "Visual",
-		Icon = "7539983773",
+		Icon = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQIi1zwYZ1HylcSWq6f0Chir1zc20FgszhesosqbHVUyg&s=10",
 		Category = MainCat
 })
 
