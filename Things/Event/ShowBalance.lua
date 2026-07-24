@@ -1,4 +1,4 @@
--- === Cash Tracker Overlay (LocalScript) ===
+-- === Bubble Tracker Overlay (LocalScript) ===
 
 -- Защита от повторного наложения при повторном запуске скрипта
 local GEN = (_G.__CashTrackerGen or 0) + 1
@@ -27,9 +27,9 @@ local function parseCash(text)
     return num
 end
 
--- === GUI ===
+-- === GUI (visual) ===
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "CashTrackerGui_" .. GEN
+screenGui.Name = "BubbleTrackerGui_" .. GEN
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
 screenGui.DisplayOrder = 999
@@ -37,51 +37,105 @@ screenGui.Parent = PlayerGui
 _G.__CashTrackerGui = screenGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 130)
+frame.Size = UDim2.new(0, 230, 0, 148)
 frame.Position = UDim2.new(0, 20, 0, 200)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BackgroundTransparency = 0.15
+frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+frame.BackgroundTransparency = 0.05
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 frame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
+corner.CornerRadius = UDim.new(0, 14)
 corner.Parent = frame
 
+-- Градиентная обводка
 local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.fromRGB(80, 200, 120)
-stroke.Thickness = 1
-stroke.Transparency = 0.3
+stroke.Thickness = 1.5
+stroke.Transparency = 0.1
 stroke.Parent = frame
 
+local strokeGradient = Instance.new("UIGradient")
+strokeGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 170, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(160, 120, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 170, 255)),
+})
+strokeGradient.Rotation = 45
+strokeGradient.Parent = stroke
+
+-- Лёгкий внутренний градиент фона (сверху темнее, снизу чуть светлее)
+local bgGradient = Instance.new("UIGradient")
+bgGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 22, 30)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 14, 20)),
+})
+bgGradient.Rotation = 90
+bgGradient.Parent = frame
+
+-- Заголовок
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 32)
+titleBar.BackgroundTransparency = 1
+titleBar.Parent = frame
+
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 26)
+title.Size = UDim2.new(1, -16, 1, 0)
+title.Position = UDim2.new(0, 12, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "💰 Cash Tracker"
-title.TextColor3 = Color3.fromRGB(120, 255, 160)
+title.Text = "🫧  Bubble Tracker"
+title.TextColor3 = Color3.fromRGB(235, 235, 245)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 15
-title.Parent = frame
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = titleBar
 
-local function makeLabel(yPos)
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -16, 0, 20)
-    lbl.Position = UDim2.new(0, 8, 0, yPos)
-    lbl.BackgroundTransparency = 1
-    lbl.TextColor3 = Color3.fromRGB(230, 230, 230)
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 13
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = frame
-    return lbl
+-- Разделительная линия под заголовком
+local divider = Instance.new("Frame")
+divider.Size = UDim2.new(1, -24, 0, 1)
+divider.Position = UDim2.new(0, 12, 0, 32)
+divider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+divider.BackgroundTransparency = 0.9
+divider.BorderSizePixel = 0
+divider.Parent = frame
+
+-- Функция создания строки: иконка + название слева, значение справа (акцентным цветом)
+local function makeRow(yPos, icon, labelText, accentColor)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, -24, 0, 22)
+    row.Position = UDim2.new(0, 12, 0, yPos)
+    row.BackgroundTransparency = 1
+    row.Parent = frame
+
+    local nameLbl = Instance.new("TextLabel")
+    nameLbl.Size = UDim2.new(0.55, 0, 1, 0)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text = icon .. "  " .. labelText
+    nameLbl.TextColor3 = Color3.fromRGB(170, 170, 185)
+    nameLbl.Font = Enum.Font.Gotham
+    nameLbl.TextSize = 12.5
+    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    nameLbl.Parent = row
+
+    local valueLbl = Instance.new("TextLabel")
+    valueLbl.Size = UDim2.new(0.45, 0, 1, 0)
+    valueLbl.Position = UDim2.new(0.55, 0, 0, 0)
+    valueLbl.BackgroundTransparency = 1
+    valueLbl.Text = "0"
+    valueLbl.TextColor3 = accentColor
+    valueLbl.Font = Enum.Font.GothamBold
+    valueLbl.TextSize = 13
+    valueLbl.TextXAlignment = Enum.TextXAlignment.Right
+    valueLbl.Parent = row
+
+    return valueLbl
 end
 
-local currentLabel  = makeLabel(30)
-local farmedLabel   = makeLabel(52)
-local perMinLabel   = makeLabel(74)
-local perHourLabel  = makeLabel(96)
+local currentLabel  = makeRow(42, "🫧", "Current",    Color3.fromRGB(140, 190, 255))
+local farmedLabel   = makeRow(68, "📈", "Farmed",     Color3.fromRGB(140, 255, 180))
+local perMinLabel   = makeRow(94, "⏱", "Per Minute", Color3.fromRGB(255, 210, 130))
+local perHourLabel  = makeRow(120, "🕐", "Per Hour",   Color3.fromRGB(255, 150, 150))
 
 -- === Состояние ===
 local currentValue = nil
@@ -100,8 +154,8 @@ local function formatNum(n)
 end
 
 local function updateGui()
-    currentLabel.Text = "Сейчас: " .. formatNum(currentValue or 0)
-    farmedLabel.Text  = "Нафармлено: " .. formatNum(farmedTotal)
+    currentLabel.Text = formatNum(currentValue or 0)
+    farmedLabel.Text  = formatNum(farmedTotal)
 
     local elapsedMin = (os.clock() - startTime) / 60
     local perMin, perHour = 0, 0
@@ -110,8 +164,8 @@ local function updateGui()
         perHour = perMin * 60
     end
 
-    perMinLabel.Text  = "В минуту: ~" .. formatNum(perMin)
-    perHourLabel.Text = "В час: ~" .. formatNum(perHour)
+    perMinLabel.Text  = "~" .. formatNum(perMin)
+    perHourLabel.Text = "~" .. formatNum(perHour)
 end
 
 local function onCashText(text)
