@@ -170,11 +170,10 @@ local EspDownedToggle = VisualSection:Toggle({
 local ThingsVisualSection = VisualPage:Section({Name = "Things", Side = 2})
 
 local EspTicketsToggle = ThingsVisualSection:Toggle({
-    Name = "Esp Tickets",
+    Name = "ad",
     Flag = "EspTickets",
     Default = false,
     Callback = function(Value)
-        _G.EspTickets = Value
     end
 })
 
