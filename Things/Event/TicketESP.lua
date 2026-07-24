@@ -36,6 +36,7 @@ local function updateESP()
     for _, ticket in ipairs(ticketsFolder:GetChildren()) do
         if ticket.Name == "Visual" then
             local sun = ticket:FindFirstChild("Sun: Tier2")
+            
             if sun then
                 for _, name in ipairs({"Bubbles", "CD", "Fih", "Person"}) do
                     local mesh = sun:FindFirstChild(name)
@@ -45,6 +46,15 @@ local function updateESP()
                         else
                             removeESP(mesh)
                         end
+                    end
+                end
+            else
+                local root = ticket:FindFirstChild("HumanoidRootPart")
+                if root and root:IsA("MeshPart") then
+                    if _G.EspTickets then
+                        applyESP(root)
+                    else
+                        removeESP(root)
                     end
                 end
             end
