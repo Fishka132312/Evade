@@ -1,6 +1,5 @@
--- ==================== AVOID NPC SCRIPT ====================
 if _G.AvoidNPCScriptLoaded then
-    print("✅ Avoid NPC скрипт уже запущен!")
+    print("aready running!")
     return
 end
 
@@ -14,12 +13,10 @@ local RunService = game:GetService("RunService")
 local lastTeleportTime = 0
 local TELEPORT_COOLDOWN = 0.5
 
--- Переменные для возврата
 local previousPosition = nil
 local returnTime = 0
 local isInSafe = false
 
--- Платформа в safe zone
 local safeStandPlatform = Instance.new("Part")
 safeStandPlatform.Size = Vector3.new(12, 1, 12)
 safeStandPlatform.Anchored = true
@@ -74,39 +71,31 @@ RunService.Heartbeat:Connect(function()
     local now = tick()
 
     if npcNearby and not isInSafe then
-        -- Сохраняем позицию перед телепортом
         previousPosition = root.Position
         
-        -- Телепорт в safe zone
         if now - lastTeleportTime > TELEPORT_COOLDOWN then
             local safeCFrame = getSafeCFrame()
             
-            -- Ставим платформу под игроком в safe
             safeStandPlatform.CFrame = safeCFrame - Vector3.new(0, 4, 0)
             
             root.CFrame = safeCFrame
             lastTeleportTime = now
             isInSafe = true
-            returnTime = now + 5  -- вернёмся через 5 секунд
+            returnTime = now + 5
             
             if _G.PauseFarm then
                 _G.PauseFarm(5)
             end
             
-            print("⚠️ NPC с AI рядом! Телепорт в safe zone на 5 сек")
         end
 
     elseif isInSafe and now >= returnTime then
-        -- Возврат на предыдущую позицию
         if previousPosition then
             root.CFrame = CFrame.new(previousPosition + Vector3.new(0, 5, 0))
-            print("🔄 Возврат на предыдущую позицию")
         end
         
-        safeStandPlatform.CFrame = CFrame.new(0, -10000, 0) -- убираем платформу
+        safeStandPlatform.CFrame = CFrame.new(0, -10000, 0)
         isInSafe = false
         previousPosition = nil
     end
 end)
-
-print("✅ Avoid NPC скрипт обновлён! (с возвратом + платформа в safe)")
