@@ -1,5 +1,4 @@
--- // XP Farm by Grok (Plushie Hell / DesertBus)
-_G.XPFARMPV = _G.XPFARMPV or false   -- Изначально ВЫКЛЮЧЕНО
+_G.XPFARMPV = _G.XPFARMPV or false
 _G.XPFarmRunning = false
 
 local Players = game:GetService("Players")
@@ -41,13 +40,11 @@ end
 
 local function mainLoop()
     while _G.XPFarmRunning do
-        -- Ждём пока включат фарм
         if not _G.XPFARMPV then
             task.wait(0.5)
             continue
         end
 
-        -- Если не в лобби — заходим
         if not isInLobby() then
             pcall(function()
                 SetPlayerModeEvent:FireServer(true)
@@ -55,34 +52,28 @@ local function mainLoop()
             task.wait(0.5)
         end
 
-        -- Меняем карту
         fireCommand("!map DesertBus")
         task.wait(0.5)
 
-        -- Ждём загрузки карты
         waitForMapLoad()
         task.wait(0.7)
 
-        -- Специал раунд
         fireCommand("!specialround Plushie Hell")
         task.wait(0.7)
 
-        -- Обнуляем таймер
         fireCommand("!timer 0")
         task.wait(0.5)
 
-        -- === Новый способ окончания раунда ===
         while _G.XPFARMPV and _G.XPFarmRunning do
             local timerText = getRoundTimer()
             
             if timerText then
-                -- Если осталось мало времени (0:01, 0:00, 0:0 и т.д.)
                 if timerText == "0:01" or 
                    timerText == "0:00" or 
                    timerText == "0:0" or 
                    timerText == "00:00" then
                     
-                    task.wait(0.5)   -- ждём 2 секунды как ты просил
+                    task.wait(0.5)
                     break
                 end
             end
@@ -90,11 +81,10 @@ local function mainLoop()
             task.wait(0.5)
         end
 
-        task.wait(0.5) -- небольшая пауза перед следующим циклом
+        task.wait(0.5)
     end
 end
 
--- Защита от двойного инжекта
 if _G.XPFarmConnection then
     _G.XPFarmRunning = false
     task.wait(0.5)
@@ -102,6 +92,3 @@ end
 
 _G.XPFarmRunning = true
 _G.XPFarmConnection = task.spawn(mainLoop)
-
-print("✅ XP Farm загружен! (изначально выключен)")
-print("Включи командой:  _G.XPFARMPV = true")
