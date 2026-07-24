@@ -34,7 +34,7 @@ local function waitForMapLoad()
         local loading = popups:WaitForChild("LoadingMap", 20)
         
         while _G.XPFARMPV and loading.Visible do
-            task.wait(0.5)
+            task.wait(0.2)
         end
     end)
 end
@@ -43,7 +43,7 @@ local function mainLoop()
     while _G.XPFarmRunning do
         -- Ждём пока включат фарм
         if not _G.XPFARMPV then
-            task.wait(1)
+            task.wait(0.2)
             continue
         end
 
@@ -52,24 +52,24 @@ local function mainLoop()
             pcall(function()
                 SetPlayerModeEvent:FireServer(true)
             end)
-            task.wait(1.5)
+            task.wait(0.2)
         end
 
         -- Меняем карту
         fireCommand("!map DesertBus")
-        task.wait(1.2)
+        task.wait(0.2)
 
         -- Ждём загрузки карты
         waitForMapLoad()
-        task.wait(0.6)
+        task.wait(0.2)
 
         -- Специал раунд
         fireCommand("!specialround Plushie Hell")
-        task.wait(0.6)
+        task.wait(0.2)
 
         -- Обнуляем таймер
         fireCommand("!timer 0")
-        task.wait(1)
+        task.wait(0.2)
 
         -- === Новый способ окончания раунда ===
         while _G.XPFARMPV and _G.XPFarmRunning do
@@ -82,22 +82,22 @@ local function mainLoop()
                    timerText == "0:0" or 
                    timerText == "00:00" then
                     
-                    task.wait(2)   -- ждём 2 секунды как ты просил
+                    task.wait(0.2)   -- ждём 2 секунды как ты просил
                     break
                 end
             end
             
-            task.wait(2)
+            task.wait(0.2)
         end
 
-        task.wait(1) -- небольшая пауза перед следующим циклом
+        task.wait(0.2) -- небольшая пауза перед следующим циклом
     end
 end
 
 -- Защита от двойного инжекта
 if _G.XPFarmConnection then
     _G.XPFarmRunning = false
-    task.wait(0.8)
+    task.wait(0.2)
 end
 
 _G.XPFarmRunning = true
