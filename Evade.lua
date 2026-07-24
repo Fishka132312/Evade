@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Fishka132312/MeowlGui/refs/heads/main/source/library.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Fishka132312/MeowlGui/refs/heads/main/source/library.lua"))() -----1
 local CheatName = "Evade"
 
 local Players = game:GetService("Players")
@@ -65,7 +65,7 @@ local EventPage = Window:Page({
 --AutoFarm Event--
 local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1})
 
-local BubblesFarmToggle = AutoFarmEvent:Toggle({
+local BubblesFarmToggle = AutoFarmEventSection:Toggle({
     Name = "Bubbles Farm",
     Flag = "TicketFarm",
     Default = false,
@@ -74,7 +74,7 @@ local BubblesFarmToggle = AutoFarmEvent:Toggle({
     end
 })
 
-local XPPVFARMToggle = AutoFarmEvent:Toggle({
+local XPPVFARMToggle = AutoFarmEventSection:Toggle({
     Name = "PV FARM (USE IT ON PRIVATE SERVER)",
     Flag = "PVXPFarm",
     Default = false,
