@@ -104,6 +104,16 @@ local ThingsToggle = Things1Section:Toggle({
     end
 })
 
+local ThingsToggle = Things1Section:Toggle({
+    Name = "Farm Details",
+    Flag = "FarmDetails",
+    Default = false,
+    Callback = function(Value)
+        _G.ShowBalance = Value
+    end
+})
+
+
 
 -------------------------Main-----------------------
 
