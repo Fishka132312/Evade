@@ -8,9 +8,9 @@ local scripts = {
   'Event/AutoFarmEvent.lua',
   'Event/XPFARMPV.lua',
   'Event/ShowBalance.lua',
+  'Event/TicketESP.lua',
   'Main/AvoidNPC.lua',
   'Visual/EspNPC.lua',
-  'Visual/TicketESP.lua',
 }
 
 local baseUrl = 'https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/'
