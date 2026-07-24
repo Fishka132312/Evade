@@ -58,7 +58,7 @@ local Window = Library:Window({
 
 local EventCat = Window:Category("Event")
 local EventPage = Window:Page({
-		Name = "Summer Event 🫧",
+		Name = "Summer Event",
 		Icon = "https://i.postimg.cc/6q7p8GSZ/Bez-imeni-2.png",
 		Category = EventCat
 })
