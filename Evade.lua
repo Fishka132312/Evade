@@ -10,6 +10,7 @@ local scripts = {
   'Event/ShowBalance.lua',
   'Event/TicketESP.lua',
   'Main/AvoidNPC.lua',
+  'Main/AutoRevive.lua',
   'Visual/EspNPC.lua',
 }
 
@@ -134,6 +135,15 @@ local ThingsToggle = ThingsMainSection:Toggle({
     Default = false,
     Callback = function(Value)
         _G.AvoidNPC = Value
+    end
+})
+
+local ThingsToggle = ThingsMainSection:Toggle({
+    Name = "Auto Revive (Self)",
+    Flag = "AutoReviveSelf",
+    Default = false,
+    Callback = function(Value)
+        _G.AutoRevive = Value
     end
 })
 
