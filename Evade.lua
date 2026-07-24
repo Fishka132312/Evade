@@ -64,7 +64,7 @@ local EventPage = Window:Page({
 })
 
 --AutoFarm Event--
-local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://cdn-icons-png.flaticon.com/128/9619/9619952.png"})
+local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://i.postimg.cc/762vFMTN/Bez-imeni-1-upscayl-2x-upscayl-standard-4x.png"})
 
 local BubblesFarmToggle = AutoFarmEventSection:Toggle({
     Name = "Bubbles Farm",
