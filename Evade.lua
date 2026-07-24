@@ -59,12 +59,12 @@ local Window = Library:Window({
 local EventCat = Window:Category("Event")
 local EventPage = Window:Page({
 		Name = "Summer Event 🫧",
-		Icon = "https://i.postimg.cc/50MptwR4/Bez-imeni-2.png",
+		Icon = "https://cdn-icons-png.flaticon.com/128/839/839888.png",
 		Category = EventCat
 })
 
 --AutoFarm Event--
-local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://i.postimg.cc/762vFMTN/Bez-imeni-1-upscayl-2x-upscayl-standard-4x.png"})
+local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://cdn-icons-png.flaticon.com/128/15226/15226982.png"})
 
 local BubblesFarmToggle = AutoFarmEventSection:Toggle({
     Name = "Bubbles Farm",
@@ -84,7 +84,7 @@ local XPPVFARMToggle = AutoFarmEventSection:Toggle({
     end
 })
 
-local ThingsEventSection = EventPage:Section({Name = "Things", Side = 2})
+local ThingsEventSection = EventPage:Section({Name = "Things", Side = 2, Icon = "https://cdn-icons-png.flaticon.com/128/15226/15226982.png"})
 
 local Disable3dRenderToggle = ThingsEventSection:Toggle({
     Name = "Disable 3d Render",
@@ -151,12 +151,12 @@ local ThingsToggle = ThingsMainSection:Toggle({
 
 local VisualPage = Window:Page({
 		Name = "Visual",
-		Icon = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQIi1zwYZ1HylcSWq6f0Chir1zc20FgszhesosqbHVUyg&s=10",
+		Icon = "https://cdn-icons-png.flaticon.com/128/17124/17124934.png",
 		Category = MainCat
 })
 
 --Visual--
-local VisualSection = VisualPage:Section({Name = "Visual", Side = 1})
+local VisualSection = VisualPage:Section({Name = "Visual", Side = 1, Icon = "https://cdn-icons-png.flaticon.com/128/17124/17124934.png"})
 
 local EspNpcToggle = VisualSection:Toggle({
     Name = "Esp NPC",
