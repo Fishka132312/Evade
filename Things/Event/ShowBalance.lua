@@ -1,6 +1,3 @@
--- === Bubble Tracker Overlay (LocalScript) ===
-
--- Защита от повторного наложения при повторном запуске скрипта
 local GEN = (_G.__CashTrackerGen or 0) + 1
 _G.__CashTrackerGen = GEN
 
@@ -19,7 +16,6 @@ if _G.ShowBalance == nil then
     _G.ShowBalance = true
 end
 
--- Парсинг текста в число (убирает запятые, буквы, оставляет цифры и точку)
 local function parseCash(text)
     if not text then return nil end
     local clean = text:gsub("[^%d%.]", "")
@@ -27,7 +23,6 @@ local function parseCash(text)
     return num
 end
 
--- === GUI (visual) ===
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "BubbleTrackerGui_" .. GEN
 screenGui.ResetOnSpawn = false
@@ -50,7 +45,6 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 14)
 corner.Parent = frame
 
--- Градиентная обводка
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 1.5
 stroke.Transparency = 0.1
@@ -65,7 +59,6 @@ strokeGradient.Color = ColorSequence.new({
 strokeGradient.Rotation = 45
 strokeGradient.Parent = stroke
 
--- Лёгкий внутренний градиент фона (сверху темнее, снизу чуть светлее)
 local bgGradient = Instance.new("UIGradient")
 bgGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 22, 30)),
@@ -74,7 +67,6 @@ bgGradient.Color = ColorSequence.new({
 bgGradient.Rotation = 90
 bgGradient.Parent = frame
 
--- Заголовок
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 32)
 titleBar.BackgroundTransparency = 1
@@ -91,7 +83,6 @@ title.TextSize = 15
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = titleBar
 
--- Разделительная линия под заголовком
 local divider = Instance.new("Frame")
 divider.Size = UDim2.new(1, -24, 0, 1)
 divider.Position = UDim2.new(0, 12, 0, 32)
@@ -100,7 +91,6 @@ divider.BackgroundTransparency = 0.9
 divider.BorderSizePixel = 0
 divider.Parent = frame
 
--- Функция создания строки: иконка + название слева, значение справа (акцентным цветом)
 local function makeRow(yPos, icon, labelText, accentColor)
     local row = Instance.new("Frame")
     row.Size = UDim2.new(1, -24, 0, 22)
@@ -137,7 +127,6 @@ local farmedLabel   = makeRow(68, "📈", "Farmed",     Color3.fromRGB(140, 255,
 local perMinLabel   = makeRow(94, "⏱", "Per Minute", Color3.fromRGB(255, 210, 130))
 local perHourLabel  = makeRow(120, "🕐", "Per Hour",   Color3.fromRGB(255, 150, 150))
 
--- === Состояние ===
 local currentValue = nil
 local farmedTotal = 0
 local startTime = os.clock()
@@ -159,7 +148,7 @@ local function updateGui()
 
     local elapsedMin = (os.clock() - startTime) / 60
     local perMin, perHour = 0, 0
-    if elapsedMin > 0.0167 then -- защита от деления на почти ноль (первая секунда)
+    if elapsedMin > 0.0167 then
         perMin = farmedTotal / elapsedMin
         perHour = perMin * 60
     end
@@ -173,7 +162,6 @@ local function onCashText(text)
     if not newVal then return end
 
     if currentValue == nil then
-        -- первый раз увидели текст — просто запоминаем базу
         currentValue = newVal
         startTime = os.clock()
         farmedTotal = 0
@@ -187,7 +175,6 @@ local function onCashText(text)
     updateGui()
 end
 
--- === Поиск и подключение к лейблу кэша (с ожиданием, если GUI ещё не создан) ===
 local function tryGetCashLabel()
     local ok, obj = pcall(function()
         return LocalPlayer.PlayerGui.Game.HUD.Overlay.CharacterStatus.BottomLeft.Tickets.Cash
@@ -218,7 +205,6 @@ task.spawn(function()
                     onCashText(label.Text)
                 end)
 
-                -- если объект удалится из иерархии — переподключимся заново
                 label.AncestryChanged:Connect(function(_, parent)
                     if not parent and connectedLabel == label then
                         connectedLabel = nil
@@ -233,7 +219,6 @@ task.spawn(function()
     end
 end)
 
--- === Видимость через _G.ShowBalance ===
 task.spawn(function()
     while _G.__CashTrackerGen == GEN do
         frame.Visible = (_G.ShowBalance ~= false)
