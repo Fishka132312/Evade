@@ -1,5 +1,4 @@
 if _G.NPCEspScriptLoaded then
-    print("already running")
     return
 end
 
