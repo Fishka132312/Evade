@@ -55,17 +55,17 @@ local Window = Library:Window({
 
 -------------------------Event-----------------------
 
-local EventCat = Window:Category("Main")
+local EventCat = Window:Category("Event")
 local EventPage = Window:Page({
-		Name = "Auto Farm (Event)",
+		Name = "Summer Event 🫧",
 		Icon = "7539983773",
 		Category = EventCat
 })
 
---Summer Event--
-local SummerEventSection = EventPage:Section({Name = "Summer Event", Side = 1})
+--AutoFarm Event--
+local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1})
 
-local EventFarmToggle = SummerEventSection:Toggle({
+local BubblesFarmToggle = AutoFarmEvent:Toggle({
     Name = "Bubbles Farm",
     Flag = "TicketFarm",
     Default = false,
@@ -74,7 +74,7 @@ local EventFarmToggle = SummerEventSection:Toggle({
     end
 })
 
-local EventFarmToggle = SummerEventSection:Toggle({
+local XPPVFARMToggle = AutoFarmEvent:Toggle({
     Name = "PV FARM (USE IT ON PRIVATE SERVER)",
     Flag = "PVXPFarm",
     Default = false,
@@ -83,9 +83,9 @@ local EventFarmToggle = SummerEventSection:Toggle({
     end
 })
 
-local Things1Section = EventPage:Section({Name = "Things", Side = 2})
+local ThingsEventSection = EventPage:Section({Name = "Things", Side = 2})
 
-local EventFarmToggle = Things1Section:Toggle({
+local Disable3dRenderToggle = ThingsEventSection:Toggle({
     Name = "Disable 3d Render",
     Flag = "Disable3d",
     Default = false,
@@ -96,7 +96,7 @@ local EventFarmToggle = Things1Section:Toggle({
 })
 
 
-local ThingsToggle = Things1Section:Toggle({
+local EspBubblesToggle = ThingsEventSection:Toggle({
     Name = "Esp Bubbles",
     Flag = "EspBubbles",
     Default = false,
@@ -105,7 +105,7 @@ local ThingsToggle = Things1Section:Toggle({
     end
 })
 
-local ThingsToggle = Things1Section:Toggle({
+local FarmDetailsToggle = ThingsEventSection:Toggle({
     Name = "Farm Details",
     Flag = "FarmDetails",
     Default = false,
@@ -126,9 +126,9 @@ local MainPage = Window:Page({
 })
 
 --Things--
-local ThingsSection = MainPage:Section({Name = "Things", Side = 2})
+local ThingsMainSection = MainPage:Section({Name = "Things", Side = 2})
 
-local ThingsToggle = ThingsSection:Toggle({
+local ThingsToggle = ThingsMainSection:Toggle({
     Name = "Evoid NPC",
     Flag = "EvoidNPC",
     Default = false,
@@ -139,17 +139,16 @@ local ThingsToggle = ThingsSection:Toggle({
 
 -------------------------Visual-----------------------
 
-local VisualCat = Window:Category("Main")
 local VisualPage = Window:Page({
 		Name = "Visual",
 		Icon = "7539983773",
-		Category = VisualCat
+		Category = MainCat
 })
 
 --Visual--
 local VisualSection = VisualPage:Section({Name = "Visual", Side = 1})
 
-local ThingsToggle = VisualSection:Toggle({
+local EspNpcToggle = VisualSection:Toggle({
     Name = "Esp NPC",
     Flag = "EspNPC",
     Default = false,
@@ -158,7 +157,7 @@ local ThingsToggle = VisualSection:Toggle({
     end
 })
 
-local ThingsToggle = VisualSection:Toggle({
+local EspDownedToggle = VisualSection:Toggle({
     Name = "Esp Downed",
     Flag = "DownedEsp",
     Default = false,
@@ -168,9 +167,9 @@ local ThingsToggle = VisualSection:Toggle({
 })
 
 --Things--
-local VisualSection = VisualPage:Section({Name = "Things", Side = 2})
+local ThingsVisualSection = VisualPage:Section({Name = "Things", Side = 2})
 
-local ThingsToggle = VisualSection:Toggle({
+local EspTicketsToggle = ThingsVisualSection:Toggle({
     Name = "Esp Tickets",
     Flag = "EspTickets",
     Default = false,
