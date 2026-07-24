@@ -16,14 +16,14 @@ if _G.ShowBalance == nil then
 	_G.ShowBalance = false
 end
 
-local WARMUP_SECONDS = 3
-local MAX_DELTA_PER_UPDATE = 1000
+local WARMUP_SECONDS = 5
+local MAX_GAIN_PER_PICKUP = 10
 
 local function parseCash(text)
 	if not text then return nil end
 	local clean = text:gsub("[^%d%.]", "")
-	local num = tonumber(clean)
-	return num
+	if clean == "" then return nil end
+	return tonumber(clean)
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -126,14 +126,15 @@ local function makeRow(yPos, icon, labelText, accentColor)
 end
 
 local currentLabel = makeRow(42, "🫧", "Current", Color3.fromRGB(140, 190, 255))
-local farmedLabel = makeRow(68, "📈", "Farmed", Color3.fromRGB(140, 255, 180))
-local perMinLabel = makeRow(94, "⏱", "Per Minute", Color3.fromRGB(255, 210, 130))
+local farmedLabel  = makeRow(68, "📈", "Farmed", Color3.fromRGB(140, 255, 180))
+local perMinLabel  = makeRow(94, "⏱", "Per Minute", Color3.fromRGB(255, 210, 130))
 local perHourLabel = makeRow(120, "🕐", "Per Hour", Color3.fromRGB(255, 150, 150))
 
 local currentValue = nil
 local farmedTotal = 0
-local startTime = os.clock()
-local warmupUntil = 0
+local startTime = nil
+local scriptStart = os.clock()
+local warmupUntil = scriptStart + WARMUP_SECONDS
 
 local function formatNum(n)
 	n = math.floor(n or 0)
@@ -149,11 +150,14 @@ end
 local function updateGui()
 	currentLabel.Text = formatNum(currentValue or 0)
 	farmedLabel.Text = formatNum(farmedTotal)
-	local elapsedMin = (os.clock() - startTime) / 60
+
 	local perMin, perHour = 0, 0
-	if elapsedMin > 0.0167 then
-		perMin = farmedTotal / elapsedMin
-		perHour = perMin * 60
+	if startTime then
+		local elapsedMin = (os.clock() - startTime) / 60
+		if elapsedMin > 0.0167 then
+			perMin = farmedTotal / elapsedMin
+			perHour = perMin * 60
+		end
 	end
 	perMinLabel.Text = "~" .. formatNum(perMin)
 	perHourLabel.Text = "~" .. formatNum(perHour)
@@ -165,25 +169,25 @@ local function onCashText(text)
 
 	if currentValue == nil then
 		currentValue = newVal
-		startTime = os.clock()
-		farmedTotal = 0
-		warmupUntil = os.clock() + WARMUP_SECONDS
 		updateGui()
 		return
 	end
 
 	if os.clock() < warmupUntil then
 		currentValue = newVal
-		startTime = os.clock()
 		updateGui()
 		return
 	end
 
 	local delta = newVal - currentValue
-	if delta > 0 and delta <= MAX_DELTA_PER_UPDATE then
+	currentValue = newVal
+
+	if delta > 0 and delta <= MAX_GAIN_PER_PICKUP then
+		if not startTime then
+			startTime = os.clock()
+		end
 		farmedTotal += delta
 	end
-	currentValue = newVal
 	updateGui()
 end
 
@@ -208,6 +212,7 @@ task.spawn(function()
 					pcall(function() _G.__CashTrackerConn:Disconnect() end)
 				end
 				warmupUntil = os.clock() + WARMUP_SECONDS
+				currentValue = nil
 				onCashText(label.Text)
 				_G.__CashTrackerConn = label:GetPropertyChangedSignal("Text"):Connect(function()
 					onCashText(label.Text)
