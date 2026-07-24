@@ -11,15 +11,23 @@ local Event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("SetPlayerMo
 local lp = Players.LocalPlayer
 local pg = lp:WaitForChild("PlayerGui")
 
-local function revive()
-    if Event then
-        Event:FireServer(true)
-    end
-end
+local lastRevive = 0
+local cooldown = 5
 
 local respawnFrame = nil
 
-local function checkGui()
+local function revive()
+    local now = tick()
+    if now - lastRevive < cooldown then
+        return
+    end
+    if Event then
+        Event:FireServer(true)
+        lastRevive = now
+    end
+end
+
+local function findRespawn()
     local gameGui = pg:FindFirstChild("Game")
     if gameGui then
         local respawn = gameGui:FindFirstChild("Respawn")
@@ -32,12 +40,10 @@ local function checkGui()
 end
 
 _G.AutoReviveConnection = game:GetService("RunService").Heartbeat:Connect(function()
-    if not _G.AutoRevive then
-        return
-    end
+    if not _G.AutoRevive then return end
     
     if not respawnFrame or not respawnFrame.Parent then
-        if not checkGui() then
+        if not findRespawn() then
             return
         end
     end
