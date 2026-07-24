@@ -1,5 +1,4 @@
 if _G.FarmScriptLoaded then
-    print("already running")
     return
 end
 
