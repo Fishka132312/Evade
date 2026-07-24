@@ -1,15 +1,13 @@
 if _G.FarmScriptLoaded then
-    print("Скрипт уже запущен!")
+    print("already running")
     return
 end
 
 _G.FarmScriptLoaded = true
 _G.FarmEvent = false
 
--- === НОВОЕ: Сигнал паузы ===
 _G.PauseFarm = function(seconds)
     _G.FarmPauseUntil = tick() + (seconds or 5)
-    print("Фарм приостановлен на " .. (seconds or 5) .. " секунд")
 end
 
 local Players = game:GetService("Players")
@@ -20,7 +18,7 @@ local wasFarming = false
 local lastTeleportTime = 0
 local TELEPORT_COOLDOWN = 0.4
 
-local _G_FarmPauseUntil = 0  -- для отслеживания паузы
+local _G_FarmPauseUntil = 0
 
 local function getRootPart()
     local char = LocalPlayer.Character
@@ -61,7 +59,6 @@ local function isEnemyNear(myPos)
     return false
 end
 
--- Платформы
 local safePlatform = Instance.new("Part")
 safePlatform.Size = Vector3.new(20, 1, 20)
 safePlatform.Anchored = true
@@ -76,7 +73,6 @@ ticketPlatform.Transparency = 0.7
 ticketPlatform.CanCollide = false
 ticketPlatform.Parent = workspace
 
--- === НОВАЯ платформа под игроком ===
 local standPlatform = Instance.new("Part")
 standPlatform.Size = Vector3.new(8, 1, 8)
 standPlatform.Anchored = true
@@ -93,7 +89,6 @@ local function disableNearbyCollisions(centerPos)
     end
 end
 
--- Обработка смерти
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
 end)
@@ -104,12 +99,10 @@ RunService.Heartbeat:Connect(function()
     local root = getRootPart()
     if not root then return end
 
-    -- Проверка паузы
     if _G.FarmPauseUntil and tick() < _G.FarmPauseUntil then
         return
     end
 
-    -- Выход из фарма
     if wasFarming and not _G.FarmEvent then
         wasFarming = false
         safePlatform.CFrame = CFrame.new(0, -10000, 0)
@@ -134,7 +127,6 @@ RunService.Heartbeat:Connect(function()
     local highCFrame = CFrame.new(safePos + Vector3.new(0, 1000, 0))
 
     if enemyNear then
-        -- === ВРАГ РЯДОМ ===
         safePlatform.CFrame = highCFrame - Vector3.new(0, 3.5, 0)
         ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
         standPlatform.CFrame = CFrame.new(0, -10000, 0)
@@ -144,7 +136,6 @@ RunService.Heartbeat:Connect(function()
             lastTeleportTime = now
         end
     else
-        -- === ФАРМ ТИКЕТОВ ===
         local ticketsFolder = workspace:FindFirstChild("Effects") and workspace.Effects:FindFirstChild("Tickets")
         local targetTicket = ticketsFolder and ticketsFolder:GetChildren()[1]
        
@@ -155,7 +146,6 @@ RunService.Heartbeat:Connect(function()
             ticketPlatform.CFrame = farmCFrame - Vector3.new(0, 3.5, 0)
             standPlatform.CFrame = farmCFrame - Vector3.new(0, 5, 0)  -- платформа под игроком
             
-            -- Отключаем коллизии вокруг тикета
             disableNearbyCollisions(ticketPos)
            
             if (root.Position - farmCFrame.Position).Magnitude > 6 and now - lastTeleportTime > TELEPORT_COOLDOWN then
@@ -163,7 +153,6 @@ RunService.Heartbeat:Connect(function()
                 lastTeleportTime = now
             end
         else
-            -- Нет тикетов
             safePlatform.CFrame = highCFrame - Vector3.new(0, 3.5, 0)
             ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
             standPlatform.CFrame = CFrame.new(0, -10000, 0)
@@ -175,5 +164,3 @@ RunService.Heartbeat:Connect(function()
         end
     end
 end)
-
-print("✅ Фарм-скрипт улучшен: отключение коллизий + платформа под игроком + пауза по сигналу!")
