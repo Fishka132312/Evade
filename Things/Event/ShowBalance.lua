@@ -13,7 +13,7 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 if _G.ShowBalance == nil then
-    _G.ShowBalance = true
+    _G.ShowBalance = false
 end
 
 local function parseCash(text)
