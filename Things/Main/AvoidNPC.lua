@@ -1,5 +1,4 @@
 if _G.AvoidNPCScriptLoaded then
-    print("aready running!")
     return
 end
 
