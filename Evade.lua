@@ -5,8 +5,9 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 local scripts = {
-  'Autofarm/AutoFarmEvent.lua',
-  'Autofarm/XPFARMPV.lua',
+  'Event/AutoFarmEvent.lua',
+  'Event/XPFARMPV.lua',
+  'Event/ShowBalance.lua',
   'Main/AvoidNPC.lua',
   'Visual/EspNPC.lua',
   'Visual/TicketESP.lua',
