@@ -1,6 +1,5 @@
--- ==================== NPC ESP (BillboardGui Version) ====================
 if _G.NPCEspScriptLoaded then
-    print("✅ NPC ESP скрипт уже запущен!")
+    print("already running")
     return
 end
 
@@ -8,7 +7,7 @@ _G.NPCEspScriptLoaded = true
 _G.EspNPC = _G.EspNPC or false
 
 local RunService = game:GetService("RunService")
-local highlights = {}   -- [npcModel] = true
+local highlights = {}
 
 local function isNPC(model)
     if not model then return false end
@@ -29,7 +28,6 @@ local function applyESP(model)
     local icon = billboard:FindFirstChild("Icon")
     if not icon then return end
     
-    -- Создаём красную обводку вокруг иконки
     local stroke = Instance.new("UIStroke")
     stroke.Name = "EspStroke"
     stroke.Color = Color3.fromRGB(255, 0, 0)
@@ -38,7 +36,6 @@ local function applyESP(model)
     stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     stroke.Parent = icon
     
-    -- Делаем иконку чуть ярче + красный оттенок
     icon.ImageColor3 = Color3.fromRGB(255, 100, 100)
     
     highlights[model] = true
@@ -55,7 +52,7 @@ local function removeESP(model)
             if icon then
                 local stroke = icon:FindFirstChild("EspStroke")
                 if stroke then stroke:Destroy() end
-                icon.ImageColor3 = Color3.fromRGB(255, 255, 255) -- возвращаем оригинальный цвет
+                icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
             end
         end
     end
@@ -77,7 +74,6 @@ local function updateESP()
         end
     end
 
-    -- Очистка
     for model, _ in pairs(highlights) do
         if not model.Parent or not isNPC(model) then
             removeESP(model)
@@ -94,6 +90,3 @@ RunService.Heartbeat:Connect(function()
     end
     updateESP()
 end)
-
-print("✅ NPC ESP через BillboardGui загружен!")
-print("   Управление: _G.EspNPC = true / false")
