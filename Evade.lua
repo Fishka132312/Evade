@@ -59,15 +59,16 @@ local Window = Library:Window({
 local EventCat = Window:Category("Event")
 local EventPage = Window:Page({
 		Name = "Summer Event 🫧",
-		Icon = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTKm0YLnnUO9uknFdZGSUt_xb7R3Cqfc3uP2poBZduIYBA06uJpaHHkAiw&s=10",
+		Icon = "https://cdn-icons-png.flaticon.com/128/839/839888.png",
 		Category = EventCat
 })
 
 --AutoFarm Event--
-local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://cdn-icons-png.flaticon.com/512/8188/8188078.png"})
+local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://cdn-icons-png.flaticon.com/128/9619/9619952.png"})
 
 AutoFarmEventSection:Button({
-    Name = "test",
+    Name = "da",
+    Icon = "https://cdn-icons-png.flaticon.com/128/9619/9619952.png"
     Callback = function()
         print("нажали")
     end
