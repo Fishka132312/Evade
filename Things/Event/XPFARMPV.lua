@@ -53,7 +53,7 @@ local function mainLoop()
         end
 
         fireCommand("!map DesertBus")
-        task.wait(1.2)
+        task.wait(0.6)
 
         waitForMapLoad()
         task.wait(0.6)
@@ -73,15 +73,15 @@ local function mainLoop()
                    timerText == "0:0" or 
                    timerText == "00:00" then
                     
-                    task.wait(2)
+                    task.wait(0.6)
                     break
                 end
             end
             
-            task.wait(2)
+            task.wait(0.6)
         end
 
-        task.wait(1)
+        task.wait(0.6)
     end
 end
 
