@@ -240,7 +240,7 @@ MiscSection:Button({
     end
 })
 
-FpsSection:Slider({
+MiscSection:Slider({
     Name = "FPS Cap",
     Tooltip = "Frame limit. Apply using the button below",
     Flag = "FpsCap",
@@ -251,7 +251,7 @@ FpsSection:Slider({
     Decimals = 1
 })
 
-FpsSection:Button({
+MiscSection:Button({
     Name = "Apply FPS Cap",
     Tooltip = "Apply the selected FPS Cap",
     Callback = function()
