@@ -33,7 +33,7 @@ local function waitForMapLoad()
         local loading = popups:WaitForChild("LoadingMap", 20)
         
         while _G.XPFARMPV and loading.Visible do
-            task.wait(0.2)
+            task.wait(0.5)
         end
     end)
 end
@@ -41,7 +41,7 @@ end
 local function mainLoop()
     while _G.XPFarmRunning do
         if not _G.XPFARMPV then
-            task.wait(0.5)
+            task.wait(1)
             continue
         end
 
@@ -49,20 +49,20 @@ local function mainLoop()
             pcall(function()
                 SetPlayerModeEvent:FireServer(true)
             end)
-            task.wait(0.5)
+            task.wait(1.5)
         end
 
         fireCommand("!map DesertBus")
-        task.wait(0.5)
+        task.wait(1.2)
 
         waitForMapLoad()
-        task.wait(0.7)
+        task.wait(0.6)
 
         fireCommand("!specialround Plushie Hell")
-        task.wait(0.7)
+        task.wait(0.6)
 
         fireCommand("!timer 0")
-        task.wait(0.5)
+        task.wait(1)
 
         while _G.XPFARMPV and _G.XPFarmRunning do
             local timerText = getRoundTimer()
@@ -73,12 +73,12 @@ local function mainLoop()
                    timerText == "0:0" or 
                    timerText == "00:00" then
                     
-                    task.wait(0.5)
+                    task.wait(2)
                     break
                 end
             end
             
-            task.wait(0.5)
+            task.wait(2)
         end
 
         task.wait(1)
@@ -87,7 +87,7 @@ end
 
 if _G.XPFarmConnection then
     _G.XPFarmRunning = false
-    task.wait(0.5)
+    task.wait(0.8)
 end
 
 _G.XPFarmRunning = true
