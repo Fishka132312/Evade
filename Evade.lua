@@ -51,7 +51,7 @@ Library:ChangeTheme("AccentGradient", Gradient)
 local Window = Library:Window({
     Name = "Evade [🌊]",
     SubName = "Meowl Sploit",
-    Logo = "129442179713871"
+    Logo = "https://i.postimg.cc/R09KZw72/Bez-imeni-1.png"
 })
 
 -------------------------Event-----------------------
