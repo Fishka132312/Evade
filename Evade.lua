@@ -9,7 +9,7 @@ local scripts = {
   'Event/XPFARMPV.lua',
   'Event/ShowBalance.lua',
   'Event/TicketESP.lua',
-  'Event/AntiDev.lua'
+  'Event/AntiDev.lua',
   'Main/AvoidNPC.lua',
   'Main/AutoRevive.lua',
   'Visual/EspNPC.lua',
