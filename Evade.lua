@@ -240,10 +240,38 @@ MiscSection:Button({
     end
 })
 
-MiscSection:Button({
-    Name = "Anti Lag",
+FpsSection:Slider({
+    Name = "FPS Cap",
+    Tooltip = "Frame limit. Apply using the button below",
+    Flag = "FpsCap",
+    Min = 25,
+    Max = 240,
+    Default = 60,
+    Suffix = " fps",
+    Decimals = 1
+})
+
+FpsSection:Button({
+    Name = "Apply FPS Cap",
+    Tooltip = "Apply the selected FPS Cap",
     Callback = function()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/Misc/AntiAfk.lua'))()
+        local Value = Library.Flags["FpsCap"]
+
+        if setfpscap then
+            setfpscap(Value)
+
+            Library:Notification({
+                Title = "Performance",
+                Description = "FPS cap выставлен на " .. Value,
+                Duration = 3
+            })
+        else
+            Library:Notification({
+                Title = "Error",
+                Description = "Твой эксплойт не поддерживает setfpscap",
+                Duration = 4
+            })
+        end
     end
 })
 
