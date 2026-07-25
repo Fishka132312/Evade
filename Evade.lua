@@ -9,6 +9,7 @@ local scripts = {
   'Event/XPFARMPV.lua',
   'Event/ShowBalance.lua',
   'Event/TicketESP.lua',
+  'Event/AntiDev.lua'
   'Main/AvoidNPC.lua',
   'Main/AutoRevive.lua',
   'Visual/EspNPC.lua',
@@ -133,6 +134,16 @@ local FarmDetailsToggle = ThingsEventSection:Toggle({
     end
 })
 
+local FarmDetailsToggle = ThingsEventSection:Toggle({
+    Name = "Anti Dev (USE IT ON PRIVATE SERVER)",
+	Tooltip = "When someone joins your PV, your game will crash",
+    Flag = "AntiDev",
+    Default = false,
+    Callback = function(Value)
+        _G.AntiDev = Value
+    end
+})
+
 
 -------------------------Game-----------------------
 
@@ -148,7 +159,7 @@ local ThingsMainSection = MainPage:Section({Name = "Things", Side = 2})
 
 ThingsMainSection:Paragraph({
     Name = "Main",
-    Text = "Basic survival functions. Enable Auto Revive if you're playing solo."
+    Text = "Basic survival functions. Enable Auto Revive if you're playing solo"
 })
 
 ThingsMainSection:Divider()
@@ -269,13 +280,13 @@ MiscSection:Button({
 
             Library:Notification({
                 Title = "Performance",
-                Description = "FPS cap выставлен на " .. Value,
+                Description = "FPS cap set to " .. Value,
                 Duration = 3
             })
         else
             Library:Notification({
                 Title = "Error",
-                Description = "Твой эксплойт не поддерживает setfpscap",
+                Description = "Exec dont support setfpscap",
                 Duration = 4
             })
         end
