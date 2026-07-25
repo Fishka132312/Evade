@@ -65,7 +65,7 @@ local EventPage = Window:Page({
 })
 
 --AutoFarm Event--
-local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://i.postimg.cc/gj06NJ76/Bez-imeni-2.png"})
+local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://i.postimg.cc/tCDF4BRx/Bez-imeni-1.png"})
 
 AutoFarmEventSection:Image({
     Id = "https://tr.rbxcdn.com/180DAY-e7de42d5d990a8c737a9720fd5ff31cc/768/432/Image/Webp/noFilter",
@@ -100,7 +100,7 @@ local XPPVFARMToggle = AutoFarmEventSection:Toggle({
     end
 })
 
-local ThingsEventSection = EventPage:Section({Name = "Things", Side = 2})
+local ThingsEventSection = EventPage:Section({Name = "Things", Side = 2, icon = "https://i.postimg.cc/cH8VsKQf/Bez-imeni-1.png"})
 
 local Disable3dRenderToggle = ThingsEventSection:Toggle({
     Name = "Disable 3d Render",
@@ -155,7 +155,7 @@ local MainPage = Window:Page({
 })
 
 --Things--
-local ThingsMainSection = MainPage:Section({Name = "Things", Side = 2})
+local ThingsMainSection = MainPage:Section({Name = "Things", Side = 2, icon = "https://i.postimg.cc/cH8VsKQf/Bez-imeni-1.png"})
 
 ThingsMainSection:Paragraph({
     Name = "Main",
@@ -216,7 +216,7 @@ local EspDownedToggle = VisualSection:Toggle({
 })
 
 --Things--
-local ThingsVisualSection = VisualPage:Section({Name = "Things", Side = 2})
+local ThingsVisualSection = VisualPage:Section({Name = "Things", Side = 2, icon = "https://i.postimg.cc/cH8VsKQf/Bez-imeni-1.png"})
 
 local EspTicketsToggle = ThingsVisualSection:Toggle({
     Name = "ad",
