@@ -66,8 +66,22 @@ local EventPage = Window:Page({
 --AutoFarm Event--
 local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://i.postimg.cc/gj06NJ76/Bez-imeni-2.png"})
 
+AutoFarmEventSection:Image({
+    Id = "https://tr.rbxcdn.com/180DAY-e7de42d5d990a8c737a9720fd5ff31cc/768/432/Image/Webp/noFilter",
+    Height = 90,
+    Rounded = true
+})
+
+AutoFarmEventSection:Paragraph({
+    Name = "Summer Event",
+    Text = "Bubble farming is recommended only on VIP servers."
+})
+
+AutoFarmEventSection:Divider()
+
 local BubblesFarmToggle = AutoFarmEventSection:Toggle({
     Name = "Bubbles Farm",
+	Tooltip = "Automatically collects event bubbles on the map",
     Flag = "TicketFarm",
     Default = false,
     Callback = function(Value)
@@ -77,6 +91,7 @@ local BubblesFarmToggle = AutoFarmEventSection:Toggle({
 
 local XPPVFARMToggle = AutoFarmEventSection:Toggle({
     Name = "PV FARM (USE IT ON PRIVATE SERVER)",
+	Tooltip = "Farm XP. ONLY PRIVATE CEPBEP and can be combined with farm bubbles",
     Flag = "PVXPFarm",
     Default = false,
     Callback = function(Value)
@@ -88,6 +103,7 @@ local ThingsEventSection = EventPage:Section({Name = "Things", Side = 2})
 
 local Disable3dRenderToggle = ThingsEventSection:Toggle({
     Name = "Disable 3d Render",
+	Tooltip = "Disables world rendering. FPS boost",
     Flag = "Disable3d",
     Default = false,
     Callback = function(Value)
@@ -99,6 +115,7 @@ local Disable3dRenderToggle = ThingsEventSection:Toggle({
 
 local EspBubblesToggle = ThingsEventSection:Toggle({
     Name = "Esp Bubbles",
+	Tooltip = "Shows bubbles through the walls",
     Flag = "EspBubbles",
     Default = false,
     Callback = function(Value)
@@ -108,13 +125,13 @@ local EspBubblesToggle = ThingsEventSection:Toggle({
 
 local FarmDetailsToggle = ThingsEventSection:Toggle({
     Name = "Farm Details",
+	Tooltip = "Shows the amount of bubbles and the collection speed per min, per hour",
     Flag = "FarmDetails",
     Default = false,
     Callback = function(Value)
         _G.ShowBalance = Value
     end
 })
-
 
 
 -------------------------Main-----------------------
@@ -129,8 +146,16 @@ local MainPage = Window:Page({
 --Things--
 local ThingsMainSection = MainPage:Section({Name = "Things", Side = 2})
 
+ThingsMainSection:Paragraph({
+    Name = "Main",
+    Text = "Basic survival functions. Enable Auto Revive if you're playing solo."
+})
+
+ThingsMainSection:Divider()
+
 local ThingsToggle = ThingsMainSection:Toggle({
     Name = "Evoid NPC",
+	Tooltip = "If nextbot is in 10 studs, teleport to the safe zone and return in 5 seconds",
     Flag = "EvoidNPC",
     Default = false,
     Callback = function(Value)
@@ -140,6 +165,7 @@ local ThingsToggle = ThingsMainSection:Toggle({
 
 local ThingsToggle = ThingsMainSection:Toggle({
     Name = "Auto Revive (Self)",
+	Tooltip = "Automatically revives when you're down",
     Flag = "AutoReviveSelf",
     Default = false,
     Callback = function(Value)
@@ -160,6 +186,7 @@ local VisualSection = VisualPage:Section({Name = "Visual", Side = 1, Icon = "htt
 
 local EspNpcToggle = VisualSection:Toggle({
     Name = "Esp NPC",
+	Tooltip = "Shows nextbots through the walls",
     Flag = "EspNPC",
     Default = false,
     Callback = function(Value)
@@ -169,6 +196,7 @@ local EspNpcToggle = VisualSection:Toggle({
 
 local EspDownedToggle = VisualSection:Toggle({
     Name = "Esp Downed",
+	Tooltip = "Shows the people through the walls who got downed",
     Flag = "DownedEsp",
     Default = false,
     Callback = function(Value)
@@ -188,6 +216,9 @@ local EspTicketsToggle = ThingsVisualSection:Toggle({
 })
 
 local SettingsCat = Window:Category("Settings")
+
+local UiPage = Library:CreateUiPage(Window)
+table.insert(SettingsCat.Elements, UiPage)
 local SettingsPage = Library:CreateSettingsPage(Window, KeybindList)
 table.insert(SettingsCat.Elements, SettingsPage)
 Window:Init()
