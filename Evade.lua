@@ -219,12 +219,12 @@ local EspTicketsToggle = ThingsVisualSection:Toggle({
 
 local MiscPage = Window:Page({
 		Name = "Misc",
-		Icon = "https://i.postimg.cc/8zCNcv6R/Bez-imeni-2.png",
+		Icon = "https://i.postimg.cc/CxnfNm71/Bez-imeni-1.png",
 		Category = GameCat
 })
 
 --Misc--
-local MiscSection = MiscPage:Section({Name = "Misc", Side = 1, Icon = "https://i.postimg.cc/8zCNcv6R/Bez-imeni-2.png"})
+local MiscSection = MiscPage:Section({Name = "Misc", Side = 1, Icon = "https://i.postimg.cc/CxnfNm71/Bez-imeni-1.png"})
 
 MiscSection:Button({
     Name = "Anti Afk",
