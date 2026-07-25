@@ -134,13 +134,13 @@ local FarmDetailsToggle = ThingsEventSection:Toggle({
 })
 
 
--------------------------Main-----------------------
+-------------------------Game-----------------------
 
-local MainCat = Window:Category("Main")
+local GameCat = Window:Category("Game")
 local MainPage = Window:Page({
 		Name = "Main",
 		Icon = "https://i.postimg.cc/ZYy9YGSk/Bez-imeni-2.png",
-		Category = MainCat
+		Category = GameCat
 })
 
 --Things--
@@ -178,7 +178,7 @@ local ThingsToggle = ThingsMainSection:Toggle({
 local VisualPage = Window:Page({
 		Name = "Visual",
 		Icon = "https://i.postimg.cc/8zCNcv6R/Bez-imeni-2.png",
-		Category = MainCat
+		Category = GameCat
 })
 
 --Visual--
@@ -212,6 +212,38 @@ local EspTicketsToggle = ThingsVisualSection:Toggle({
     Flag = "EspTickets",
     Default = false,
     Callback = function(Value)
+    end
+})
+
+-------------------------Misc-----------------------
+
+local MiscPage = Window:Page({
+		Name = "Misc",
+		Icon = "https://i.postimg.cc/8zCNcv6R/Bez-imeni-2.png",
+		Category = GameCat
+})
+
+--Misc--
+local MiscSection = MiscPage:Section({Name = "Misc", Side = 1, Icon = "https://i.postimg.cc/8zCNcv6R/Bez-imeni-2.png"})
+
+MiscSection:Button({
+    Name = "Anti Afk",
+    Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/Misc/AntiAfk.lua'))()
+    end
+})
+
+MiscSection:Button({
+    Name = "Anti Lag",
+    Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/Misc/AntiLag.lua'))()
+    end
+})
+
+MiscSection:Button({
+    Name = "Anti Lag",
+    Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/Misc/AntiAfk.lua'))()
     end
 })
 
