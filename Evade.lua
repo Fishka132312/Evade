@@ -240,6 +240,13 @@ MiscSection:Button({
     end
 })
 
+MiscSection:Button({
+    Name = "Remote Spy",
+    Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/Fishka132312/Evade/refs/heads/main/Things/Misc/RemoteSpy.lua'))()
+    end
+})
+
 MiscSection:Slider({
     Name = "FPS Cap",
     Tooltip = "Frame limit. Apply using the button below",
