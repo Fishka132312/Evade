@@ -1,94 +1,160 @@
-_G.XPFARMPV = _G.XPFARMPV or false
-_G.XPFarmRunning = false
+_G.XPFarm = _G.XPFarm or {}
+local F = _G.XPFarm
+
+if F.thread then pcall(task.cancel, F.thread) end
+F.gen = (F.gen or 0) + 1
+F.enabled = false
+F.config = {
+	cycleCooldown  = 30,
+	postRoundDelay = 3,
+	map            = "DesertBus",
+	specialRound   = "Plushie Hell",
+	mapLoadTimeout = 30,
+	roundTimeout   = 180,
+	pollRate       = 0.35,
+}
+
+local cfg   = F.config
+local myGen = F.gen
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LocalPlayer = Players.LocalPlayer
+local RS      = game:GetService("ReplicatedStorage")
+local LP      = Players.LocalPlayer
 
-local AdminCommand = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Admin"):WaitForChild("Command")
-local SetPlayerModeEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("SetPlayerMode")
+local function alive() return F.enabled and F.gen == myGen end
 
-local function fireCommand(cmd)
-    pcall(function()
-        AdminCommand:FireServer(cmd)
-    end)
+local function log(...) warn("[XPFarm]", ...) end
+
+local Events = RS:WaitForChild("Events", 10)
+if not Events then return log("Events не найден") end
+local Admin = Events:WaitForChild("Admin", 10)
+local AdminCommand = Admin and Admin:WaitForChild("Command", 10)
+local SetPlayerMode = Events:WaitForChild("SetPlayerMode", 10)
+if not (AdminCommand and SetPlayerMode) then return log("ремоуты не найдены") end
+
+local function cmd(text)
+	local ok, err = pcall(AdminCommand.FireServer, AdminCommand, text)
+	if not ok then log("ошибка команды", text, err) end
+	return ok
 end
 
-local function isInLobby()
-    return LocalPlayer.PlayerGui:FindFirstChild("Game") ~= nil
+local function waitUntil(fn, timeout, step)
+	local t0 = os.clock()
+	while alive() do
+		local ok, res = pcall(fn)
+		if ok and res then return true end
+		if os.clock() - t0 >= timeout then return false end
+		task.wait(step or 0.15)
+	end
+	return false
 end
 
-local function getRoundTimer()
-    local success, text = pcall(function()
-        local gui = LocalPlayer.PlayerGui:FindFirstChild("Game")
-        if not gui then return nil end
-        return gui.HUD.Overlay.RoundOverlay.RoundTimer.IngameRoundTimer.Timer.Text
-    end)
-    return success and text or nil
+local function sleep(seconds)
+	local t0 = os.clock()
+	while alive() and os.clock() - t0 < seconds do
+		task.wait(0.2)
+	end
+	return alive()
+end
+
+local function gameHud()
+	return LP.PlayerGui:FindFirstChild("Game")
+end
+
+local function secondsLeft()
+	local gui = gameHud()
+	if not gui then return nil end
+	local ok, text = pcall(function()
+		return gui.HUD.Overlay.RoundOverlay.RoundTimer.IngameRoundTimer.Timer.Text
+	end)
+	if not ok or type(text) ~= "string" then return nil end
+	local m, s = text:match("(%d+)%s*:%s*(%d+)")
+	if m then return tonumber(m) * 60 + tonumber(s) end
+	return tonumber(text:match("%d+"))
 end
 
 local function waitForMapLoad()
-    pcall(function()
-        local popups = LocalPlayer.PlayerGui:WaitForChild("Shared", 10):WaitForChild("Popups", 10)
-        local loading = popups:WaitForChild("LoadingMap", 20)
-        
-        while _G.XPFARMPV and loading.Visible do
-            task.wait(0.5)
-        end
-    end)
+	local function loadingGui()
+		local shared = LP.PlayerGui:FindFirstChild("Shared")
+		local popups = shared and shared:FindFirstChild("Popups")
+		return popups and popups:FindFirstChild("LoadingMap")
+	end
+
+	waitUntil(function()
+		local g = loadingGui()
+		return g and g.Visible
+	end, 5)
+
+	local done = waitUntil(function()
+		local g = loadingGui()
+		return (not g) or (not g.Visible)
+	end, cfg.mapLoadTimeout, 0.25)
+
+	if not done then log("таймаут загрузки карты") end
+
+	if not waitUntil(gameHud, 10) then
+		log("HUD не появился")
+		return false
+	end
+	return true
 end
 
-local function mainLoop()
-    while _G.XPFarmRunning do
-        if not _G.XPFARMPV then
-            task.wait(1)
-            continue
-        end
-
-        if not isInLobby() then
-            pcall(function()
-                SetPlayerModeEvent:FireServer(true)
-            end)
-            task.wait(1.5)
-        end
-
-        fireCommand("!map DesertBus")
-        task.wait(0.6)
-
-        waitForMapLoad()
-        task.wait(0.6)
-
-        fireCommand("!specialround Plushie Hell")
-        task.wait(0.6)
-
-        fireCommand("!timer 0")
-        task.wait(1)
-
-        while _G.XPFARMPV and _G.XPFarmRunning do
-            local timerText = getRoundTimer()
-            
-            if timerText then
-                if timerText == "0:01" or 
-                   timerText == "0:00" or 
-                   timerText == "0:0" or 
-                   timerText == "00:00" then
-                    
-                    task.wait(1)
-                    break
-                end
-            end
-            
-            task.wait(1)
-        end
-
-        task.wait(1)
-    end
+local function waitRoundEnd()
+	local t0, sawTimer = os.clock(), false
+	while alive() do
+		local left = secondsLeft()
+		if left then
+			sawTimer = true
+			if left <= 1 then
+				sleep(1)
+				return true
+			end
+		elseif sawTimer then
+			return true
+		end
+		if os.clock() - t0 > cfg.roundTimeout then
+			log("таймаут раунда, иду на новый цикл")
+			return false
+		end
+		task.wait(cfg.pollRate)
+	end
+	return false
 end
 
-if _G.XPFarmConnection then
-    _G.XPFarmRunning = false
-    task.wait(0.8)
-end
+F.thread = task.spawn(function()
+	log("запущен, кулдаун цикла:", cfg.cycleCooldown, "сек")
 
-_G.XPFarmRunning = true
-_G.XPFarmConnection = task.spawn(mainLoop)
+	while alive() do
+		local cycleStart = os.clock()
+
+		if not gameHud() then
+			pcall(SetPlayerMode.FireServer, SetPlayerMode, true)
+			if not sleep(2) then break end
+		end
+
+		cmd("!map " .. cfg.map)
+		if not sleep(1) then break end
+
+		if waitForMapLoad() then
+			if not sleep(1) then break end
+			cmd("!specialround " .. cfg.specialRound)
+			if not sleep(1.5) then break end
+			cmd("!timer 0")
+			if not sleep(1.5) then break end
+
+			waitRoundEnd()
+			if not sleep(cfg.postRoundDelay) then break end
+		else
+			if not sleep(5) then break end
+		end
+
+		local elapsed = os.clock() - cycleStart
+		local remaining = cfg.cycleCooldown - elapsed
+		if remaining > 0 then
+			log(("цикл занял %.1f сек, жду ещё %.1f"):format(elapsed, remaining))
+			if not sleep(remaining) then break end
+		end
+	end
+
+	log("остановлен")
+end)
