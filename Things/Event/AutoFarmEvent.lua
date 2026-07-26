@@ -1,165 +1,250 @@
-if _G.FarmScriptLoaded then
-    return
-end
+if _G.FarmUnload then pcall(_G.FarmUnload) end
 
-_G.FarmScriptLoaded = true
-_G.FarmEvent = false
-
-_G.PauseFarm = function(seconds)
-    _G.FarmPauseUntil = tick() + (seconds or 5)
-end
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local LP         = Players.LocalPlayer
 
-local wasFarming = false
-local lastTeleportTime = 0
-local TELEPORT_COOLDOWN = 0.4
+if _G.FarmEvent == nil then _G.FarmEvent = false end
+_G.FarmPauseUntil = 0
 
-local _G_FarmPauseUntil = 0
+_G.PauseFarm  = function(sec) _G.FarmPauseUntil = os.clock() + (sec or 5) end
+_G.ResumeFarm = function() _G.FarmPauseUntil = 0 end
 
-local function getRootPart()
-    local char = LocalPlayer.Character
-    if char then
-        return char:FindFirstChild("HumanoidRootPart")
-    end
-    return nil
+local CFG = {
+	enemyRadius      = 22,
+	teleportCooldown = 0.4,
+	scanInterval     = 0.25,
+	collisionRange   = 15,
+	safeHeight       = 1000,
+}
+
+local connections, parts = {}, {}
+local wasFarming, lastTeleport, lastScan = false, 0, 0
+local enemyNearCached = false
+local collisionMemory = {}
+
+local HIDDEN = CFrame.new(0, -10000, 0)
+
+local function makePlatform(size, collide, transparency)
+	local p = Instance.new("Part")
+	p.Size        = size
+	p.Anchored    = true
+	p.CanCollide  = collide
+	p.Transparency= transparency
+	p.CastShadow  = false
+	p.CanQuery    = false
+	p.Locked      = true
+	p.CFrame      = HIDDEN
+	p.Parent      = workspace
+	table.insert(parts, p)
+	return p
 end
 
-local function isCharacterAlive()
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChild("Humanoid")
-    return hum and hum.Health > 0
+local safePlatform  = makePlatform(Vector3.new(20, 1, 20), true, 0.7)
+local standPlatform = makePlatform(Vector3.new(8, 1, 8),  true, 0.6)
+
+local function hidePlatforms()
+	safePlatform.CFrame  = HIDDEN
+	standPlatform.CFrame = HIDDEN
+end
+
+local function restoreCollisions()
+	for part, original in pairs(collisionMemory) do
+		if part.Parent then
+			pcall(function() part.CanCollide = original end)
+		end
+	end
+	table.clear(collisionMemory)
+end
+
+local function disableNearbyCollisions(centerPos)
+	local ok, found = pcall(function()
+		return workspace:GetPartBoundsInRadius(centerPos, CFG.collisionRange)
+	end)
+	if not ok or not found then return end
+
+	for _, obj in ipairs(found) do
+		if obj:IsA("BasePart") and not obj.Anchored and obj.CanCollide
+			and not obj:IsDescendantOf(LP.Character or workspace)
+			and collisionMemory[obj] == nil then
+			collisionMemory[obj] = obj.CanCollide
+			obj.CanCollide = false
+		end
+	end
+end
+
+local function getRoot()
+	local char = LP.Character
+	return char and char:FindFirstChild("HumanoidRootPart") or nil
+end
+
+local function isAlive()
+	local char = LP.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	return hum ~= nil and hum.Health > 0
+end
+
+local function teleport(root, cframe)
+	root.CFrame = cframe
+	pcall(function()
+		root.AssemblyLinearVelocity = Vector3.zero
+		root.AssemblyAngularVelocity = Vector3.zero
+	end)
+	lastTeleport = os.clock()
 end
 
 local function getRandomSpawn()
-    local spawns = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Parts") and workspace.Map.Parts:FindFirstChild("Spawns")
-    if spawns then
-        local children = spawns:GetChildren()
-        if #children > 0 then
-            return children[math.random(1, #children)]
-        end
-    end
-    return nil
+	local map = workspace:FindFirstChild("Map")
+	local partsFolder = map and map:FindFirstChild("Parts")
+	local spawns = partsFolder and partsFolder:FindFirstChild("Spawns")
+	if not spawns then return nil end
+
+	local valid = {}
+	for _, child in ipairs(spawns:GetChildren()) do
+		if child:IsA("PVInstance") then table.insert(valid, child) end
+	end
+	if #valid == 0 then return nil end
+	return valid[math.random(1, #valid)]
+end
+
+local function getNearestTicket(myPos)
+	local effects = workspace:FindFirstChild("Effects")
+	local folder = effects and effects:FindFirstChild("Tickets")
+	if not folder then return nil end
+
+	local best, bestDist = nil, math.huge
+	for _, child in ipairs(folder:GetChildren()) do
+		if child:IsA("PVInstance") then
+			local ok, pos = pcall(function() return child:GetPivot().Position end)
+			if ok then
+				local d = (pos - myPos).Magnitude
+				if d < bestDist then best, bestDist = pos, d end
+			end
+		end
+	end
+	return best
 end
 
 local function isEnemyNear(myPos)
-    local playersFolder = workspace:FindFirstChild("Players")
-    if not playersFolder then return false end
-    for _, model in ipairs(playersFolder:GetChildren()) do
-        if model.Name ~= LocalPlayer.Name and model:FindFirstChild("HumanoidRootPart") then
-            local dist = (model.HumanoidRootPart.Position - myPos).Magnitude
-            if dist <= 22 then
-                return true
-            end
-        end
-    end
-    return false
+	local folder = workspace:FindFirstChild("Players")
+	if not folder then return false end
+
+	for _, model in ipairs(folder:GetChildren()) do
+		if model ~= LP.Character and model.Name ~= LP.Name then
+			local r = model:FindFirstChild("HumanoidRootPart")
+			local hum = model:FindFirstChildOfClass("Humanoid")
+			if r and (not hum or hum.Health > 0)
+				and (r.Position - myPos).Magnitude <= CFG.enemyRadius then
+				return true
+			end
+		end
+	end
+	return false
 end
 
-local safePlatform = Instance.new("Part")
-safePlatform.Size = Vector3.new(20, 1, 20)
-safePlatform.Anchored = true
-safePlatform.Transparency = 0.7
-safePlatform.CanCollide = true
-safePlatform.Parent = workspace
-
-local ticketPlatform = Instance.new("Part")
-ticketPlatform.Size = Vector3.new(10, 1, 10)
-ticketPlatform.Anchored = true
-ticketPlatform.Transparency = 0.7
-ticketPlatform.CanCollide = false
-ticketPlatform.Parent = workspace
-
-local standPlatform = Instance.new("Part")
-standPlatform.Size = Vector3.new(8, 1, 8)
-standPlatform.Anchored = true
-standPlatform.Transparency = 0.6
-standPlatform.CanCollide = true
-standPlatform.Parent = workspace
-
-local function disableNearbyCollisions(centerPos)
-    local range = 15
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and not obj.Anchored and (obj.Position - centerPos).Magnitude <= range then
-            obj.CanCollide = false
-        end
-    end
+local function safeCFrame()
+	local map = workspace:FindFirstChild("Map")
+	local zones = map and map:FindFirstChild("SafeZones")
+	local base = Vector3.new(0, 0, 0)
+	if zones and zones:IsA("PVInstance") then
+		local ok, pivot = pcall(function() return zones:GetPivot().Position end)
+		if ok then base = pivot end
+	end
+	return CFrame.new(base + Vector3.new(0, CFG.safeHeight, 0))
 end
 
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.5)
-end)
+local function stopFarming(root)
+	wasFarming = false
+	hidePlatforms()
+	restoreCollisions()
+	if root then
+		local spawnPoint = getRandomSpawn()
+		if spawnPoint then
+			local ok, pos = pcall(function() return spawnPoint:GetPivot().Position end)
+			if ok then teleport(root, CFrame.new(pos + Vector3.new(0, 5, 0))) end
+		end
+	end
+end
 
-RunService.Heartbeat:Connect(function()
-    if not isCharacterAlive() then return end
-   
-    local root = getRootPart()
-    if not root then return end
+local function onHeartbeat()
+	local farming = _G.FarmEvent == true
+	local paused  = os.clock() < (_G.FarmPauseUntil or 0)
+	local root    = getRoot()
 
-    if _G.FarmPauseUntil and tick() < _G.FarmPauseUntil then
-        return
-    end
+	if (not farming) or paused or (not isAlive()) then
+		if wasFarming then
+			stopFarming((not paused) and isAlive() and root or nil)
+		end
+		return
+	end
 
-    if wasFarming and not _G.FarmEvent then
-        wasFarming = false
-        safePlatform.CFrame = CFrame.new(0, -10000, 0)
-        ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
-        standPlatform.CFrame = CFrame.new(0, -10000, 0)
-       
-        local spawnPoint = getRandomSpawn()
-        if spawnPoint then
-            root.CFrame = CFrame.new(spawnPoint:GetPivot().Position + Vector3.new(0, 5, 0))
-        end
-        return
-    end
+	if not root then return end
+	wasFarming = true
 
-    wasFarming = _G.FarmEvent
-    if not _G.FarmEvent then return end
+	local now = os.clock()
+	local high = safeCFrame()
 
-    local now = tick()
-    local enemyNear = isEnemyNear(root.Position)
-   
-    local safeZoneMap = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("SafeZones")
-    local safePos = safeZoneMap and safeZoneMap:GetPivot().Position or Vector3.new(0, 1000, 0)
-    local highCFrame = CFrame.new(safePos + Vector3.new(0, 1000, 0))
+	if now - lastScan >= CFG.scanInterval then
+		lastScan = now
+		enemyNearCached = isEnemyNear(root.Position)
+	end
 
-    if enemyNear then
-        safePlatform.CFrame = highCFrame - Vector3.new(0, 3.5, 0)
-        ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
-        standPlatform.CFrame = CFrame.new(0, -10000, 0)
-       
-        if (root.Position - highCFrame.Position).Magnitude > 15 and now - lastTeleportTime > TELEPORT_COOLDOWN then
-            root.CFrame = highCFrame
-            lastTeleportTime = now
-        end
-    else
-        local ticketsFolder = workspace:FindFirstChild("Effects") and workspace.Effects:FindFirstChild("Tickets")
-        local targetTicket = ticketsFolder and ticketsFolder:GetChildren()[1]
-       
-        if targetTicket then
-            local ticketPos = targetTicket:GetPivot().Position
-            local farmCFrame = CFrame.new(ticketPos - Vector3.new(0, 4.5, 0))
-           
-            ticketPlatform.CFrame = farmCFrame - Vector3.new(0, 3.5, 0)
-            standPlatform.CFrame = farmCFrame - Vector3.new(0, 5, 0)  -- платформа под игроком
-            
-            disableNearbyCollisions(ticketPos)
-           
-            if (root.Position - farmCFrame.Position).Magnitude > 6 and now - lastTeleportTime > TELEPORT_COOLDOWN then
-                root.CFrame = farmCFrame
-                lastTeleportTime = now
-            end
-        else
-            safePlatform.CFrame = highCFrame - Vector3.new(0, 3.5, 0)
-            ticketPlatform.CFrame = CFrame.new(0, -10000, 0)
-            standPlatform.CFrame = CFrame.new(0, -10000, 0)
-           
-            if (root.Position - highCFrame.Position).Magnitude > 15 and now - lastTeleportTime > TELEPORT_COOLDOWN then
-                root.CFrame = highCFrame
-                lastTeleportTime = now
-            end
-        end
-    end
-end)
+	local function goSafe()
+		safePlatform.CFrame  = high - Vector3.new(0, 3.5, 0)
+		standPlatform.CFrame = HIDDEN
+		if (root.Position - high.Position).Magnitude > 15
+			and now - lastTeleport > CFG.teleportCooldown then
+			teleport(root, high)
+		end
+	end
+
+	if enemyNearCached then
+		restoreCollisions()
+		goSafe()
+		return
+	end
+
+	local ticketPos = getNearestTicket(root.Position)
+	if not ticketPos then
+		goSafe()
+		return
+	end
+
+	local farmCFrame = CFrame.new(ticketPos - Vector3.new(0, 4.5, 0))
+	standPlatform.CFrame = farmCFrame - Vector3.new(0, 5, 0)
+	safePlatform.CFrame  = HIDDEN
+
+	if now - lastScan < 0.01 then
+		disableNearbyCollisions(ticketPos)
+	end
+
+	if (root.Position - farmCFrame.Position).Magnitude > 6
+		and now - lastTeleport > CFG.teleportCooldown then
+		teleport(root, farmCFrame)
+	end
+end
+
+local errorCount = 0
+table.insert(connections, RunService.Heartbeat:Connect(function()
+	local ok, err = pcall(onHeartbeat)
+	if not ok then
+		errorCount += 1
+		if errorCount <= 5 then warn("[Farm] ошибка:", err) end
+	end
+end))
+
+table.insert(connections, LP.CharacterAdded:Connect(function()
+	task.wait(0.5)
+	hidePlatforms()
+	restoreCollisions()
+	wasFarming = false
+end))
+
+_G.FarmUnload = function()
+	for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
+	table.clear(connections)
+	restoreCollisions()
+	for _, p in ipairs(parts) do pcall(function() p:Destroy() end) end
+	table.clear(parts)
+	_G.FarmUnload = nil
+end
