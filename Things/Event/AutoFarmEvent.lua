@@ -1,54 +1,76 @@
 if _G.FarmUnload then pcall(_G.FarmUnload) end
 
-local Players    = game:GetService("Players")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local LP         = Players.LocalPlayer
+local LP = Players.LocalPlayer
 
 if _G.FarmEvent == nil then _G.FarmEvent = false end
 _G.FarmPauseUntil = 0
-
-_G.PauseFarm  = function(sec) _G.FarmPauseUntil = os.clock() + (sec or 5) end
+_G.PauseFarm = function(sec) _G.FarmPauseUntil = os.clock() + (sec or 5) end
 _G.ResumeFarm = function() _G.FarmPauseUntil = 0 end
 
 local CFG = {
-	enemyRadius      = 22,
+	enemyRadius = 22,
 	teleportCooldown = 0.4,
-	scanInterval     = 0.25,
-	collisionRange   = 15,
-	safeHeight       = 1000,
+	scanInterval = 0.25,
+	clearRadius = 18,
+	safeHeight = 1000,
 }
 
-local connections, parts = {}, {}
-local wasFarming, lastTeleport, lastScan = false, 0, 0
-local enemyNearCached = false
-local collisionMemory = {}
-
 local HIDDEN = CFrame.new(0, -10000, 0)
+local connections, ownParts = {}, {}
+local collisionMemory = {}
+local wasFarming, lastTeleport, lastScan, enemyNear = false, 0, 0, false
+local atTicket = false
 
-local function makePlatform(size, collide, transparency)
+local function makePlatform(size, transparency)
 	local p = Instance.new("Part")
-	p.Size        = size
-	p.Anchored    = true
-	p.CanCollide  = collide
-	p.Transparency= transparency
-	p.CastShadow  = false
-	p.CanQuery    = false
-	p.Locked      = true
-	p.CFrame      = HIDDEN
-	p.Parent      = workspace
-	table.insert(parts, p)
+	p.Size = size
+	p.Anchored = true
+	p.CanCollide = true
+	p.Transparency = transparency
+	p.CastShadow = false
+	p.CanQuery = false
+	p.Locked = true
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.CFrame = HIDDEN
+	p.Parent = workspace
+	table.insert(ownParts, p)
 	return p
 end
 
-local safePlatform  = makePlatform(Vector3.new(20, 1, 20), true, 0.7)
-local standPlatform = makePlatform(Vector3.new(8, 1, 8),  true, 0.6)
+local safePlatform = makePlatform(Vector3.new(20, 1, 20), 0.7)
+local standPlatform = makePlatform(Vector3.new(10, 1, 10), 0.6)
 
-local function hidePlatforms()
-	safePlatform.CFrame  = HIDDEN
-	standPlatform.CFrame = HIDDEN
+local function isOwn(obj)
+	for _, p in ipairs(ownParts) do
+		if obj == p then return true end
+	end
+	return false
 end
 
-local function restoreCollisions()
+local function getRoot()
+	local char = LP.Character
+	return char and char:FindFirstChild("HumanoidRootPart") or nil
+end
+
+local function getHumanoid()
+	local char = LP.Character
+	return char and char:FindFirstChildOfClass("Humanoid") or nil
+end
+
+local function isAlive()
+	local hum = getHumanoid()
+	return hum ~= nil and hum.Health > 0
+end
+
+local function rootOffset()
+	local hum = getHumanoid()
+	if hum and hum.RigType == Enum.HumanoidRigType.R15 then return 3.5 end
+	return 3
+end
+
+local function restoreArea()
 	for part, original in pairs(collisionMemory) do
 		if part.Parent then
 			pcall(function() part.CanCollide = original end)
@@ -57,40 +79,41 @@ local function restoreCollisions()
 	table.clear(collisionMemory)
 end
 
-local function disableNearbyCollisions(centerPos)
+local function clearArea(pos)
 	local ok, found = pcall(function()
-		return workspace:GetPartBoundsInRadius(centerPos, CFG.collisionRange)
+		return workspace:GetPartBoundsInRadius(pos, CFG.clearRadius)
 	end)
 	if not ok or not found then return end
 
+	local char = LP.Character
 	for _, obj in ipairs(found) do
-		if obj:IsA("BasePart") and not obj.Anchored and obj.CanCollide
-			and not obj:IsDescendantOf(LP.Character or workspace)
+		if obj:IsA("BasePart") and obj.CanCollide and not isOwn(obj)
+			and not (char and obj:IsDescendantOf(char))
 			and collisionMemory[obj] == nil then
-			collisionMemory[obj] = obj.CanCollide
+			collisionMemory[obj] = true
 			obj.CanCollide = false
 		end
 	end
 end
 
-local function getRoot()
-	local char = LP.Character
-	return char and char:FindFirstChild("HumanoidRootPart") or nil
-end
+local function teleport(root, cframe, clear)
+	if clear then
+		clearArea(cframe.Position)
+	else
+		restoreArea()
+	end
 
-local function isAlive()
-	local char = LP.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	return hum ~= nil and hum.Health > 0
-end
-
-local function teleport(root, cframe)
 	root.CFrame = cframe
 	pcall(function()
 		root.AssemblyLinearVelocity = Vector3.zero
 		root.AssemblyAngularVelocity = Vector3.zero
 	end)
 	lastTeleport = os.clock()
+end
+
+local function hidePlatforms()
+	safePlatform.CFrame = HIDDEN
+	standPlatform.CFrame = HIDDEN
 end
 
 local function getRandomSpawn()
@@ -155,21 +178,32 @@ end
 
 local function stopFarming(root)
 	wasFarming = false
+	atTicket = false
 	hidePlatforms()
-	restoreCollisions()
+	restoreArea()
+
 	if root then
 		local spawnPoint = getRandomSpawn()
 		if spawnPoint then
 			local ok, pos = pcall(function() return spawnPoint:GetPivot().Position end)
-			if ok then teleport(root, CFrame.new(pos + Vector3.new(0, 5, 0))) end
+			if ok then
+				local dest = CFrame.new(pos + Vector3.new(0, rootOffset() + 2, 0))
+				clearArea(dest.Position)
+				root.CFrame = dest
+				pcall(function()
+					root.AssemblyLinearVelocity = Vector3.zero
+					root.AssemblyAngularVelocity = Vector3.zero
+				end)
+				task.delay(0.35, restoreArea)
+			end
 		end
 	end
 end
 
 local function onHeartbeat()
 	local farming = _G.FarmEvent == true
-	local paused  = os.clock() < (_G.FarmPauseUntil or 0)
-	local root    = getRoot()
+	local paused = os.clock() < (_G.FarmPauseUntil or 0)
+	local root = getRoot()
 
 	if (not farming) or paused or (not isAlive()) then
 		if wasFarming then
@@ -182,24 +216,31 @@ local function onHeartbeat()
 	wasFarming = true
 
 	local now = os.clock()
+	local offset = rootOffset()
 	local high = safeCFrame()
+	local doScan = now - lastScan >= CFG.scanInterval
 
-	if now - lastScan >= CFG.scanInterval then
+	if doScan then
 		lastScan = now
-		enemyNearCached = isEnemyNear(root.Position)
+		enemyNear = isEnemyNear(root.Position)
 	end
 
 	local function goSafe()
-		safePlatform.CFrame  = high - Vector3.new(0, 3.5, 0)
+		safePlatform.CFrame = high - Vector3.new(0, offset + 0.5, 0)
 		standPlatform.CFrame = HIDDEN
+
+		if atTicket then
+			restoreArea()
+			atTicket = false
+		end
+
 		if (root.Position - high.Position).Magnitude > 15
 			and now - lastTeleport > CFG.teleportCooldown then
-			teleport(root, high)
+			teleport(root, high, false)
 		end
 	end
 
-	if enemyNearCached then
-		restoreCollisions()
+	if enemyNear then
 		goSafe()
 		return
 	end
@@ -210,41 +251,44 @@ local function onHeartbeat()
 		return
 	end
 
-	local farmCFrame = CFrame.new(ticketPos - Vector3.new(0, 4.5, 0))
-	standPlatform.CFrame = farmCFrame - Vector3.new(0, 5, 0)
-	safePlatform.CFrame  = HIDDEN
+	local dest = CFrame.new(ticketPos - Vector3.new(0, 4.5, 0))
+	standPlatform.CFrame = dest - Vector3.new(0, offset + 0.5, 0)
+	safePlatform.CFrame = HIDDEN
 
-	if now - lastScan < 0.01 then
-		disableNearbyCollisions(ticketPos)
-	end
+	local far = (root.Position - dest.Position).Magnitude > 6
 
-	if (root.Position - farmCFrame.Position).Magnitude > 6
-		and now - lastTeleport > CFG.teleportCooldown then
-		teleport(root, farmCFrame)
+	if far and now - lastTeleport > CFG.teleportCooldown then
+		teleport(root, dest, true)
+		atTicket = true
+	elseif atTicket and doScan then
+		clearArea(dest.Position)
 	end
 end
 
-local errorCount = 0
+local errorLimit = 0
 table.insert(connections, RunService.Heartbeat:Connect(function()
-	local ok, err = pcall(onHeartbeat)
+	local ok = pcall(onHeartbeat)
 	if not ok then
-		errorCount += 1
-		if errorCount <= 5 then warn("[Farm] ошибка:", err) end
+		errorLimit += 1
+		if errorLimit > 200 then
+			_G.FarmEvent = false
+		end
 	end
 end))
 
 table.insert(connections, LP.CharacterAdded:Connect(function()
 	task.wait(0.5)
 	hidePlatforms()
-	restoreCollisions()
+	restoreArea()
 	wasFarming = false
+	atTicket = false
 end))
 
 _G.FarmUnload = function()
 	for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
 	table.clear(connections)
-	restoreCollisions()
-	for _, p in ipairs(parts) do pcall(function() p:Destroy() end) end
-	table.clear(parts)
+	restoreArea()
+	for _, p in ipairs(ownParts) do pcall(function() p:Destroy() end) end
+	table.clear(ownParts)
 	_G.FarmUnload = nil
 end
