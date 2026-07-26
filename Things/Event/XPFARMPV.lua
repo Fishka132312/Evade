@@ -1,12 +1,18 @@
+--=====================  XP FARM (v3)  =====================--
+-- Стоп:      _G.XPFarm.enabled = false
+-- Настройки: _G.XPFarm.config.cycleCooldown = 45
+--===========================================================--
+
 _G.XPFarm = _G.XPFarm or {}
 local F = _G.XPFarm
 
+-- 1) корректно гасим прошлую копию (главный источник "двойных команд")
 if F.thread then pcall(task.cancel, F.thread) end
 F.gen = (F.gen or 0) + 1
-F.enabled = false
+F.enabled = true
 F.config = {
-	cycleCooldown  = 30,
-	postRoundDelay = 3,
+	cycleCooldown  = 30,   -- МИНИМУМ секунд между началами циклов
+	postRoundDelay = 3,    -- пауза после конца раунда, до новой команды
 	map            = "DesertBus",
 	specialRound   = "Plushie Hell",
 	mapLoadTimeout = 30,
@@ -25,6 +31,7 @@ local function alive() return F.enabled and F.gen == myGen end
 
 local function log(...) warn("[XPFarm]", ...) end
 
+-- 2) безопасный поиск ремоутов с таймаутом (раньше могло висеть вечно)
 local Events = RS:WaitForChild("Events", 10)
 if not Events then return log("Events не найден") end
 local Admin = Events:WaitForChild("Admin", 10)
@@ -38,6 +45,7 @@ local function cmd(text)
 	return ok
 end
 
+-- ждём условие с таймаутом, уважая остановку скрипта
 local function waitUntil(fn, timeout, step)
 	local t0 = os.clock()
 	while alive() do
@@ -49,6 +57,7 @@ local function waitUntil(fn, timeout, step)
 	return false
 end
 
+-- прерываемый сон: при выключении не висим 30 секунд
 local function sleep(seconds)
 	local t0 = os.clock()
 	while alive() and os.clock() - t0 < seconds do
@@ -61,6 +70,7 @@ local function gameHud()
 	return LP.PlayerGui:FindFirstChild("Game")
 end
 
+-- 3) таймер парсим в секунды, а не сравниваем строки "0:00"/"0:0"/"00:00"
 local function secondsLeft()
 	local gui = gameHud()
 	if not gui then return nil end
@@ -73,6 +83,7 @@ local function secondsLeft()
 	return tonumber(text:match("%d+"))
 end
 
+-- 4) загрузку карты ждём по факту: сначала появление попапа, потом исчезновение
 local function waitForMapLoad()
 	local function loadingGui()
 		local shared = LP.PlayerGui:FindFirstChild("Shared")
@@ -92,6 +103,7 @@ local function waitForMapLoad()
 
 	if not done then log("таймаут загрузки карты") end
 
+	-- ждём, пока реально появится игровой HUD, иначе !timer 0 уходит в пустоту
 	if not waitUntil(gameHud, 10) then
 		log("HUD не появился")
 		return false
@@ -110,6 +122,7 @@ local function waitRoundEnd()
 				return true
 			end
 		elseif sawTimer then
+			-- таймер исчез => раунд закончился
 			return true
 		end
 		if os.clock() - t0 > cfg.roundTimeout then
@@ -121,12 +134,14 @@ local function waitRoundEnd()
 	return false
 end
 
+--============================ ЦИКЛ ============================--
 F.thread = task.spawn(function()
 	log("запущен, кулдаун цикла:", cfg.cycleCooldown, "сек")
 
 	while alive() do
 		local cycleStart = os.clock()
 
+		-- если игрового HUD нет, просимся в игроки
 		if not gameHud() then
 			pcall(SetPlayerMode.FireServer, SetPlayerMode, true)
 			if not sleep(2) then break end
@@ -148,6 +163,7 @@ F.thread = task.spawn(function()
 			if not sleep(5) then break end
 		end
 
+		-- 5) ГАРАНТИЯ: между началами циклов не меньше cycleCooldown секунд
 		local elapsed = os.clock() - cycleStart
 		local remaining = cfg.cycleCooldown - elapsed
 		if remaining > 0 then
