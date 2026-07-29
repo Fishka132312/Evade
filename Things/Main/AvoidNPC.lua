@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 
 local lastTeleportTime = 0
 local TELEPORT_COOLDOWN = 0.5
+local SAFE_DISTANCE = 50
 
 local previousPosition = nil
 local returnTime = 0
@@ -34,10 +35,55 @@ local function isCharacterAlive()
     return hum and hum.Health > 0
 end
 
-local function getSafeCFrame()
+local function getAllNPCs()
+    local npcs = {}
+    local playersFolder = workspace:FindFirstChild("Players")
+    if not playersFolder then return npcs end
+    
+    for _, model in ipairs(playersFolder:GetChildren()) do
+        if model ~= LocalPlayer.Character and model:FindFirstChild("HumanoidRootPart") then
+            if model:GetAttribute("AI") == true then
+                table.insert(npcs, model.HumanoidRootPart.Position)
+            end
+        end
+    end
+    return npcs
+end
+
+local function isPositionSafe(position, safeDistance)
+    local npcs = getAllNPCs()
+    for _, npcPos in ipairs(npcs) do
+        local dist = (npcPos - position).Magnitude
+        if dist <= safeDistance then
+            return false
+        end
+    end
+    return true
+end
+
+local function findSafeCFrame()
     local safeZoneMap = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("SafeZones")
-    local safePos = safeZoneMap and safeZoneMap:GetPivot().Position or Vector3.new(0, 1000, 0)
-    return CFrame.new(safePos + Vector3.new(0, 1000, 0))
+    local basePos = safeZoneMap and safeZoneMap:GetPivot().Position or Vector3.new(0, 500, 0)
+    
+    local offsets = {
+        Vector3.new(0, 1000, 0),
+        Vector3.new(100, 1000, 0),
+        Vector3.new(-100, 1000, 0),
+        Vector3.new(0, 1000, 100),
+        Vector3.new(0, 1000, -100),
+        Vector3.new(50, 1200, 50),
+        Vector3.new(-50, 1200, -50),
+        Vector3.new(0, 1500, 0),
+    }
+    
+    for _, offset in ipairs(offsets) do
+        local testPos = basePos + offset
+        if isPositionSafe(testPos, SAFE_DISTANCE) then
+            return CFrame.new(testPos)
+        end
+    end
+    
+    return CFrame.new(basePos + Vector3.new(0, 2000, 0))
 end
 
 local function isNPCNearby(root)
@@ -73,7 +119,7 @@ RunService.Heartbeat:Connect(function()
         previousPosition = root.Position
         
         if now - lastTeleportTime > TELEPORT_COOLDOWN then
-            local safeCFrame = getSafeCFrame()
+            local safeCFrame = findSafeCFrame()
             
             safeStandPlatform.CFrame = safeCFrame - Vector3.new(0, 4, 0)
             
@@ -85,16 +131,25 @@ RunService.Heartbeat:Connect(function()
             if _G.PauseFarm then
                 _G.PauseFarm(5)
             end
-            
         end
 
-    elseif isInSafe and now >= returnTime then
-        if previousPosition then
-            root.CFrame = CFrame.new(previousPosition + Vector3.new(0, 5, 0))
+    elseif isInSafe then
+        if isNPCNearby(root) then
+            local newSafeCFrame = findSafeCFrame()
+            root.CFrame = newSafeCFrame
+            safeStandPlatform.CFrame = newSafeCFrame - Vector3.new(0, 4, 0)
+            returnTime = now + 5
         end
         
-        safeStandPlatform.CFrame = CFrame.new(0, -10000, 0)
-        isInSafe = false
-        previousPosition = nil
+        if now >= returnTime then
+            if previousPosition and isPositionSafe(previousPosition, SAFE_DISTANCE) then
+                root.CFrame = CFrame.new(previousPosition + Vector3.new(0, 5, 0))
+                safeStandPlatform.CFrame = CFrame.new(0, -10000, 0)
+                isInSafe = false
+                previousPosition = nil
+            else
+                returnTime = now + 3
+            end
+        end
     end
 end)
