@@ -4,6 +4,7 @@ _G.XPFarmStop = false
 _G.XPFarmConfig = _G.XPFarmConfig or {
 	cycleCooldown  = 30,
 	postRoundDelay = 3,
+	finalSecondDelay = 2,
 	map            = "Hexagonal",
 	specialRound   = "Plushie Hell",
 	mapLoadTimeout = 30,
@@ -102,7 +103,7 @@ local function waitRoundEnd()
 		local left = secondsLeft()
 		if left then
 			sawTimer = true
-			if left <= 1 then sleep(1) return true end
+			if left <= 1 then sleep(cfg.finalSecondDelay) return true end
 		elseif sawTimer then
 			return true
 		end
