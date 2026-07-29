@@ -11,6 +11,7 @@ _G.ResumeFarm = function() _G.FarmPauseUntil = 0 end
 
 local CFG = {
 	enemyRadius = 22,
+	npcSafeDistance = 50,
 	teleportCooldown = 0.4,
 	scanInterval = 0.25,
 	clearRadius = 18,
@@ -148,6 +149,35 @@ local function getNearestTicket(myPos)
 	return best
 end
 
+local function getAllNPCs()
+	local npcs = {}
+	local folder = workspace:FindFirstChild("Players")
+	if not folder then return npcs end
+	
+	for _, model in ipairs(folder:GetChildren()) do
+		if model ~= LP.Character and model:FindFirstChild("HumanoidRootPart") then
+			if model:GetAttribute("AI") == true or model.Name ~= LP.Name then
+				local hum = model:FindFirstChildOfClass("Humanoid")
+				if not hum or hum.Health > 0 then
+					table.insert(npcs, model.HumanoidRootPart.Position)
+				end
+			end
+		end
+	end
+	return npcs
+end
+
+local function isPositionSafeFromNPC(position, safeDistance)
+	local npcs = getAllNPCs()
+	for _, npcPos in ipairs(npcs) do
+		local dist = (npcPos - position).Magnitude
+		if dist <= safeDistance then
+			return false
+		end
+	end
+	return true
+end
+
 local function isEnemyNear(myPos)
 	local folder = workspace:FindFirstChild("Players")
 	if not folder then return false end
@@ -165,7 +195,7 @@ local function isEnemyNear(myPos)
 	return false
 end
 
-local function safeCFrame()
+local function findSafeCFrame()
 	local map = workspace:FindFirstChild("Map")
 	local zones = map and map:FindFirstChild("SafeZones")
 	local base = Vector3.new(0, 0, 0)
@@ -173,7 +203,30 @@ local function safeCFrame()
 		local ok, pivot = pcall(function() return zones:GetPivot().Position end)
 		if ok then base = pivot end
 	end
-	return CFrame.new(base + Vector3.new(0, CFG.safeHeight, 0))
+	
+	local offsets = {
+		Vector3.new(0, CFG.safeHeight, 0),
+		Vector3.new(100, CFG.safeHeight, 0),
+		Vector3.new(-100, CFG.safeHeight, 0),
+		Vector3.new(0, CFG.safeHeight, 100),
+		Vector3.new(0, CFG.safeHeight, -100),
+		Vector3.new(50, CFG.safeHeight + 200, 50),
+		Vector3.new(-50, CFG.safeHeight + 200, -50),
+		Vector3.new(0, CFG.safeHeight + 500, 0),
+	}
+	
+	for _, offset in ipairs(offsets) do
+		local testPos = base + offset
+		if isPositionSafeFromNPC(testPos, CFG.npcSafeDistance) then
+			return CFrame.new(testPos)
+		end
+	end
+	
+	return CFrame.new(base + Vector3.new(0, CFG.safeHeight + 1000, 0))
+end
+
+local function safeCFrame()
+	return findSafeCFrame()
 end
 
 local function stopFarming(root)
@@ -217,7 +270,6 @@ local function onHeartbeat()
 
 	local now = os.clock()
 	local offset = rootOffset()
-	local high = safeCFrame()
 	local doScan = now - lastScan >= CFG.scanInterval
 
 	if doScan then
@@ -226,6 +278,7 @@ local function onHeartbeat()
 	end
 
 	local function goSafe()
+		local high = safeCFrame()
 		safePlatform.CFrame = high - Vector3.new(0, offset + 0.5, 0)
 		standPlatform.CFrame = HIDDEN
 
@@ -251,17 +304,31 @@ local function onHeartbeat()
 		return
 	end
 
-	local dest = CFrame.new(ticketPos - Vector3.new(0, 4.5, 0))
+	local ticketDestPos = ticketPos - Vector3.new(0, 4.5, 0)
+	if not isPositionSafeFromNPC(ticketDestPos, CFG.npcSafeDistance) then
+		goSafe()
+		return
+	end
+
+	local dest = CFrame.new(ticketDestPos)
 	standPlatform.CFrame = dest - Vector3.new(0, offset + 0.5, 0)
 	safePlatform.CFrame = HIDDEN
 
 	local far = (root.Position - dest.Position).Magnitude > 6
 
 	if far and now - lastTeleport > CFG.teleportCooldown then
-		teleport(root, dest, true)
-		atTicket = true
+		if isPositionSafeFromNPC(dest.Position, CFG.npcSafeDistance) then
+			teleport(root, dest, true)
+			atTicket = true
+		else
+			goSafe()
+		end
 	elseif atTicket and doScan then
-		clearArea(dest.Position)
+		if not isPositionSafeFromNPC(root.Position, CFG.npcSafeDistance) then
+			goSafe()
+		else
+			clearArea(dest.Position)
+		end
 	end
 end
 
