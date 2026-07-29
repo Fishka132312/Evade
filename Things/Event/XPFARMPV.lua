@@ -30,6 +30,7 @@ local Events = RS:WaitForChild("Events", 10)
 if not Events then return log("Events не найден") end
 local Admin = Events:WaitForChild("Admin", 10)
 local AdminCommand = Admin and Admin:WaitForChild("Command", 10)
+local VIPCommand = Admin and Admin:WaitForChild("VIPCommand", 10)
 local SetPlayerMode = Events:WaitForChild("SetPlayerMode", 10)
 if not (AdminCommand and SetPlayerMode) then return log("ремоуты не найдены") end
 
@@ -119,6 +120,7 @@ end
 _G.XPFarmThread = task.spawn(function()
 	log("загружен, ждёт _G.XPFARMPV = true")
 	local wasActive = false
+	local isFirstCycle = true  -- 👈 флаг для первого цикла
 
 	while loaded() do
 		if not active() then
@@ -140,6 +142,22 @@ _G.XPFarmThread = task.spawn(function()
 		if not gameHud() then
 			pcall(SetPlayerMode.FireServer, SetPlayerMode, true)
 			if not sleep(2) then continue end
+		end
+
+		-- 👇 Установка режима Pro ОДИН РАЗ перед первой картой
+		if isFirstCycle then
+			if VIPCommand then
+				local ok, err = pcall(VIPCommand.FireServer, VIPCommand, "Gamemode", "Pro")
+				if ok then
+					log("установлен режим Pro")
+				else
+					log("ошибка установки режима Pro:", err)
+				end
+				if not sleep(1.5) then continue end
+			else
+				log("VIPCommand не найден")
+			end
+			isFirstCycle = false
 		end
 
 		cmd("!map " .. cfg.map)
