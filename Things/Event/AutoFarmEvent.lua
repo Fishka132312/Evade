@@ -11,7 +11,7 @@ _G.ResumeFarm = function() _G.FarmPauseUntil = 0 end
 
 local CFG = {
 	enemyRadius = 22,
-	npcSafeDistance = 50,
+	npcSafeDistance = 10,
 	teleportCooldown = 0.4,
 	scanInterval = 0.25,
 	clearRadius = 18,
