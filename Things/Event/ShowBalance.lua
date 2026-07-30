@@ -132,7 +132,7 @@ local perHourLabel = makeRow(120, "🕐", "Per Hour", Color3.fromRGB(255, 150, 1
 
 local currentValue = nil
 local farmedTotal = 0
-local startTime = nil
+local gains = {} -- {time = os.clock(), amount = delta}
 local scriptStart = os.clock()
 local warmupUntil = scriptStart + WARMUP_SECONDS
 
@@ -151,16 +151,29 @@ local function updateGui()
 	currentLabel.Text = formatNum(currentValue or 0)
 	farmedLabel.Text = formatNum(farmedTotal)
 
+	local now = os.clock()
 	local perMin, perHour = 0, 0
-	if startTime then
-		local elapsedMin = (os.clock() - startTime) / 60
-		if elapsedMin > 0.0167 then
-			perMin = farmedTotal / elapsedMin
-			perHour = perMin * 60
+
+	-- Удаляем только то, что старше часа: для часа оно больше не считается
+	while #gains > 0 and now - gains[1].time >= 3600 do
+		table.remove(gains, 1)
+	end
+
+	-- Точные скользящие окна:
+	-- Per Minute = сколько нафармлено за последние 60 секунд
+	-- Per Hour   = сколько нафармлено за последние 3600 секунд
+	for _, gain in ipairs(gains) do
+		local age = now - gain.time
+		if age < 60 then
+			perMin += gain.amount
+		end
+		if age < 3600 then
+			perHour += gain.amount
 		end
 	end
-	perMinLabel.Text = "~" .. formatNum(perMin)
-	perHourLabel.Text = "~" .. formatNum(perHour)
+
+	perMinLabel.Text = formatNum(perMin)
+	perHourLabel.Text = formatNum(perHour)
 end
 
 local function onCashText(text)
@@ -183,10 +196,9 @@ local function onCashText(text)
 	currentValue = newVal
 
 	if delta > 0 and delta <= MAX_GAIN_PER_PICKUP then
-		if not startTime then
-			startTime = os.clock()
-		end
+		local now = os.clock()
 		farmedTotal += delta
+		table.insert(gains, {time = now, amount = delta})
 	end
 	updateGui()
 end
@@ -233,6 +245,7 @@ end)
 task.spawn(function()
 	while _G.__CashTrackerGen == GEN do
 		frame.Visible = (_G.ShowBalance ~= false)
+		updateGui() -- обновляет минуту/час даже если баланс не изменился
 		task.wait(0.2)
 	end
 end)
