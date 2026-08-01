@@ -9,6 +9,7 @@ if _G.__CashTrackerConn then
 end
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -18,12 +19,31 @@ end
 
 local WARMUP_SECONDS = 5
 local MAX_GAIN_PER_PICKUP = 10
+local PICKUP_WINDOW = 0.45
 
 local function parseCash(text)
 	if not text then return nil end
-	local clean = text:gsub("[^%d%.]", "")
+
+	local s = tostring(text)
+	local mult = 1
+	local up = s:upper()
+	if up:find("K") then mult = 1e3
+	elseif up:find("M") then mult = 1e6
+	elseif up:find("B") then mult = 1e9
+	end
+
+	local clean = s:gsub("[^%d%.,]", "")
 	if clean == "" then return nil end
-	return tonumber(clean)
+
+	if mult > 1 then
+		clean = clean:gsub(",", ".")
+	else
+		clean = clean:gsub("[%.,]", "")
+	end
+
+	local n = tonumber(clean)
+	if not n then return nil end
+	return n * mult
 end
 
 local screenGui = Instance.new("ScreenGui")
@@ -35,7 +55,7 @@ screenGui.Parent = PlayerGui
 _G.__CashTrackerGui = screenGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 230, 0, 148)
+frame.Size = UDim2.new(0, 230, 0, 174)
 frame.Position = UDim2.new(0, 20, 0, 200)
 frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 frame.BackgroundTransparency = 0.05
@@ -129,15 +149,20 @@ local currentLabel = makeRow(42, "🫧", "Current", Color3.fromRGB(140, 190, 255
 local farmedLabel  = makeRow(68, "📈", "Farmed", Color3.fromRGB(140, 255, 180))
 local perMinLabel  = makeRow(94, "⏱", "Per Minute", Color3.fromRGB(255, 210, 130))
 local perHourLabel = makeRow(120, "🕐", "Per Hour", Color3.fromRGB(255, 150, 150))
+local lastGainLabel = makeRow(146, "✨", "Last pickup", Color3.fromRGB(200, 180, 255))
 
 local currentValue = nil
 local farmedTotal = 0
-local gains = {} -- {time = os.clock(), amount = delta}
+local gains = {}
+local lastGain = 0
 local scriptStart = os.clock()
 local warmupUntil = scriptStart + WARMUP_SECONDS
 
+local pendingAmount = 0
+local pendingLastTime = 0
+
 local function formatNum(n)
-	n = math.floor(n or 0)
+	n = math.floor((n or 0) + 0.5)
 	local formatted = tostring(n)
 	local k
 	while true do
@@ -150,18 +175,15 @@ end
 local function updateGui()
 	currentLabel.Text = formatNum(currentValue or 0)
 	farmedLabel.Text = formatNum(farmedTotal)
+	lastGainLabel.Text = "+" .. formatNum(lastGain)
 
 	local now = os.clock()
 	local perMin, perHour = 0, 0
 
-	-- Удаляем только то, что старше часа: для часа оно больше не считается
 	while #gains > 0 and now - gains[1].time >= 3600 do
 		table.remove(gains, 1)
 	end
 
-	-- Точные скользящие окна:
-	-- Per Minute = сколько нафармлено за последние 60 секунд
-	-- Per Hour   = сколько нафармлено за последние 3600 секунд
 	for _, gain in ipairs(gains) do
 		local age = now - gain.time
 		if age < 60 then
@@ -174,6 +196,34 @@ local function updateGui()
 
 	perMinLabel.Text = formatNum(perMin)
 	perHourLabel.Text = formatNum(perHour)
+end
+
+local function commitGain(amount)
+	if amount <= 0 then return end
+	if amount > MAX_GAIN_PER_PICKUP then return end
+	farmedTotal += amount
+	lastGain = amount
+	table.insert(gains, {time = os.clock(), amount = amount})
+end
+
+local function flushPending(force)
+	if pendingAmount <= 0 then return end
+	if force or (os.clock() - pendingLastTime) >= PICKUP_WINDOW then
+		commitGain(pendingAmount)
+		pendingAmount = 0
+	end
+end
+
+local function addDelta(delta)
+	if pendingAmount > 0 and (pendingAmount + delta) > MAX_GAIN_PER_PICKUP then
+		flushPending(true)
+	end
+	pendingAmount += delta
+	pendingLastTime = os.clock()
+
+	if pendingAmount >= MAX_GAIN_PER_PICKUP then
+		flushPending(true)
+	end
 end
 
 local function onCashText(text)
@@ -195,11 +245,16 @@ local function onCashText(text)
 	local delta = newVal - currentValue
 	currentValue = newVal
 
-	if delta > 0 and delta <= MAX_GAIN_PER_PICKUP then
-		local now = os.clock()
-		farmedTotal += delta
-		table.insert(gains, {time = now, amount = delta})
+	if delta > 0 then
+		if delta > MAX_GAIN_PER_PICKUP then
+			flushPending(true)
+		else
+			addDelta(delta)
+		end
+	elseif delta < 0 then
+		flushPending(true)
 	end
+
 	updateGui()
 end
 
@@ -213,6 +268,8 @@ local function tryGetCashLabel()
 	return nil
 end
 
+local activeLabel = nil
+
 task.spawn(function()
 	local connectedLabel = nil
 	while _G.__CashTrackerGen == GEN do
@@ -220,11 +277,13 @@ task.spawn(function()
 		if label then
 			if label ~= connectedLabel then
 				connectedLabel = label
+				activeLabel = label
 				if _G.__CashTrackerConn then
 					pcall(function() _G.__CashTrackerConn:Disconnect() end)
 				end
 				warmupUntil = os.clock() + WARMUP_SECONDS
 				currentValue = nil
+				pendingAmount = 0
 				onCashText(label.Text)
 				_G.__CashTrackerConn = label:GetPropertyChangedSignal("Text"):Connect(function()
 					onCashText(label.Text)
@@ -232,20 +291,34 @@ task.spawn(function()
 				label.AncestryChanged:Connect(function(_, parent)
 					if not parent and connectedLabel == label then
 						connectedLabel = nil
+						activeLabel = nil
 					end
 				end)
 			end
 		else
 			connectedLabel = nil
+			activeLabel = nil
 		end
 		task.wait(1)
 	end
 end)
 
+local heartbeatConn
+heartbeatConn = RunService.Heartbeat:Connect(function()
+	if _G.__CashTrackerGen ~= GEN then
+		heartbeatConn:Disconnect()
+		return
+	end
+	if activeLabel and activeLabel.Parent then
+		onCashText(activeLabel.Text)
+	end
+	flushPending(false)
+end)
+
 task.spawn(function()
 	while _G.__CashTrackerGen == GEN do
 		frame.Visible = (_G.ShowBalance ~= false)
-		updateGui() -- обновляет минуту/час даже если баланс не изменился
+		updateGui()
 		task.wait(0.2)
 	end
 end)
