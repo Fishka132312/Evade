@@ -396,7 +396,7 @@ reportBtn.MouseButton1Click:Connect(function()
 
 	local copied = copyToClipboard(report)
 	local oldText = "📋 Report"
-	reportBtn.Text = copied and "✅ Скопировано" or "⚠️ Смотри F9"
+	reportBtn.Text = copied and "✅ Copied" or "⚠️ Check F9"
 	task.delay(1.5, function()
 		if reportBtn and reportBtn.Parent then
 			reportBtn.Text = oldText
