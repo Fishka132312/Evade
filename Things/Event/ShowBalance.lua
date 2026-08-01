@@ -55,7 +55,7 @@ screenGui.Parent = PlayerGui
 _G.__CashTrackerGui = screenGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 230, 0, 174)
+frame.Size = UDim2.new(0, 230, 0, 190)
 frame.Position = UDim2.new(0, 20, 0, 200)
 frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 frame.BackgroundTransparency = 0.05
@@ -149,13 +149,39 @@ local currentLabel = makeRow(42, "🫧", "Current", Color3.fromRGB(140, 190, 255
 local farmedLabel  = makeRow(68, "📈", "Farmed", Color3.fromRGB(140, 255, 180))
 local perMinLabel  = makeRow(94, "⏱", "Per Minute", Color3.fromRGB(255, 210, 130))
 local perHourLabel = makeRow(120, "🕐", "Per Hour", Color3.fromRGB(255, 150, 150))
-local lastGainLabel = makeRow(146, "✨", "Last pickup", Color3.fromRGB(200, 180, 255))
+
+local reportBtn = Instance.new("TextButton")
+reportBtn.Size = UDim2.new(1, -24, 0, 26)
+reportBtn.Position = UDim2.new(0, 12, 0, 150)
+reportBtn.BackgroundColor3 = Color3.fromRGB(46, 42, 72)
+reportBtn.BorderSizePixel = 0
+reportBtn.AutoButtonColor = true
+reportBtn.Text = "📋 Report"
+reportBtn.TextColor3 = Color3.fromRGB(220, 210, 255)
+reportBtn.Font = Enum.Font.GothamBold
+reportBtn.TextSize = 13
+reportBtn.Parent = frame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 8)
+btnCorner.Parent = reportBtn
+
+local btnStroke = Instance.new("UIStroke")
+btnStroke.Thickness = 1
+btnStroke.Transparency = 0.5
+btnStroke.Color = Color3.fromRGB(160, 130, 255)
+btnStroke.Parent = reportBtn
 
 local currentValue = nil
+local startBalance = nil
+local baselineSet = false
 local farmedTotal = 0
 local gains = {}
-local lastGain = 0
+local pickupCounts = {}
+local totalPickups = 0
+
 local scriptStart = os.clock()
+local startTimestamp = os.time()
 local warmupUntil = scriptStart + WARMUP_SECONDS
 
 local pendingAmount = 0
@@ -175,7 +201,6 @@ end
 local function updateGui()
 	currentLabel.Text = formatNum(currentValue or 0)
 	farmedLabel.Text = formatNum(farmedTotal)
-	lastGainLabel.Text = "+" .. formatNum(lastGain)
 
 	local now = os.clock()
 	local perMin, perHour = 0, 0
@@ -200,14 +225,21 @@ end
 
 local function commitGain(amount)
 	if amount <= 0 then return end
+	if not baselineSet then return end
 	if amount > MAX_GAIN_PER_PICKUP then return end
-	farmedTotal += amount
-	lastGain = amount
-	table.insert(gains, {time = os.clock(), amount = amount})
+
+	local rounded = math.floor(amount + 0.5)
+	farmedTotal += rounded
+	table.insert(gains, {time = os.clock(), amount = rounded})
+	pickupCounts[rounded] = (pickupCounts[rounded] or 0) + 1
+	totalPickups += 1
 end
 
 local function flushPending(force)
-	if pendingAmount <= 0 then return end
+	if pendingAmount <= 0 then
+		pendingAmount = 0
+		return
+	end
 	if force or (os.clock() - pendingLastTime) >= PICKUP_WINDOW then
 		commitGain(pendingAmount)
 		pendingAmount = 0
@@ -232,14 +264,21 @@ local function onCashText(text)
 
 	if currentValue == nil then
 		currentValue = newVal
+		startBalance = newVal
 		updateGui()
 		return
 	end
 
 	if os.clock() < warmupUntil then
 		currentValue = newVal
+		startBalance = newVal
 		updateGui()
 		return
+	end
+
+	if not baselineSet then
+		baselineSet = true
+		startBalance = startBalance or newVal
 	end
 
 	local delta = newVal - currentValue
@@ -256,6 +295,116 @@ local function onCashText(text)
 	end
 
 	updateGui()
+end
+
+local function formatDuration(seconds)
+	seconds = math.floor(seconds)
+	local h = math.floor(seconds / 3600)
+	local m = math.floor((seconds % 3600) / 60)
+	local s = seconds % 60
+	if h > 0 then
+		return string.format("%d ч %d мин %d сек", h, m, s)
+	elseif m > 0 then
+		return string.format("%d мин %d сек", m, s)
+	else
+		return string.format("%d сек", s)
+	end
+end
+
+local function buildReport()
+	flushPending(true)
+
+	local nowClock = os.clock()
+	local elapsed = math.max(nowClock - scriptStart, 1)
+	local minutes = elapsed / 60
+	local hours = elapsed / 3600
+
+	local avgPerMin = farmedTotal / minutes
+	local avgPerHour = farmedTotal / hours
+
+	local lines = {}
+	local function add(s) table.insert(lines, s) end
+
+	add("=========================================")
+	add("        🫧 BUBBLE TRACKER REPORT")
+	add("=========================================")
+	add("Начало фарма:   " .. os.date("%d.%m.%Y %H:%M:%S", startTimestamp))
+	add("Сейчас:         " .. os.date("%d.%m.%Y %H:%M:%S", os.time()))
+	add("Время фарма:   " .. formatDuration(elapsed))
+	add("")
+	add("Стартовый баланс: " .. formatNum(startBalance or 0) .. " (в фарм не считается)")
+	add("Текущий баланс:  " .. formatNum(currentValue or 0))
+	add("Нафармлено всего: " .. formatNum(farmedTotal))
+	add("")
+	add("Среднее за минуту: " .. string.format("%.1f", avgPerMin))
+	add("Среднее за час:    " .. string.format("%.1f", avgPerHour))
+	add("Всего сборов:      " .. totalPickups)
+	add("")
+	add("----------- СБОРЫ ПО КОЛИЧЕСТВУ -----------")
+
+	if totalPickups == 0 then
+		add("Пока нет данных — ни одного тикета не собрано.")
+	else
+		for amount = 1, MAX_GAIN_PER_PICKUP do
+			local count = pickupCounts[amount] or 0
+			if count > 0 then
+				add(string.format("  +%-2d тикетов  —  %d раз  (всего %s)",
+					amount, count, formatNum(amount * count)))
+			end
+		end
+
+		for amount, count in pairs(pickupCounts) do
+			if amount > MAX_GAIN_PER_PICKUP then
+				add(string.format("  +%-2d тикетов  —  %d раз", amount, count))
+			end
+		end
+
+		add("")
+		add("------------- ШАНС ВЫПАДЕНИЯ -------------")
+		for amount = 1, MAX_GAIN_PER_PICKUP do
+			local count = pickupCounts[amount] or 0
+			if count > 0 then
+				local pct = count / totalPickups * 100
+				local barLen = math.floor(pct / 5 + 0.5)
+				local bar = string.rep("#", barLen)
+				add(string.format("  +%-2d  %5.1f%%  %s", amount, pct, bar))
+			end
+		end
+	end
+
+	add("=========================================")
+	return table.concat(lines, "\n")
+end
+
+local function copyToClipboard(text)
+	local fn = (setclipboard or toclipboard or set_clipboard or (syn and syn.write_clipboard))
+	if fn then
+		local ok = pcall(fn, text)
+		return ok
+	end
+	return false
+end
+
+reportBtn.MouseButton1Click:Connect(function()
+	local report = buildReport()
+
+	print("\n" .. report)
+
+	local copied = copyToClipboard(report)
+	local oldText = "📋 Report"
+	reportBtn.Text = copied and "✅ Скопировано" or "⚠️ Смотри F9"
+	task.delay(1.5, function()
+		if reportBtn and reportBtn.Parent then
+			reportBtn.Text = oldText
+		end
+	end)
+end)
+
+_G.BubbleReport = function()
+	local r = buildReport()
+	print("\n" .. r)
+	copyToClipboard(r)
+	return r
 end
 
 local function tryGetCashLabel()
@@ -283,6 +432,7 @@ task.spawn(function()
 				end
 				warmupUntil = os.clock() + WARMUP_SECONDS
 				currentValue = nil
+				baselineSet = false
 				pendingAmount = 0
 				onCashText(label.Text)
 				_G.__CashTrackerConn = label:GetPropertyChangedSignal("Text"):Connect(function()
