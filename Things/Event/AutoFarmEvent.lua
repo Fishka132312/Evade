@@ -1,3 +1,4 @@
+
 if _G.FarmUnload then pcall(_G.FarmUnload) end
 
 local Players = game:GetService("Players")
@@ -16,6 +17,7 @@ local CFG = {
 	scanInterval = 0.25,
 	clearRadius = 18,
 	safeHeight = 1000,
+	ignoreRealPlayers = true,
 }
 
 local HIDDEN = CFrame.new(0, -10000, 0)
@@ -23,6 +25,51 @@ local connections, ownParts = {}, {}
 local collisionMemory = {}
 local wasFarming, lastTeleport, lastScan, enemyNear = false, 0, 0, false
 local atTicket = false
+
+local realCharacters = {}
+
+local function trackPlayer(plr)
+	if plr.Character then realCharacters[plr.Character] = true end
+	table.insert(connections, plr.CharacterAdded:Connect(function(char)
+		realCharacters[char] = true
+	end))
+	table.insert(connections, plr.CharacterRemoving:Connect(function(char)
+		realCharacters[char] = nil
+	end))
+end
+
+for _, plr in ipairs(Players:GetPlayers()) do trackPlayer(plr) end
+table.insert(connections, Players.PlayerAdded:Connect(trackPlayer))
+table.insert(connections, Players.PlayerRemoving:Connect(function(plr)
+	if plr.Character then realCharacters[plr.Character] = nil end
+end))
+
+local function isRealPlayerCharacter(model)
+	if realCharacters[model] then return true end
+	if Players:GetPlayerFromCharacter(model) then return true end
+	if Players:FindFirstChild(model.Name) then return true end
+	return false
+end
+
+local function isHostileNPC(model)
+	local char = LP.Character
+	if model == char then return false end
+	if char and model:IsDescendantOf(char) then return false end
+	if not model:FindFirstChild("HumanoidRootPart") then return false end
+
+	if CFG.ignoreRealPlayers and isRealPlayerCharacter(model) then
+		return false
+	end
+
+	local aiAttr = model:GetAttribute("AI")
+	if aiAttr == false then return false end
+
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	if hum and hum.Health <= 0 then return false end
+
+	return true
+end
+
 
 local function makePlatform(size, transparency)
 	local p = Instance.new("Part")
@@ -153,15 +200,10 @@ local function getAllNPCs()
 	local npcs = {}
 	local folder = workspace:FindFirstChild("Players")
 	if not folder then return npcs end
-	
+
 	for _, model in ipairs(folder:GetChildren()) do
-		if model ~= LP.Character and model:FindFirstChild("HumanoidRootPart") then
-			if model:GetAttribute("AI") == true or model.Name ~= LP.Name then
-				local hum = model:FindFirstChildOfClass("Humanoid")
-				if not hum or hum.Health > 0 then
-					table.insert(npcs, model.HumanoidRootPart.Position)
-				end
-			end
+		if model:IsA("Model") and isHostileNPC(model) then
+			table.insert(npcs, model.HumanoidRootPart.Position)
 		end
 	end
 	return npcs
@@ -170,8 +212,7 @@ end
 local function isPositionSafeFromNPC(position, safeDistance)
 	local npcs = getAllNPCs()
 	for _, npcPos in ipairs(npcs) do
-		local dist = (npcPos - position).Magnitude
-		if dist <= safeDistance then
+		if (npcPos - position).Magnitude <= safeDistance then
 			return false
 		end
 	end
@@ -183,11 +224,9 @@ local function isEnemyNear(myPos)
 	if not folder then return false end
 
 	for _, model in ipairs(folder:GetChildren()) do
-		if model ~= LP.Character and model.Name ~= LP.Name then
+		if model:IsA("Model") and isHostileNPC(model) then
 			local r = model:FindFirstChild("HumanoidRootPart")
-			local hum = model:FindFirstChildOfClass("Humanoid")
-			if r and (not hum or hum.Health > 0)
-				and (r.Position - myPos).Magnitude <= CFG.enemyRadius then
+			if r and (r.Position - myPos).Magnitude <= CFG.enemyRadius then
 				return true
 			end
 		end
@@ -203,7 +242,7 @@ local function findSafeCFrame()
 		local ok, pivot = pcall(function() return zones:GetPivot().Position end)
 		if ok then base = pivot end
 	end
-	
+
 	local offsets = {
 		Vector3.new(0, CFG.safeHeight, 0),
 		Vector3.new(100, CFG.safeHeight, 0),
@@ -214,14 +253,14 @@ local function findSafeCFrame()
 		Vector3.new(-50, CFG.safeHeight + 200, -50),
 		Vector3.new(0, CFG.safeHeight + 500, 0),
 	}
-	
+
 	for _, offset in ipairs(offsets) do
 		local testPos = base + offset
 		if isPositionSafeFromNPC(testPos, CFG.npcSafeDistance) then
 			return CFrame.new(testPos)
 		end
 	end
-	
+
 	return CFrame.new(base + Vector3.new(0, CFG.safeHeight + 1000, 0))
 end
 
@@ -354,6 +393,7 @@ end))
 _G.FarmUnload = function()
 	for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
 	table.clear(connections)
+	table.clear(realCharacters)
 	restoreArea()
 	for _, p in ipairs(ownParts) do pcall(function() p:Destroy() end) end
 	table.clear(ownParts)
