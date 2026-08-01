@@ -303,12 +303,21 @@ local function formatDuration(seconds)
 	local m = math.floor((seconds % 3600) / 60)
 	local s = seconds % 60
 	if h > 0 then
-		return string.format("%d ч %d мин %d сек", h, m, s)
+		return string.format("%dh %02dm %02ds", h, m, s)
 	elseif m > 0 then
-		return string.format("%d мин %d сек", m, s)
+		return string.format("%dm %02ds", m, s)
 	else
-		return string.format("%d сек", s)
+		return string.format("%ds", s)
 	end
+end
+
+local BAR_SEGMENTS = 16
+
+local function makeBar(pct)
+	local filled = math.floor(pct / 100 * BAR_SEGMENTS + 0.5)
+	if filled < 0 then filled = 0 end
+	if filled > BAR_SEGMENTS then filled = BAR_SEGMENTS end
+	return string.rep("█", filled) .. string.rep("░", BAR_SEGMENTS - filled)
 end
 
 local function buildReport()
@@ -316,63 +325,58 @@ local function buildReport()
 
 	local nowClock = os.clock()
 	local elapsed = math.max(nowClock - scriptStart, 1)
-	local minutes = elapsed / 60
-	local hours = elapsed / 3600
-
-	local avgPerMin = farmedTotal / minutes
-	local avgPerHour = farmedTotal / hours
+	local avgPerMin = farmedTotal / (elapsed / 60)
+	local avgPerHour = farmedTotal / (elapsed / 3600)
 
 	local lines = {}
 	local function add(s) table.insert(lines, s) end
 
-	add("=========================================")
-	add("        🫧 BUBBLE TRACKER REPORT")
-	add("=========================================")
-	add("Начало фарма:   " .. os.date("%d.%m.%Y %H:%M:%S", startTimestamp))
-	add("Сейчас:         " .. os.date("%d.%m.%Y %H:%M:%S", os.time()))
-	add("Время фарма:   " .. formatDuration(elapsed))
+	add("╔═══════════════════════════════════════════╗")
+	add("║           🫧  BUBBLE TRACKER               ║")
+	add("╚═══════════════════════════════════════════╝")
 	add("")
-	add("Стартовый баланс: " .. formatNum(startBalance or 0) .. " (в фарм не считается)")
-	add("Текущий баланс:  " .. formatNum(currentValue or 0))
-	add("Нафармлено всего: " .. formatNum(farmedTotal))
+	add("⏱  SESSION")
+	add("Started      " .. os.date("%d %b %Y · %H:%M:%S", startTimestamp))
+	add("Now          " .. os.date("%d %b %Y · %H:%M:%S", os.time()))
+	add("Farmed For   " .. formatDuration(elapsed))
 	add("")
-	add("Среднее за минуту: " .. string.format("%.1f", avgPerMin))
-	add("Среднее за час:    " .. string.format("%.1f", avgPerHour))
-	add("Всего сборов:      " .. totalPickups)
+	add("🎟  TICKETS")
+	add("Starting     " .. formatNum(startBalance or 0))
+	add("Current      " .. formatNum(currentValue or 0))
+	add("Farmed       +" .. formatNum(farmedTotal))
 	add("")
-	add("----------- СБОРЫ ПО КОЛИЧЕСТВУ -----------")
+	add("📈  RATE")
+	add(string.format("Per minute   %.1f", avgPerMin))
+	add(string.format("Per hour     %.1f", avgPerHour))
+	add("Drops        " .. totalPickups)
+	add("")
 
+	local amounts = {}
+	for amount in pairs(pickupCounts) do
+		table.insert(amounts, amount)
+	end
+	table.sort(amounts)
+
+	add("──────────────  DROP LOG  ──────────────")
 	if totalPickups == 0 then
-		add("Пока нет данных — ни одного тикета не собрано.")
+		add("no drops yet")
 	else
-		for amount = 1, MAX_GAIN_PER_PICKUP do
-			local count = pickupCounts[amount] or 0
-			if count > 0 then
-				add(string.format("  +%-2d тикетов  —  %d раз  (всего %s)",
-					amount, count, formatNum(amount * count)))
-			end
-		end
-
-		for amount, count in pairs(pickupCounts) do
-			if amount > MAX_GAIN_PER_PICKUP then
-				add(string.format("  +%-2d тикетов  —  %d раз", amount, count))
-			end
+		for _, amount in ipairs(amounts) do
+			local count = pickupCounts[amount]
+			add(string.format("+%-3d ×%-3d →   %s tickets",
+				amount, count, formatNum(amount * count)))
 		end
 
 		add("")
-		add("------------- ШАНС ВЫПАДЕНИЯ -------------")
-		for amount = 1, MAX_GAIN_PER_PICKUP do
-			local count = pickupCounts[amount] or 0
-			if count > 0 then
-				local pct = count / totalPickups * 100
-				local barLen = math.floor(pct / 5 + 0.5)
-				local bar = string.rep("#", barLen)
-				add(string.format("  +%-2d  %5.1f%%  %s", amount, pct, bar))
-			end
+		add("──────────────  DROP RATE  ─────────────")
+		for _, amount in ipairs(amounts) do
+			local pct = pickupCounts[amount] / totalPickups * 100
+			add(string.format("+%-4d %5.1f%%   %s", amount, pct, makeBar(pct)))
 		end
 	end
 
-	add("=========================================")
+	add("")
+	add("════════════════════════════════════════")
 	return table.concat(lines, "\n")
 end
 
