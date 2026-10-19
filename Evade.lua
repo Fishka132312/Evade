@@ -68,7 +68,7 @@ local EventPage = Window:Page({
 local AutoFarmEventSection = EventPage:Section({Name = "Auto Farm", Side = 1, Icon = "https://i.postimg.cc/tCDF4BRx/Bez-imeni-1.png"})
 
 AutoFarmEventSection:Image({
-    Id = "https://tr.rbxcdn.com/180DAY-e7de42d5d990a8c737a9720fd5ff31cc/768/432/Image/Webp/noFilter",
+    Id = "https://tr.rbxcdn.com/180DAY-fe879d3e4fabd2580b57a66efba92d1d/768/432/Image/Webp/noFilter",
     Height = 90,
     Rounded = true
 })
