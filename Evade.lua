@@ -7,6 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 local scripts = {
   'Event/AutoFarmEvent.lua',
   'Event/XPFARMPV.lua',
+  'Event/XPFARMPV1.lua',
   'Event/ShowBalance.lua',
   'Event/TicketESP.lua',
   'Event/AntiDev.lua',
@@ -97,6 +98,16 @@ local XPPVFARMToggle = AutoFarmEventSection:Toggle({
     Default = false,
     Callback = function(Value)
         _G.XPFARMPV = Value
+    end
+})
+
+local XPPVFARMToggle = AutoFarmEventSection:Toggle({
+    Name = "PV FARM (Faster test)",
+	Tooltip = "Farm XP. ONLY PRIVATE CEPBEP and can be combined with farm bubbles",
+    Flag = "PVXPFarm",
+    Default = false,
+    Callback = function(Value)
+        _G.XPFARMPV1 = Value
     end
 })
 
