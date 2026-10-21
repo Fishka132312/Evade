@@ -1,17 +1,24 @@
-_G.XPFARMPV = _G.XPFARMPV or false
+_G.XPFARMPV = _G.XPFARMPV or false  --щщщщвф
 _G.XPFarmStop = false
 
 _G.XPFarmConfig = _G.XPFarmConfig or {}
 local cfg = _G.XPFarmConfig
 
 local DEFAULTS = {
-	cycleCooldown   = 30,   -- минимальная длина цикла (сек)
-	afterTimerDelay = 5,    -- сколько ждать после !timer 0 (раунд заканчивается)
+	cycleCooldown   = 30,   -- минимальная длина всего цикла (сек)
 	map             = "Maze",
 	specialRound    = "Plushie Hell",
 	mapLoadTimeout  = 30,
 	timerDelay      = 2,    -- пауза между !specialround и !timer 0
 	timerCommand    = "!timer 0",
+
+	-- ожидание конца раунда ПОСЛЕ !timer 0
+	afterTimerDelay = 25,   -- сколько секунд ждать после !timer 0, если roundEndGui не задан
+	roundEndGui     = nil,  -- имя GUI, который появляется в конце раунда (напр. "Results"); nil = ждать по времени
+	roundEndTimeout = 90,   -- максимум ожидания, если roundEndGui задан, но не появился
+	postRoundDelay  = 2,    -- пауза после конца раунда перед следующим !map
+
+	watchGui        = true, -- во время ожидания печатать, какие GUI появились/пропали (чтобы найти сигнал конца раунда)
 }
 for k, v in pairs(DEFAULTS) do
 	if cfg[k] == nil then cfg[k] = v end
@@ -69,7 +76,54 @@ end
 
 local function gameHud() return LP.PlayerGui:FindFirstChild("Game") end
 
--- ждём, пока карта загрузится (экран LoadingMap появился и пропал)
+----------------------------------------------------------------
+-- GUI-хелперы
+----------------------------------------------------------------
+local function isShown(obj)
+	local cur = obj
+	while cur and cur ~= LP.PlayerGui do
+		if cur:IsA("GuiObject") and not cur.Visible then return false end
+		if cur:IsA("ScreenGui") and not cur.Enabled then return false end
+		cur = cur.Parent
+	end
+	return true
+end
+
+-- снимок видимых GUI (глубина до 4) — для поиска сигнала конца раунда
+local function snapshotGui()
+	local snap = {}
+	local pgName = LP.PlayerGui:GetFullName()
+	local function walk(obj, depth)
+		for _, c in ipairs(obj:GetChildren()) do
+			if c:IsA("ScreenGui") then
+				if c.Enabled then
+					snap[c.Name] = true
+					walk(c, 1)
+				end
+			elseif c:IsA("GuiObject") then
+				if c.Visible then
+					snap[c:GetFullName():sub(#pgName + 2)] = true
+					if depth < 4 then walk(c, depth + 1) end
+				end
+			end
+		end
+	end
+	walk(LP.PlayerGui, 0)
+	return snap
+end
+
+local function logGuiDiff(prev, cur)
+	for k in pairs(cur) do
+		if not prev[k] then log("GUI появился/виден:", k) end
+	end
+	for k in pairs(prev) do
+		if not cur[k] then log("GUI пропал/скрыт:", k) end
+	end
+end
+
+----------------------------------------------------------------
+-- ЗАГРУЗКА КАРТЫ
+----------------------------------------------------------------
 local function waitForMapLoad()
 	local function loadingGui()
 		local shared = LP.PlayerGui:FindFirstChild("Shared")
@@ -92,13 +146,56 @@ local function waitForMapLoad()
 		log("ТАЙМАУТ загрузки карты (всё равно продолжаю)")
 	end
 
-	-- HUD больше не блокирует цикл: просто ждём немного и логируем
 	if not waitUntil(gameHud, 5) then
 		log("HUD (PlayerGui.Game) не найден — продолжаю без него")
 	end
 	return active()
 end
 
+----------------------------------------------------------------
+-- ОЖИДАНИЕ КОНЦА РАУНДА (после !timer 0)
+----------------------------------------------------------------
+local function waitRoundEnd()
+	local t0 = os.clock()
+	local prev = cfg.watchGui and snapshotGui() or nil
+
+	if cfg.roundEndGui then
+		log("жду GUI конца раунда '" .. cfg.roundEndGui .. "' (макс " .. cfg.roundEndTimeout .. "с)")
+	else
+		log("жду конца раунда " .. cfg.afterTimerDelay .. "с")
+	end
+
+	while active() do
+		local elapsed = os.clock() - t0
+
+		if cfg.roundEndGui then
+			local g = LP.PlayerGui:FindFirstChild(cfg.roundEndGui, true)
+			if g and isShown(g) then
+				log(("GUI конца раунда появился через %.1fс"):format(elapsed))
+				return true
+			end
+			if elapsed >= cfg.roundEndTimeout then
+				log("ТАЙМАУТ: GUI конца раунда так и не появился")
+				return false
+			end
+		elseif elapsed >= cfg.afterTimerDelay then
+			log("время ожидания конца раунда вышло")
+			return true
+		end
+
+		if prev then
+			local cur = snapshotGui()
+			logGuiDiff(prev, cur)
+			prev = cur
+		end
+		task.wait(0.5)
+	end
+	return false
+end
+
+----------------------------------------------------------------
+-- ОСНОВНОЙ ЦИКЛ
+----------------------------------------------------------------
 _G.XPFarmThread = task.spawn(function()
 	log("загружен, ждёт _G.XPFARMPV = true")
 	local wasActive = false
@@ -138,12 +235,12 @@ _G.XPFarmThread = task.spawn(function()
 		cmd("!specialround " .. cfg.specialRound)
 
 		-- 3) через timerDelay секунд — !timer 0
-		log("жду " .. cfg.timerDelay .. "с перед таймером")
 		if not sleep(cfg.timerDelay) then continue end
 		cmd(cfg.timerCommand)
 
-		-- 4) даём раунду закончиться
-		if not sleep(cfg.afterTimerDelay) then continue end
+		-- 4) ждём конца раунда, только потом следующий цикл
+		if not waitRoundEnd() and not active() then continue end
+		if not sleep(cfg.postRoundDelay) then continue end
 
 		-- 5) добираем до минимальной длины цикла
 		local remaining = cfg.cycleCooldown - (os.clock() - cycleStart)
