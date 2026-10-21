@@ -1,4 +1,4 @@
-_G.XPFARMPV = _G.XPFARMPV or false  --12131
+_G.XPFARMPV = _G.XPFARMPV or false  --12131222222222
 _G.XPFarmStop = false
 
 _G.XPFarmConfig = _G.XPFarmConfig or {}
@@ -134,24 +134,27 @@ end
 ----------------------------------------------------------------
 -- ЗАГРУЗКА КАРТЫ
 ----------------------------------------------------------------
+-- PlayerGui.Shared.Popups.LoadingMap.Screen.ImageLabel
+local function loadingImage()
+	local shared = LP.PlayerGui:FindFirstChild("Shared")
+	local popups = shared and shared:FindFirstChild("Popups")
+	local lm     = popups and popups:FindFirstChild("LoadingMap")
+	local screen = lm and lm:FindFirstChild("Screen")
+	return screen and screen:FindFirstChild("ImageLabel")
+end
+
+-- загрузка идёт, пока ImageTransparency < 0.5 (0 = видно, 1 = пропало)
+local function loadingShown()
+	local img = loadingImage()
+	return img ~= nil and img.ImageTransparency < 0.5
+end
+
 local function waitForMapLoad()
-	local function loadingGui()
-		local shared = LP.PlayerGui:FindFirstChild("Shared")
-		local popups = shared and shared:FindFirstChild("Popups")
-		return popups and popups:FindFirstChild("LoadingMap")
-	end
+	local saw = waitUntil(loadingShown, 5, 0.05)
+	log(saw and "экран загрузки карты появился (ImageTransparency < 0.5)" or "экран загрузки не появился за 5с (идём дальше)")
 
-	local saw = waitUntil(function()
-		local g = loadingGui()
-		return g and g.Visible
-	end, 5)
-	log(saw and "экран загрузки карты появился" or "экран загрузки не появился за 5с (идём дальше)")
-
-	if waitUntil(function()
-		local g = loadingGui()
-		return (not g) or (not g.Visible)
-	end, cfg.mapLoadTimeout, 0.25) then
-		log("карта загрузилась")
+	if waitUntil(function() return not loadingShown() end, cfg.mapLoadTimeout, 0.1) then
+		log("карта загрузилась (ImageTransparency = 1)")
 	else
 		log("ТАЙМАУТ загрузки карты (всё равно продолжаю)")
 	end
