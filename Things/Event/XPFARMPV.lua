@@ -1,4 +1,4 @@
-_G.XPFARMPV = _G.XPFARMPV or false
+_G.XPFARMPV = _G.XPFARMPV or false  --12131
 _G.XPFarmStop = false
 
 _G.XPFarmConfig = _G.XPFarmConfig or {}
@@ -14,7 +14,6 @@ local DEFAULTS = {
 
 	-- конец раунда = Frame PlayerGui.Shared.Popups.Rewards стал Visible = true
 	roundEndTimeout = 400,  -- максимум ожидания окна Rewards после !timer 0 (сек)
-	staleHideTimeout = 5,   -- если Rewards уже был виден до ожидания (остаток с прошлого раунда) — ждём, пока скроется
 	postRoundDelay  = 2,    -- пауза после конца раунда перед следующим !map
 
 	watchGui        = false, -- отладка: печатать, какие GUI появились/пропали
@@ -90,6 +89,16 @@ local function rewardsVisible()
 	return r ~= nil and r.Visible == true
 end
 
+-- скрыть окно наград (Visible = false)
+local function hideRewards()
+	local r = rewardsFrame()
+	if r then
+		pcall(function() r.Visible = false end)
+		return true
+	end
+	return false
+end
+
 -- снимок видимых GUI (глубина до 4) — только для отладки (cfg.watchGui)
 local function snapshotGui()
 	local snap = {}
@@ -161,15 +170,11 @@ local function waitRoundEnd()
 	local t0 = os.clock()
 	local prev = cfg.watchGui and snapshotGui() or nil
 
-	-- если окно наград осталось видимым с прошлого раунда — сначала дождёмся, пока оно скроется,
-	-- иначе скрипт решит, что раунд уже закончился
+	-- если окно наград осталось видимым с прошлого раунда — просто прячем, чтобы не принять его за конец нового
 	if rewardsVisible() then
-		log("Rewards уже виден (остаток прошлого раунда), жду пока скроется")
-		if not waitUntil(function() return not rewardsVisible() end, cfg.staleHideTimeout, 0.1) then
-			if not active() then return false end
-			log("Rewards так и не скрылся за " .. cfg.staleHideTimeout .. "с — считаю раунд законченным")
-			return true
-		end
+		log("Rewards уже виден (остаток прошлого раунда), скрываю")
+		hideRewards()
+		task.wait(0.1)
 	end
 
 	log("жду Rewards.Visible = true (макс " .. cfg.roundEndTimeout .. "с)")
@@ -178,7 +183,8 @@ local function waitRoundEnd()
 		local elapsed = os.clock() - t0
 
 		if rewardsVisible() then
-			log(("Rewards появился через %.1fс — раунд закончен"):format(elapsed))
+			log(("Rewards появился через %.1fс — раунд закончен, скрываю окно"):format(elapsed))
+			hideRewards()
 			return true
 		end
 
