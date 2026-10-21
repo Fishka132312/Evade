@@ -1,4 +1,4 @@
-if _G.FarmUnload then pcall(_G.FarmUnload) end  --йуцйуй
+if _G.FarmUnload then pcall(_G.FarmUnload) end  --йуцйуй11
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -37,13 +37,13 @@ local CFG = {
 	glorpDangerScale = 0.6,  -- у Glorp допускаем монстров ближе (риск ради него); 1 = как обычно
 
 	-- Glorp: сервер засчитывает сбор только если персонаж ХОДИТ рядом (не стоит, не телепортится каждый кадр)
-	glorpWalkRadius = 3,     -- ближе этого ходим туда-сюда рядом с ним, дальше идём к нему
+	glorpWalkRadius = 3,     -- дальше этого от Glorp -> тп обратно к нему (W при этом зажата)
 	glorpWalkMaxDist = 9,    -- если он убежал дальше этого (мы не успеваем идти) -> тп к нему
-	glorpWalkTpCooldown = 0.3, -- минимальный интервал между тп в режиме ходьбы
+	glorpWalkTpCooldown = 0.08, -- минимальный интервал между тп (W зажата, персонаж за это время успевает пройти пару studs)
 	glorpPaceInterval = 0.25, -- как часто меняем направление "туда-сюда"
 	glorpWalkTime = 4,       -- длина фазы ходьбы (сек), имеет смысл только если glorpSnapTime > 0
 	glorpSnapTime = 0,       -- 0 = только ходьба. >0 = между ходьбой на столько сек включаем старый метод (тп по паттерну)
-	glorpPressKeys = false,  -- true = вместо Humanoid:Move жмём W/S через VirtualInputManager (если Move не прокатит)
+	glorpPressKeys = true,   -- true = ЗАЖИМАЕМ W через VirtualInputManager, пока тпшимся к Glorp (как руками). false = Humanoid:Move
 	glorpTouchInterval = 0.05, -- как часто пинать firetouchinterest / prompt / click
 	glorpDebug = true,       -- писать в консоль (F9) что за объект Glorp и в какой фазе он пропал
 
@@ -681,7 +681,7 @@ local function onHeartbeat(dt)
 			local dy = math.abs(glorp.real.Y - rp.Y)
 
 			-- далеко / ещё не подходили -> тп прямо к нему, дальше идём ногами
-			if (not glorp.arrived or dist > CFG.glorpWalkMaxDist or dy > 8)
+			if (not glorp.arrived or dist > (CFG.glorpPressKeys and CFG.glorpWalkRadius or CFG.glorpWalkMaxDist) or dy > 8)
 				and now - glorp.lastWalkTp >= CFG.glorpWalkTpCooldown then
 				teleport(root, dest, true)
 				glorp.lastWalkTp = now
@@ -707,7 +707,7 @@ local function onHeartbeat(dt)
 			atTicket = true
 			clearAreaThrottled(gTarget, now)
 			if CFG.glorpPressKeys then
-				setKey(glorp.paceSign > 0 and Enum.KeyCode.W or Enum.KeyCode.S)
+				setKey(Enum.KeyCode.W) -- W зажата всё время, пока мы у Glorp
 			end
 		else
 			-- snap: старый метод
