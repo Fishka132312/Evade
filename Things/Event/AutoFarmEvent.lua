@@ -1,4 +1,4 @@
-if _G.FarmUnload then pcall(_G.FarmUnload) end
+if _G.FarmUnload then pcall(_G.FarmUnload) end  --йуцйуй
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -33,9 +33,27 @@ local CFG = {
 	glorpAhead = 2,          -- на сколько studs впереди него вставать
 	glorpCooldown = 0.03,    -- как часто можно тпшиться за ним
 	glorpStopDist = 3,       -- ближе этого не тпшимся
+	glorpTryInterval = 0.15, -- сколько стоим на одной позиции (сек, + 2*пинг), потом, если Glorp не пропал, меняем позицию
 	glorpDangerScale = 0.6,  -- у Glorp допускаем монстров ближе (риск ради него); 1 = как обычно
 
 	ignoreRealPlayers = true,
+}
+
+-- Порядок попыток, если Glorp не собрался (не пропал): {вдоль движения (+ вперёд / - назад), вбок, вверх} в studs
+local GLORP_PATTERN = {
+	{ CFG.glorpAhead, 0, 0 }, -- сначала как раньше: чуть спереди
+	{ 0, 0, 0 },              -- прямо в него
+	{ -2, 0, 0 },             -- чуть ближе (сзади)
+	{ 5, 0, 0 },              -- дальше спереди
+	{ -5, 0, 0 },
+	{ 9, 0, 0 },
+	{ -9, 0, 0 },
+	{ 0, 3, 0 },              -- вбок
+	{ 0, -3, 0 },
+	{ 0, 0, 3 },              -- выше / ниже
+	{ 0, 0, -3 },
+	{ 14, 0, 0 },
+	{ -14, 0, 0 },
 }
 
 local HIDDEN = CFrame.new(0, -10000, 0)
@@ -345,7 +363,7 @@ end
 ----------------------------------------------------------------
 -- GLORP CAT
 ----------------------------------------------------------------
-local glorp = { model = nil, pos = nil, vel = Vector3.zero, lastChange = 0 }
+local glorp = { model = nil, pos = nil, vel = Vector3.zero, lastChange = 0, attempt = 1, tryStart = nil, force = false }
 local pingCache, pingT = 0.1, 0
 
 local function getPing(now)
@@ -382,12 +400,14 @@ local function getGlorpTarget(now)
 	if not model then
 		glorp.model, glorp.pos = nil, nil
 		glorp.vel = Vector3.zero
+		glorp.attempt, glorp.tryStart, glorp.force = 1, nil, false -- собрали / пропал: сбрасываем попытки
 		return nil
 	end
 
 	local pos = r.Position
 	if glorp.model ~= model or not glorp.pos then
 		glorp.model, glorp.pos, glorp.vel, glorp.lastChange = model, pos, Vector3.zero, now
+		glorp.attempt, glorp.tryStart, glorp.force = 1, nil, false
 	else
 		-- позиции с сервера приходят пачками, поэтому считаем скорость только при реальном изменении
 		local delta = pos - glorp.pos
@@ -415,11 +435,31 @@ local function getGlorpTarget(now)
 
 	-- задержка: мы видим его с опозданием ~ping, и наш тп дойдёт до сервера тоже с опозданием
 	local lead = math.clamp(getPing(now) + CFG.glorpLead, 0, CFG.glorpMaxLead)
-	local target = pos + vel * lead
-	if vel.Magnitude > 1 then
-		target = target + vel.Unit * CFG.glorpAhead
+	local base = pos + vel * lead
+
+	-- Glorp всё ещё есть, а мы уже стояли на текущей позиции достаточно долго => не собрался, пробуем следующую позицию
+	local tryTime = CFG.glorpTryInterval + getPing(now) * 2
+	if glorp.tryStart and now - glorp.tryStart >= tryTime then
+		glorp.attempt = glorp.attempt % #GLORP_PATTERN + 1
+		glorp.tryStart = now
+		glorp.force = true -- тпшимся даже если уже ближе glorpStopDist
 	end
-	return target
+
+	-- направление его движения (в плоскости XZ); если стоит — берём куда смотрит
+	local dir
+	if vel.Magnitude > 1 then
+		local f = Vector3.new(vel.X, 0, vel.Z)
+		if f.Magnitude > 0.01 then dir = f.Unit end
+	end
+	if not dir then
+		local lv = r.CFrame.LookVector
+		local f = Vector3.new(lv.X, 0, lv.Z)
+		dir = f.Magnitude > 0.01 and f.Unit or Vector3.new(0, 0, -1)
+	end
+	local side = dir:Cross(Vector3.new(0, 1, 0))
+
+	local o = GLORP_PATTERN[glorp.attempt]
+	return base + dir * o[1] + side * o[2] + Vector3.new(0, o[3], 0)
 end
 
 ----------------------------------------------------------------
@@ -504,10 +544,12 @@ local function onHeartbeat()
 		standPlatform.CFrame = dest - Vector3.new(0, offset + 0.5, 0)
 		safePlatform.CFrame = HIDDEN
 
-		if (root.Position - gTarget).Magnitude > CFG.glorpStopDist
+		if ((root.Position - gTarget).Magnitude > CFG.glorpStopDist or glorp.force)
 			and now - lastTeleport > CFG.glorpCooldown then
 			teleport(root, dest, true)
 			atTicket = true
+			glorp.force = false
+			if not glorp.tryStart then glorp.tryStart = now end -- начали попытку на этой позиции
 		elseif atTicket then
 			clearAreaThrottled(gTarget, now)
 		end
