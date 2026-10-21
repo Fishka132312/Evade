@@ -1,4 +1,4 @@
-if _G.FarmUnload then pcall(_G.FarmUnload) end  --йуцйуй
+if _G.FarmUnload then pcall(_G.FarmUnload) end  --йуцйуй1
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -35,6 +35,14 @@ local CFG = {
 	glorpStopDist = 3,       -- ближе этого не тпшимся
 	glorpTryInterval = 0.15, -- сколько стоим на одной позиции (сек, + 2*пинг), потом, если Glorp не пропал, меняем позицию
 	glorpDangerScale = 0.6,  -- у Glorp допускаем монстров ближе (риск ради него); 1 = как обычно
+
+	-- Glorp: фазы "tween" (тп рядом + плавно догоняем) и "snap" (старый метод тпшиться на позиции), чередуются
+	glorpTweenTime = 1.2,    -- сколько сек. длится фаза догоняния
+	glorpSnapTime = 1.5,     -- сколько сек. длится фаза тпшинга по паттерну
+	glorpTweenSpeed = 90,    -- скорость догоняния (studs/сек)
+	glorpApproach = 6,       -- на сколько studs позади него появляемся при первом тп
+	glorpTouchInterval = 0.05, -- как часто пинать firetouchinterest / prompt / click
+	glorpDebug = true,       -- писать в консоль (F9) что за объект Glorp и в какой фазе он пропал
 
 	ignoreRealPlayers = true,
 }
@@ -363,8 +371,79 @@ end
 ----------------------------------------------------------------
 -- GLORP CAT
 ----------------------------------------------------------------
-local glorp = { model = nil, pos = nil, vel = Vector3.zero, lastChange = 0, attempt = 1, tryStart = nil, force = false }
+local glorp = {
+	model = nil, pos = nil, vel = Vector3.zero, lastChange = 0, attempt = 1, tryStart = nil, force = false,
+	root = nil, real = Vector3.zero, dir = Vector3.new(0, 0, -1),
+	phase = "tween", phaseStart = 0, arrived = false,
+	lastTouch = 0, cacheModel = nil, cacheT = 0, parts = {}, prompts = {}, clicks = {},
+	seenAt = 0,
+}
 local pingCache, pingT = 0.1, 0
+
+local hasFTI = type(firetouchinterest) == "function"
+local hasFPP = type(fireproximityprompt) == "function"
+local hasFCD = type(fireclickdetector) == "function"
+
+local function resetGlorpPhase(now)
+	glorp.phase, glorp.phaseStart, glorp.arrived = "tween", now, false
+	glorp.attempt, glorp.tryStart, glorp.force = 1, nil, false
+end
+
+local function refreshGlorpCache(model, now)
+	if glorp.cacheModel == model and now - glorp.cacheT < 1 then return end
+	glorp.cacheModel, glorp.cacheT = model, now
+	table.clear(glorp.parts)
+	table.clear(glorp.prompts)
+	table.clear(glorp.clicks)
+	for _, d in ipairs(model:GetDescendants()) do
+		if d:IsA("BasePart") then
+			table.insert(glorp.parts, d)
+		elseif d:IsA("ProximityPrompt") then
+			table.insert(glorp.prompts, d)
+		elseif d:IsA("ClickDetector") then
+			table.insert(glorp.clicks, d)
+		end
+	end
+end
+
+local function debugGlorp(model)
+	local counts = {}
+	for _, d in ipairs(model:GetDescendants()) do
+		counts[d.ClassName] = (counts[d.ClassName] or 0) + 1
+	end
+	local list = {}
+	for k, v in pairs(counts) do table.insert(list, k .. "=" .. v) end
+	print("[Glorp] найден:", model:GetFullName(), "|", table.concat(list, ", "))
+	print("[Glorp] firetouchinterest:", hasFTI, "| fireproximityprompt:", hasFPP, "| fireclickdetector:", hasFCD)
+	for k, v in pairs(model:GetAttributes()) do print("[Glorp] attr", k, v) end
+end
+
+-- говорим серверу что мы коснулись Glorp всеми способами, которые есть у экзекутора
+local function touchGlorp(root, now)
+	if now - glorp.lastTouch < CFG.glorpTouchInterval then return end
+	glorp.lastTouch = now
+	if not glorp.model then return end
+	refreshGlorpCache(glorp.model, now)
+
+	if hasFTI then
+		for _, part in ipairs(glorp.parts) do
+			if part.Parent then
+				pcall(firetouchinterest, root, part, 0)
+				pcall(firetouchinterest, root, part, 1)
+			end
+		end
+	end
+	if hasFPP then
+		for _, pr in ipairs(glorp.prompts) do
+			if pr.Parent then pcall(fireproximityprompt, pr) end
+		end
+	end
+	if hasFCD then
+		for _, cd in ipairs(glorp.clicks) do
+			if cd.Parent then pcall(fireclickdetector, cd) end
+		end
+	end
+end
 
 local function getPing(now)
 	if now - pingT > 0.5 then
@@ -398,16 +477,23 @@ end
 local function getGlorpTarget(now)
 	local model, r = findGlorp()
 	if not model then
-		glorp.model, glorp.pos = nil, nil
+		if glorp.model and CFG.glorpDebug then
+			print(string.format("[Glorp] пропал через %.2f сек, последняя фаза: %s (попытка %d)",
+				now - glorp.seenAt, glorp.phase, glorp.attempt))
+		end
+		glorp.model, glorp.pos, glorp.root = nil, nil, nil
 		glorp.vel = Vector3.zero
-		glorp.attempt, glorp.tryStart, glorp.force = 1, nil, false -- собрали / пропал: сбрасываем попытки
+		resetGlorpPhase(now) -- собрали / пропал: сбрасываем попытки
 		return nil
 	end
 
 	local pos = r.Position
+	glorp.root, glorp.real = r, pos
 	if glorp.model ~= model or not glorp.pos then
 		glorp.model, glorp.pos, glorp.vel, glorp.lastChange = model, pos, Vector3.zero, now
-		glorp.attempt, glorp.tryStart, glorp.force = 1, nil, false
+		glorp.seenAt = now
+		resetGlorpPhase(now)
+		if CFG.glorpDebug then debugGlorp(model) end
 	else
 		-- позиции с сервера приходят пачками, поэтому считаем скорость только при реальном изменении
 		local delta = pos - glorp.pos
@@ -456,6 +542,7 @@ local function getGlorpTarget(now)
 		local f = Vector3.new(lv.X, 0, lv.Z)
 		dir = f.Magnitude > 0.01 and f.Unit or Vector3.new(0, 0, -1)
 	end
+	glorp.dir = dir
 	local side = dir:Cross(Vector3.new(0, 1, 0))
 
 	local o = GLORP_PATTERN[glorp.attempt]
@@ -487,7 +574,8 @@ local function stopFarming(root)
 	end
 end
 
-local function onHeartbeat()
+local function onHeartbeat(dt)
+	dt = dt or (1/60)
 	local farming = _G.FarmEvent == true
 	local paused = os.clock() < (_G.FarmPauseUntil or 0)
 	local root = getRoot()
@@ -544,15 +632,54 @@ local function onHeartbeat()
 		standPlatform.CFrame = dest - Vector3.new(0, offset + 0.5, 0)
 		safePlatform.CFrame = HIDDEN
 
-		if ((root.Position - gTarget).Magnitude > CFG.glorpStopDist or glorp.force)
-			and now - lastTeleport > CFG.glorpCooldown then
-			teleport(root, dest, true)
-			atTicket = true
+		-- чередуем фазы: tween (тп рядом + плавно догоняем) <-> snap (тпшимся по паттерну)
+		local phaseLen = (glorp.phase == "tween") and CFG.glorpTweenTime or CFG.glorpSnapTime
+		if now - glorp.phaseStart >= phaseLen then
+			glorp.phase = (glorp.phase == "tween") and "snap" or "tween"
+			glorp.phaseStart = now
+			glorp.arrived = false
+			glorp.tryStart = nil
+			glorp.attempt = 1
 			glorp.force = false
-			if not glorp.tryStart then glorp.tryStart = now end -- начали попытку на этой позиции
-		elseif atTicket then
-			clearAreaThrottled(gTarget, now)
 		end
+
+		if glorp.phase == "tween" then
+			if not glorp.arrived then
+				-- 1) тп рядом с ним, чуть позади
+				local start = glorp.real - glorp.dir * CFG.glorpApproach
+				teleport(root, CFrame.new(start), true)
+				glorp.arrived = true
+			else
+				-- 2) плавно догоняем его реальную позицию, двигаясь с его скоростью (чтобы касание было "настоящим")
+				local target = glorp.real + glorp.vel * math.clamp(getPing(now), 0, 0.3)
+				local delta = target - root.Position
+				local dist = delta.Magnitude
+				local step = CFG.glorpTweenSpeed * dt
+				local newPos = (dist <= step) and target or (root.Position + delta.Unit * step)
+				clearAreaThrottled(newPos, now)
+				root.CFrame = CFrame.new(newPos)
+				pcall(function()
+					root.AssemblyLinearVelocity = glorp.vel
+					root.AssemblyAngularVelocity = Vector3.zero
+				end)
+				lastTeleport = now
+			end
+			atTicket = true
+		else
+			-- snap: старый метод
+			if ((root.Position - gTarget).Magnitude > CFG.glorpStopDist or glorp.force)
+				and now - lastTeleport > CFG.glorpCooldown then
+				teleport(root, dest, true)
+				atTicket = true
+				glorp.force = false
+				if not glorp.tryStart then glorp.tryStart = now end -- начали попытку на этой позиции
+			elseif atTicket then
+				clearAreaThrottled(gTarget, now)
+			end
+		end
+
+		-- в обеих фазах пинаем касание/prompt/click
+		touchGlorp(root, now)
 		return
 	end
 
@@ -584,8 +711,8 @@ local function onHeartbeat()
 end
 
 local errorLimit = 0
-table.insert(connections, RunService.Heartbeat:Connect(function()
-	local ok = pcall(onHeartbeat)
+table.insert(connections, RunService.Heartbeat:Connect(function(dt)
+	local ok = pcall(onHeartbeat, dt)
 	if not ok then
 		errorLimit += 1
 		if errorLimit > 200 then
