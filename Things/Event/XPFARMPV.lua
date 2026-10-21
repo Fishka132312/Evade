@@ -1,4 +1,4 @@
-_G.XPFARMPV = _G.XPFARMPV or false  --щщщщвф
+_G.XPFARMPV = _G.XPFARMPV or false
 _G.XPFarmStop = false
 
 _G.XPFarmConfig = _G.XPFarmConfig or {}
@@ -12,13 +12,12 @@ local DEFAULTS = {
 	timerDelay      = 2,    -- пауза между !specialround и !timer 0
 	timerCommand    = "!timer 0",
 
-	-- ожидание конца раунда ПОСЛЕ !timer 0
-	afterTimerDelay = 25,   -- сколько секунд ждать после !timer 0, если roundEndGui не задан
-	roundEndGui     = nil,  -- имя GUI, который появляется в конце раунда (напр. "Results"); nil = ждать по времени
-	roundEndTimeout = 90,   -- максимум ожидания, если roundEndGui задан, но не появился
+	-- конец раунда = Frame PlayerGui.Shared.Popups.Rewards стал Visible = true
+	roundEndTimeout = 120,  -- максимум ожидания окна Rewards после !timer 0 (сек)
+	staleHideTimeout = 5,   -- если Rewards уже был виден до ожидания (остаток с прошлого раунда) — ждём, пока скроется
 	postRoundDelay  = 2,    -- пауза после конца раунда перед следующим !map
 
-	watchGui        = true, -- во время ожидания печатать, какие GUI появились/пропали (чтобы найти сигнал конца раунда)
+	watchGui        = false, -- отладка: печатать, какие GUI появились/пропали
 }
 for k, v in pairs(DEFAULTS) do
 	if cfg[k] == nil then cfg[k] = v end
@@ -79,17 +78,19 @@ local function gameHud() return LP.PlayerGui:FindFirstChild("Game") end
 ----------------------------------------------------------------
 -- GUI-хелперы
 ----------------------------------------------------------------
-local function isShown(obj)
-	local cur = obj
-	while cur and cur ~= LP.PlayerGui do
-		if cur:IsA("GuiObject") and not cur.Visible then return false end
-		if cur:IsA("ScreenGui") and not cur.Enabled then return false end
-		cur = cur.Parent
-	end
-	return true
+-- PlayerGui.Shared.Popups.Rewards (может не существовать до первого показа)
+local function rewardsFrame()
+	local shared = LP.PlayerGui:FindFirstChild("Shared")
+	local popups = shared and shared:FindFirstChild("Popups")
+	return popups and popups:FindFirstChild("Rewards")
 end
 
--- снимок видимых GUI (глубина до 4) — для поиска сигнала конца раунда
+local function rewardsVisible()
+	local r = rewardsFrame()
+	return r ~= nil and r.Visible == true
+end
+
+-- снимок видимых GUI (глубина до 4) — только для отладки (cfg.watchGui)
 local function snapshotGui()
 	local snap = {}
 	local pgName = LP.PlayerGui:GetFullName()
@@ -154,33 +155,36 @@ end
 
 ----------------------------------------------------------------
 -- ОЖИДАНИЕ КОНЦА РАУНДА (после !timer 0)
+-- конец раунда = Shared.Popups.Rewards.Visible == true
 ----------------------------------------------------------------
 local function waitRoundEnd()
 	local t0 = os.clock()
 	local prev = cfg.watchGui and snapshotGui() or nil
 
-	if cfg.roundEndGui then
-		log("жду GUI конца раунда '" .. cfg.roundEndGui .. "' (макс " .. cfg.roundEndTimeout .. "с)")
-	else
-		log("жду конца раунда " .. cfg.afterTimerDelay .. "с")
+	-- если окно наград осталось видимым с прошлого раунда — сначала дождёмся, пока оно скроется,
+	-- иначе скрипт решит, что раунд уже закончился
+	if rewardsVisible() then
+		log("Rewards уже виден (остаток прошлого раунда), жду пока скроется")
+		if not waitUntil(function() return not rewardsVisible() end, cfg.staleHideTimeout, 0.1) then
+			if not active() then return false end
+			log("Rewards так и не скрылся за " .. cfg.staleHideTimeout .. "с — считаю раунд законченным")
+			return true
+		end
 	end
+
+	log("жду Rewards.Visible = true (макс " .. cfg.roundEndTimeout .. "с)")
 
 	while active() do
 		local elapsed = os.clock() - t0
 
-		if cfg.roundEndGui then
-			local g = LP.PlayerGui:FindFirstChild(cfg.roundEndGui, true)
-			if g and isShown(g) then
-				log(("GUI конца раунда появился через %.1fс"):format(elapsed))
-				return true
-			end
-			if elapsed >= cfg.roundEndTimeout then
-				log("ТАЙМАУТ: GUI конца раунда так и не появился")
-				return false
-			end
-		elseif elapsed >= cfg.afterTimerDelay then
-			log("время ожидания конца раунда вышло")
+		if rewardsVisible() then
+			log(("Rewards появился через %.1fс — раунд закончен"):format(elapsed))
 			return true
+		end
+
+		if elapsed >= cfg.roundEndTimeout then
+			log("ТАЙМАУТ: Rewards так и не появился")
+			return false
 		end
 
 		if prev then
@@ -188,7 +192,7 @@ local function waitRoundEnd()
 			logGuiDiff(prev, cur)
 			prev = cur
 		end
-		task.wait(0.5)
+		task.wait(0.1)
 	end
 	return false
 end
@@ -238,8 +242,9 @@ _G.XPFarmThread = task.spawn(function()
 		if not sleep(cfg.timerDelay) then continue end
 		cmd(cfg.timerCommand)
 
-		-- 4) ждём конца раунда, только потом следующий цикл
-		if not waitRoundEnd() and not active() then continue end
+		-- 4) ждём, пока Rewards станет видимым, только потом следующий цикл
+		waitRoundEnd()
+		if not active() then continue end
 		if not sleep(cfg.postRoundDelay) then continue end
 
 		-- 5) добираем до минимальной длины цикла
