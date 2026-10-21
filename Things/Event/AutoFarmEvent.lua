@@ -1,4 +1,4 @@
-if _G.FarmUnload then pcall(_G.FarmUnload) end  --йуцйуй1
+if _G.FarmUnload then pcall(_G.FarmUnload) end  --йуцйуй
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -36,11 +36,14 @@ local CFG = {
 	glorpTryInterval = 0.15, -- сколько стоим на одной позиции (сек, + 2*пинг), потом, если Glorp не пропал, меняем позицию
 	glorpDangerScale = 0.6,  -- у Glorp допускаем монстров ближе (риск ради него); 1 = как обычно
 
-	-- Glorp: фазы "tween" (тп рядом + плавно догоняем) и "snap" (старый метод тпшиться на позиции), чередуются
-	glorpTweenTime = 1.2,    -- сколько сек. длится фаза догоняния
-	glorpSnapTime = 1.5,     -- сколько сек. длится фаза тпшинга по паттерну
-	glorpTweenSpeed = 90,    -- скорость догоняния (studs/сек)
-	glorpApproach = 6,       -- на сколько studs позади него появляемся при первом тп
+	-- Glorp: сервер засчитывает сбор только если персонаж ХОДИТ рядом (не стоит, не телепортится каждый кадр)
+	glorpWalkRadius = 3,     -- ближе этого ходим туда-сюда рядом с ним, дальше идём к нему
+	glorpWalkMaxDist = 9,    -- если он убежал дальше этого (мы не успеваем идти) -> тп к нему
+	glorpWalkTpCooldown = 0.3, -- минимальный интервал между тп в режиме ходьбы
+	glorpPaceInterval = 0.25, -- как часто меняем направление "туда-сюда"
+	glorpWalkTime = 4,       -- длина фазы ходьбы (сек), имеет смысл только если glorpSnapTime > 0
+	glorpSnapTime = 0,       -- 0 = только ходьба. >0 = между ходьбой на столько сек включаем старый метод (тп по паттерну)
+	glorpPressKeys = false,  -- true = вместо Humanoid:Move жмём W/S через VirtualInputManager (если Move не прокатит)
 	glorpTouchInterval = 0.05, -- как часто пинать firetouchinterest / prompt / click
 	glorpDebug = true,       -- писать в консоль (F9) что за объект Glorp и в какой фазе он пропал
 
@@ -140,7 +143,7 @@ local function makePlatform(size, transparency)
 end
 
 local safePlatform = makePlatform(Vector3.new(20, 1, 20), 0.7)
-local standPlatform = makePlatform(Vector3.new(10, 1, 10), 0.6)
+local standPlatform = makePlatform(Vector3.new(16, 1, 16), 0.6)
 
 local function isOwn(obj)
 	for _, p in ipairs(ownParts) do
@@ -374,7 +377,8 @@ end
 local glorp = {
 	model = nil, pos = nil, vel = Vector3.zero, lastChange = 0, attempt = 1, tryStart = nil, force = false,
 	root = nil, real = Vector3.zero, dir = Vector3.new(0, 0, -1),
-	phase = "tween", phaseStart = 0, arrived = false,
+	phase = "walk", phaseStart = 0, arrived = false,
+	walking = false, walkFrame = 0, walkDir = Vector3.zero, paceSign = 1, paceT = 0, lastWalkTp = 0,
 	lastTouch = 0, cacheModel = nil, cacheT = 0, parts = {}, prompts = {}, clicks = {},
 	seenAt = 0,
 }
@@ -385,7 +389,7 @@ local hasFPP = type(fireproximityprompt) == "function"
 local hasFCD = type(fireclickdetector) == "function"
 
 local function resetGlorpPhase(now)
-	glorp.phase, glorp.phaseStart, glorp.arrived = "tween", now, false
+	glorp.phase, glorp.phaseStart, glorp.arrived = "walk", now, false
 	glorp.attempt, glorp.tryStart, glorp.force = 1, nil, false
 end
 
@@ -417,6 +421,27 @@ local function debugGlorp(model)
 	print("[Glorp] firetouchinterest:", hasFTI, "| fireproximityprompt:", hasFPP, "| fireclickdetector:", hasFCD)
 	for k, v in pairs(model:GetAttributes()) do print("[Glorp] attr", k, v) end
 end
+
+local VIM
+pcall(function() VIM = game:GetService("VirtualInputManager") end)
+local heldKey = nil
+local function setKey(key)
+	if heldKey == key or not VIM then return end
+	if heldKey then pcall(function() VIM:SendKeyEvent(false, heldKey, false, game) end) end
+	if key then pcall(function() VIM:SendKeyEvent(true, key, false, game) end) end
+	heldKey = key
+end
+
+-- Humanoid:Move надо вызывать ПОСЛЕ стандартного управления игры, поэтому через RenderStep с самым поздним приоритетом
+local function renderWalk()
+	if not glorp.walking or CFG.glorpPressKeys then return end
+	local hum = getHumanoid()
+	if hum and hum.Health > 0 then
+		pcall(function() hum:Move(glorp.walkDir, false) end)
+	end
+end
+pcall(function() RunService:UnbindFromRenderStep("FarmGlorpWalk") end)
+RunService:BindToRenderStep("FarmGlorpWalk", Enum.RenderPriority.Last.Value, renderWalk)
 
 -- говорим серверу что мы коснулись Glorp всеми способами, которые есть у экзекутора
 local function touchGlorp(root, now)
@@ -576,6 +601,8 @@ end
 
 local function onHeartbeat(dt)
 	dt = dt or (1/60)
+	glorp.walking = false
+	if heldKey and os.clock() - glorp.walkFrame > 0.1 then setKey(nil) end -- не ходим -> отпускаем W/S
 	local farming = _G.FarmEvent == true
 	local paused = os.clock() < (_G.FarmPauseUntil or 0)
 	local root = getRoot()
@@ -632,39 +659,56 @@ local function onHeartbeat(dt)
 		standPlatform.CFrame = dest - Vector3.new(0, offset + 0.5, 0)
 		safePlatform.CFrame = HIDDEN
 
-		-- чередуем фазы: tween (тп рядом + плавно догоняем) <-> snap (тпшимся по паттерну)
-		local phaseLen = (glorp.phase == "tween") and CFG.glorpTweenTime or CFG.glorpSnapTime
-		if now - glorp.phaseStart >= phaseLen then
-			glorp.phase = (glorp.phase == "tween") and "snap" or "tween"
-			glorp.phaseStart = now
-			glorp.arrived = false
-			glorp.tryStart = nil
-			glorp.attempt = 1
-			glorp.force = false
+		-- фазы: walk (тп рядом + ходим вокруг него) <-> snap (старый метод, выключен при glorpSnapTime = 0)
+		if CFG.glorpSnapTime > 0 then
+			local phaseLen = (glorp.phase == "walk") and CFG.glorpWalkTime or CFG.glorpSnapTime
+			if now - glorp.phaseStart >= phaseLen then
+				glorp.phase = (glorp.phase == "walk") and "snap" or "walk"
+				glorp.phaseStart = now
+				glorp.arrived = false
+				glorp.tryStart = nil
+				glorp.attempt = 1
+				glorp.force = false
+			end
+		else
+			glorp.phase = "walk"
 		end
 
-		if glorp.phase == "tween" then
-			if not glorp.arrived then
-				-- 1) тп рядом с ним, чуть позади
-				local start = glorp.real - glorp.dir * CFG.glorpApproach
-				teleport(root, CFrame.new(start), true)
+		if glorp.phase == "walk" then
+			local rp = root.Position
+			local flat = Vector3.new(glorp.real.X - rp.X, 0, glorp.real.Z - rp.Z)
+			local dist = flat.Magnitude
+			local dy = math.abs(glorp.real.Y - rp.Y)
+
+			-- далеко / ещё не подходили -> тп прямо к нему, дальше идём ногами
+			if (not glorp.arrived or dist > CFG.glorpWalkMaxDist or dy > 8)
+				and now - glorp.lastWalkTp >= CFG.glorpWalkTpCooldown then
+				teleport(root, dest, true)
+				glorp.lastWalkTp = now
 				glorp.arrived = true
-			else
-				-- 2) плавно догоняем его реальную позицию, двигаясь с его скоростью (чтобы касание было "настоящим")
-				local target = glorp.real + glorp.vel * math.clamp(getPing(now), 0, 0.3)
-				local delta = target - root.Position
-				local dist = delta.Magnitude
-				local step = CFG.glorpTweenSpeed * dt
-				local newPos = (dist <= step) and target or (root.Position + delta.Unit * step)
-				clearAreaThrottled(newPos, now)
-				root.CFrame = CFrame.new(newPos)
-				pcall(function()
-					root.AssemblyLinearVelocity = glorp.vel
-					root.AssemblyAngularVelocity = Vector3.zero
-				end)
-				lastTeleport = now
+				atTicket = true
+				dist = 0
 			end
+
+			-- направление ходьбы: далеко -> к нему, близко -> туда-сюда (чтобы персонаж всё время шёл)
+			if dist > CFG.glorpWalkRadius and flat.Magnitude > 0.01 then
+				glorp.walkDir = flat.Unit
+			else
+				if now - glorp.paceT >= CFG.glorpPaceInterval then
+					glorp.paceT = now
+					glorp.paceSign = -glorp.paceSign
+				end
+				local side = glorp.dir:Cross(Vector3.new(0, 1, 0))
+				glorp.walkDir = side * glorp.paceSign
+			end
+
+			glorp.walking = true
+			glorp.walkFrame = now
 			atTicket = true
+			clearAreaThrottled(gTarget, now)
+			if CFG.glorpPressKeys then
+				setKey(glorp.paceSign > 0 and Enum.KeyCode.W or Enum.KeyCode.S)
+			end
 		else
 			-- snap: старый метод
 			if ((root.Position - gTarget).Magnitude > CFG.glorpStopDist or glorp.force)
@@ -731,6 +775,8 @@ table.insert(connections, LP.CharacterAdded:Connect(function()
 end))
 
 _G.FarmUnload = function()
+	pcall(function() RunService:UnbindFromRenderStep("FarmGlorpWalk") end)
+	setKey(nil)
 	for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
 	table.clear(connections)
 	table.clear(realCharacters)
