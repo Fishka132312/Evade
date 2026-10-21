@@ -13,7 +13,7 @@ local DEFAULTS = {
 	timerCommand    = "!timer 0",
 
 	-- конец раунда = Frame PlayerGui.Shared.Popups.Rewards стал Visible = true
-	roundEndTimeout = 120,  -- максимум ожидания окна Rewards после !timer 0 (сек)
+	roundEndTimeout = 400,  -- максимум ожидания окна Rewards после !timer 0 (сек)
 	staleHideTimeout = 5,   -- если Rewards уже был виден до ожидания (остаток с прошлого раунда) — ждём, пока скроется
 	postRoundDelay  = 2,    -- пауза после конца раунда перед следующим !map
 
