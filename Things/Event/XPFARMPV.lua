@@ -6,7 +6,7 @@ local cfg = _G.XPFarmConfig
 
 local DEFAULTS = {
 	cycleCooldown   = 30,   -- минимальная длина всего цикла (сек)
-	map             = "Maze",
+	map             = "Sewers",
 	specialRound    = "Plushie Hell",
 	mapLoadTimeout  = 30,
 	timerDelay      = 2,    -- пауза между !specialround и !timer 0
