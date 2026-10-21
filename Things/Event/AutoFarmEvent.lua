@@ -1,8 +1,8 @@
-
 if _G.FarmUnload then pcall(_G.FarmUnload) end
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
 local LP = Players.LocalPlayer
 
 if _G.FarmEvent == nil then _G.FarmEvent = false end
@@ -11,20 +11,40 @@ _G.PauseFarm = function(sec) _G.FarmPauseUntil = os.clock() + (sec or 5) end
 _G.ResumeFarm = function() _G.FarmPauseUntil = 0 end
 
 local CFG = {
-	enemyRadius = 22,
-	npcSafeDistance = 10,
-	teleportCooldown = 0.4,
-	scanInterval = 0.25,
-	clearRadius = 18,
+	-- защита от монстров
+	enemyRadius = 22,        -- базовый радиус опасности
+	enemyRadiusMax = 140,    -- максимум, до которого радиус растёт от скорости монстра
+	reactionTime = 0.6,      -- на сколько секунд вперёд предсказываем движение монстра
+	jumpDistance = 35,       -- если монстр сместился больше чем на это за кадр = телепорт/рывок
+	erraticRadius = 60,      -- радиус опасности вокруг "телепортящегося" монстра
+	dangerHold = 0.8,        -- сколько сек. сидим в безопасности после последней угрозы
+	escapeCooldown = 0.05,   -- кулдаун телепорта при побеге (маленький!)
 	safeHeight = 1000,
+
+	-- тикеты
+	teleportCooldown = 0.4,
+	clearRadius = 18,
+	clearInterval = 0.15,
+
+	-- Glorp Cat
+	glorpName = "glorpcat",  -- имя без пробелов, в нижнем регистре
+	glorpLead = 0.12,        -- доп. запас предсказания (сек) сверх пинга
+	glorpMaxLead = 0.6,      -- максимум предсказания (сек)
+	glorpAhead = 2,          -- на сколько studs впереди него вставать
+	glorpCooldown = 0.03,    -- как часто можно тпшиться за ним
+	glorpStopDist = 3,       -- ближе этого не тпшимся
+	glorpDangerScale = 0.6,  -- у Glorp допускаем монстров ближе (риск ради него); 1 = как обычно
+
 	ignoreRealPlayers = true,
 }
 
 local HIDDEN = CFrame.new(0, -10000, 0)
 local connections, ownParts = {}, {}
 local collisionMemory = {}
-local wasFarming, lastTeleport, lastScan, enemyNear = false, 0, 0, false
+local wasFarming, lastTeleport, lastClear = false, 0, 0
 local atTicket = false
+local dangerUntil = 0
+local frameId = 0
 
 local realCharacters = {}
 
@@ -51,11 +71,18 @@ local function isRealPlayerCharacter(model)
 	return false
 end
 
+local function isGlorp(model)
+	local n = string.lower(model.Name):gsub("[%s_%-]", "")
+	return string.find(n, CFG.glorpName, 1, true) ~= nil
+end
+
 local function isHostileNPC(model)
 	local char = LP.Character
 	if model == char then return false end
 	if char and model:IsDescendantOf(char) then return false end
 	if not model:FindFirstChild("HumanoidRootPart") then return false end
+
+	if isGlorp(model) then return false end -- Glorp не враг, а цель
 
 	if CFG.ignoreRealPlayers and isRealPlayerCharacter(model) then
 		return false
@@ -69,7 +96,6 @@ local function isHostileNPC(model)
 
 	return true
 end
-
 
 local function makePlatform(size, transparency)
 	local p = Instance.new("Part")
@@ -144,9 +170,18 @@ local function clearArea(pos)
 	end
 end
 
+-- clearArea не чаще чем раз в clearInterval (иначе при постоянных тп будут лаги)
+local function clearAreaThrottled(pos, now)
+	if now - lastClear >= CFG.clearInterval then
+		lastClear = now
+		clearArea(pos)
+	end
+end
+
 local function teleport(root, cframe, clear)
+	local now = os.clock()
 	if clear then
-		clearArea(cframe.Position)
+		clearAreaThrottled(cframe.Position, now)
 	else
 		restoreArea()
 	end
@@ -156,7 +191,7 @@ local function teleport(root, cframe, clear)
 		root.AssemblyLinearVelocity = Vector3.zero
 		root.AssemblyAngularVelocity = Vector3.zero
 	end)
-	lastTeleport = os.clock()
+	lastTeleport = now
 end
 
 local function hidePlatforms()
@@ -196,40 +231,83 @@ local function getNearestTicket(myPos)
 	return best
 end
 
-local function getAllNPCs()
-	local npcs = {}
+----------------------------------------------------------------
+-- ТРЕКИНГ МОНСТРОВ (позиция, скорость, детект телепортов)
+----------------------------------------------------------------
+local tracked = {}  -- [model] = {pos, vel, t, jumpUntil, stamp}
+local npcList = {}  -- список на текущий кадр
+
+local function updateNPCs(now)
+	frameId += 1
+	table.clear(npcList)
+
 	local folder = workspace:FindFirstChild("Players")
-	if not folder then return npcs end
+	if folder then
+		for _, model in ipairs(folder:GetChildren()) do
+			if model:IsA("Model") and isHostileNPC(model) then
+				local r = model:FindFirstChild("HumanoidRootPart")
+				local pos = r.Position
+				local st = tracked[model]
+				if not st then
+					st = { pos = pos, vel = Vector3.zero, t = now, jumpUntil = 0, stamp = frameId }
+					tracked[model] = st
+				else
+					local dt = now - st.t
+					if dt > 0 then
+						local delta = pos - st.pos
+						local dist = delta.Magnitude
+						if dist >= CFG.jumpDistance then
+							-- монстр телепортнулся: скорость не трогаем, помечаем как опасного
+							st.jumpUntil = now + CFG.dangerHold * 2
+						else
+							st.vel = st.vel:Lerp(delta / dt, 0.5)
+						end
+						st.pos = pos
+						st.t = now
+					end
+					st.stamp = frameId
+				end
 
-	for _, model in ipairs(folder:GetChildren()) do
-		if model:IsA("Model") and isHostileNPC(model) then
-			table.insert(npcs, model.HumanoidRootPart.Position)
-		end
-	end
-	return npcs
-end
-
-local function isPositionSafeFromNPC(position, safeDistance)
-	local npcs = getAllNPCs()
-	for _, npcPos in ipairs(npcs) do
-		if (npcPos - position).Magnitude <= safeDistance then
-			return false
-		end
-	end
-	return true
-end
-
-local function isEnemyNear(myPos)
-	local folder = workspace:FindFirstChild("Players")
-	if not folder then return false end
-
-	for _, model in ipairs(folder:GetChildren()) do
-		if model:IsA("Model") and isHostileNPC(model) then
-			local r = model:FindFirstChild("HumanoidRootPart")
-			if r and (r.Position - myPos).Magnitude <= CFG.enemyRadius then
-				return true
+				table.insert(npcList, {
+					pos = pos,
+					vel = st.vel,
+					speed = st.vel.Magnitude,
+					jumpUntil = st.jumpUntil,
+				})
 			end
 		end
+	end
+
+	for model, st in pairs(tracked) do
+		if st.stamp ~= frameId then tracked[model] = nil end
+	end
+end
+
+-- есть ли угроза в точке pos (учитывает скорость, направление и телепорты монстров)
+local function threatAt(pos, scale)
+	scale = scale or 1
+	local now = os.clock()
+	for _, n in ipairs(npcList) do
+		local d = (n.pos - pos).Magnitude
+
+		-- 1) радиус растёт со скоростью монстра
+		local radius = math.min(CFG.enemyRadius + n.speed * CFG.reactionTime, CFG.enemyRadiusMax) * scale
+		if d <= radius then return true end
+
+		-- 2) куда монстр добежит за reactionTime: ближайшая точка его пути к нам
+		if n.speed > 1 then
+			local seg = n.vel * CFG.reactionTime
+			local len2 = seg:Dot(seg)
+			local t = 0
+			if len2 > 0 then
+				t = math.clamp((pos - n.pos):Dot(seg) / len2, 0, 1)
+			end
+			local closest = n.pos + seg * t
+			if (closest - pos).Magnitude <= CFG.enemyRadius * scale then return true end
+		end
+
+		-- 3) монстр недавно телепортировался — держим большую дистанцию
+		if n.jumpUntil > now and d <= CFG.erraticRadius * scale then return true end
 	end
 	return false
 end
@@ -256,7 +334,7 @@ local function findSafeCFrame()
 
 	for _, offset in ipairs(offsets) do
 		local testPos = base + offset
-		if isPositionSafeFromNPC(testPos, CFG.npcSafeDistance) then
+		if not threatAt(testPos, 1) then
 			return CFrame.new(testPos)
 		end
 	end
@@ -264,10 +342,87 @@ local function findSafeCFrame()
 	return CFrame.new(base + Vector3.new(0, CFG.safeHeight + 1000, 0))
 end
 
-local function safeCFrame()
-	return findSafeCFrame()
+----------------------------------------------------------------
+-- GLORP CAT
+----------------------------------------------------------------
+local glorp = { model = nil, pos = nil, vel = Vector3.zero, lastChange = 0 }
+local pingCache, pingT = 0.1, 0
+
+local function getPing(now)
+	if now - pingT > 0.5 then
+		pingT = now
+		local ok, ms = pcall(function()
+			return Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+		end)
+		if ok and type(ms) == "number" then pingCache = ms / 1000 end
+	end
+	return pingCache
 end
 
+local function findGlorp()
+	local folder = workspace:FindFirstChild("Players")
+	if not folder then return nil end
+	for _, m in ipairs(folder:GetChildren()) do
+		if m:IsA("Model") and isGlorp(m) then
+			local r = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart
+			if r then
+				local hum = m:FindFirstChildOfClass("Humanoid")
+				if not hum or hum.Health > 0 then
+					return m, r
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- возвращает предсказанную позицию Glorp Cat или nil, если его нет
+local function getGlorpTarget(now)
+	local model, r = findGlorp()
+	if not model then
+		glorp.model, glorp.pos = nil, nil
+		glorp.vel = Vector3.zero
+		return nil
+	end
+
+	local pos = r.Position
+	if glorp.model ~= model or not glorp.pos then
+		glorp.model, glorp.pos, glorp.vel, glorp.lastChange = model, pos, Vector3.zero, now
+	else
+		-- позиции с сервера приходят пачками, поэтому считаем скорость только при реальном изменении
+		local delta = pos - glorp.pos
+		if delta.Magnitude > 0.01 then
+			local dt = now - glorp.lastChange
+			if dt > 0 then
+				local inst = delta / dt
+				if inst.Magnitude > 400 then inst = glorp.vel end -- телепорт самого Glorp
+				glorp.vel = glorp.vel:Lerp(inst, 0.5)
+			end
+			glorp.pos = pos
+			glorp.lastChange = now
+		elseif now - glorp.lastChange > 0.3 then
+			glorp.vel = glorp.vel * 0.8 -- давно не двигался
+		end
+	end
+
+	local vel = glorp.vel
+	if vel.Magnitude < 1 then
+		local hum = model:FindFirstChildOfClass("Humanoid")
+		if hum and hum.MoveDirection.Magnitude > 0.1 then
+			vel = hum.MoveDirection * hum.WalkSpeed
+		end
+	end
+
+	-- задержка: мы видим его с опозданием ~ping, и наш тп дойдёт до сервера тоже с опозданием
+	local lead = math.clamp(getPing(now) + CFG.glorpLead, 0, CFG.glorpMaxLead)
+	local target = pos + vel * lead
+	if vel.Magnitude > 1 then
+		target = target + vel.Unit * CFG.glorpAhead
+	end
+	return target
+end
+
+----------------------------------------------------------------
 local function stopFarming(root)
 	wasFarming = false
 	atTicket = false
@@ -309,15 +464,19 @@ local function onHeartbeat()
 
 	local now = os.clock()
 	local offset = rootOffset()
-	local doScan = now - lastScan >= CFG.scanInterval
 
-	if doScan then
-		lastScan = now
-		enemyNear = isEnemyNear(root.Position)
+	-- каждый кадр обновляем монстров и Glorp
+	updateNPCs(now)
+	local gTarget = getGlorpTarget(now)
+	local scale = gTarget and CFG.glorpDangerScale or 1
+
+	if threatAt(root.Position, scale) or (gTarget and threatAt(gTarget, scale)) then
+		dangerUntil = now + CFG.dangerHold
 	end
+	local danger = now < dangerUntil
 
 	local function goSafe()
-		local high = safeCFrame()
+		local high = findSafeCFrame()
 		safePlatform.CFrame = high - Vector3.new(0, offset + 0.5, 0)
 		standPlatform.CFrame = HIDDEN
 
@@ -326,17 +485,36 @@ local function onHeartbeat()
 			atTicket = false
 		end
 
+		-- побег НЕ ограничен большим кулдауном
 		if (root.Position - high.Position).Magnitude > 15
-			and now - lastTeleport > CFG.teleportCooldown then
+			and now - lastTeleport > CFG.escapeCooldown then
 			teleport(root, high, false)
 		end
 	end
 
-	if enemyNear then
+	-- 1) монстры рядом / быстро приближаются / телепортируются
+	if danger then
 		goSafe()
 		return
 	end
 
+	-- 2) Glorp Cat — приоритет над тикетами
+	if gTarget then
+		local dest = CFrame.new(gTarget)
+		standPlatform.CFrame = dest - Vector3.new(0, offset + 0.5, 0)
+		safePlatform.CFrame = HIDDEN
+
+		if (root.Position - gTarget).Magnitude > CFG.glorpStopDist
+			and now - lastTeleport > CFG.glorpCooldown then
+			teleport(root, dest, true)
+			atTicket = true
+		elseif atTicket then
+			clearAreaThrottled(gTarget, now)
+		end
+		return
+	end
+
+	-- 3) тикеты
 	local ticketPos = getNearestTicket(root.Position)
 	if not ticketPos then
 		goSafe()
@@ -344,7 +522,7 @@ local function onHeartbeat()
 	end
 
 	local ticketDestPos = ticketPos - Vector3.new(0, 4.5, 0)
-	if not isPositionSafeFromNPC(ticketDestPos, CFG.npcSafeDistance) then
+	if threatAt(ticketDestPos, 1) then
 		goSafe()
 		return
 	end
@@ -356,18 +534,10 @@ local function onHeartbeat()
 	local far = (root.Position - dest.Position).Magnitude > 6
 
 	if far and now - lastTeleport > CFG.teleportCooldown then
-		if isPositionSafeFromNPC(dest.Position, CFG.npcSafeDistance) then
-			teleport(root, dest, true)
-			atTicket = true
-		else
-			goSafe()
-		end
-	elseif atTicket and doScan then
-		if not isPositionSafeFromNPC(root.Position, CFG.npcSafeDistance) then
-			goSafe()
-		else
-			clearArea(dest.Position)
-		end
+		teleport(root, dest, true)
+		atTicket = true
+	elseif atTicket then
+		clearAreaThrottled(dest.Position, now)
 	end
 end
 
@@ -388,12 +558,15 @@ table.insert(connections, LP.CharacterAdded:Connect(function()
 	restoreArea()
 	wasFarming = false
 	atTicket = false
+	dangerUntil = 0
 end))
 
 _G.FarmUnload = function()
 	for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
 	table.clear(connections)
 	table.clear(realCharacters)
+	table.clear(tracked)
+	table.clear(npcList)
 	restoreArea()
 	for _, p in ipairs(ownParts) do pcall(function() p:Destroy() end) end
 	table.clear(ownParts)
