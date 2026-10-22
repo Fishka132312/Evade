@@ -34,7 +34,7 @@ local CFG = {
 	glorpCooldown = 0.03,    -- как часто можно тпшиться за ним
 	glorpStopDist = 3,       -- ближе этого не тпшимся
 	glorpTryInterval = 0.15, -- сколько стоим на одной позиции (сек, + 2*пинг), потом, если Glorp не пропал, меняем позицию
-	glorpDangerScale = 0.6,  -- у Glorp допускаем монстров ближе (риск ради него); 1 = как обычно
+	glorpDangerScale = 0.8,  -- у Glorp допускаем монстров ближе (риск ради него); 1 = как обычно
 
 	-- Glorp: сервер засчитывает сбор только если персонаж ХОДИТ рядом (не стоит, не телепортится каждый кадр)
 	glorpWalkRadius = 3,     -- дальше этого от Glorp -> тп обратно к нему (W при этом зажата)
@@ -48,6 +48,18 @@ local CFG = {
 	glorpDebug = true,       -- писать в консоль (F9) что за объект Glorp и в какой фазе он пропал
 
 	ignoreRealPlayers = true,
+
+	-- бункер под картой
+	useBunker = true,
+	bunkerDepth = 10,       -- на сколько studs ниже нижней грани пола вставать
+	bunkerScanDepth = 400,  -- как глубоко искать низ пола
+	bunkerTries = 80,       -- сколько случайных точек проверять за скан
+	bunkerSamples = 20,     -- сколько бункеров держать в запасе
+	bunkerRescan = 2,       -- пересканировать раз в N сек
+	bunkerSwitchDist = 70,  -- монстр ближе этого к бункеру -> переезжаем
+	bunkerMinDist = 40,     -- если все бункеры ближе этого к монстрам -> старый метод (небо)
+	bunkerMaxStay = 6,      -- раз в N сек меняем бункер, даже если всё спокойно
+	bunkerDebug = false,    -- писать в консоль сколько бункеров найдено
 }
 
 -- Порядок попыток, если Glorp не собрался (не пропал): {вдоль движения (+ вперёд / - назад), вбок, вверх} в studs
@@ -312,12 +324,15 @@ local function updateNPCs(now)
 	end
 end
 
+local currentPing = 0.1
+
 -- есть ли угроза в точке pos (учитывает скорость, направление и телепорты монстров)
 local function threatAt(pos, scale)
 	scale = scale or 1
 	local now = os.clock()
 	for _, n in ipairs(npcList) do
-		local d = (n.pos - pos).Magnitude
+		local np = n.pos + n.vel * currentPing -- где монстр реально на сервере
+		local d = math.min((n.pos - pos).Magnitude, (np - pos).Magnitude)
 
 		-- 1) радиус растёт со скоростью монстра
 		local radius = math.min(CFG.enemyRadius + n.speed * CFG.reactionTime, CFG.enemyRadiusMax) * scale
@@ -329,9 +344,9 @@ local function threatAt(pos, scale)
 			local len2 = seg:Dot(seg)
 			local t = 0
 			if len2 > 0 then
-				t = math.clamp((pos - n.pos):Dot(seg) / len2, 0, 1)
+				t = math.clamp((pos - np):Dot(seg) / len2, 0, 1)
 			end
-			local closest = n.pos + seg * t
+			local closest = np + seg * t
 			if (closest - pos).Magnitude <= CFG.enemyRadius * scale then return true end
 		end
 
@@ -341,7 +356,7 @@ local function threatAt(pos, scale)
 	return false
 end
 
-local function findSafeCFrame()
+local function findSkyCFrame()
 	local map = workspace:FindFirstChild("Map")
 	local zones = map and map:FindFirstChild("SafeZones")
 	local base = Vector3.new(0, 0, 0)
@@ -369,6 +384,128 @@ local function findSafeCFrame()
 	end
 
 	return CFrame.new(base + Vector3.new(0, CFG.safeHeight + 1000, 0))
+end
+
+----------------------------------------------------------------
+-- БУНКЕР ПОД КАРТОЙ
+----------------------------------------------------------------
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Exclude
+rayParams.IgnoreWater = true
+pcall(function() rayParams.RespectCanCollide = true end)
+
+local overlapParams = OverlapParams.new()
+overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+pcall(function() overlapParams.RespectCanCollide = true end)
+
+local bunkers, lastBunkerScan, currentBunker, bunkerSince = {}, 0, nil, 0
+
+local function refreshFilters()
+	local list = {}
+	for _, p in ipairs(ownParts) do table.insert(list, p) end
+	for part in pairs(collisionMemory) do table.insert(list, part) end -- временно выключенные нами
+	if LP.Character then table.insert(list, LP.Character) end
+	local npcFolder = workspace:FindFirstChild("Players")
+	if npcFolder then table.insert(list, npcFolder) end
+	local eff = workspace:FindFirstChild("Effects")
+	if eff then table.insert(list, eff) end
+	rayParams.FilterDescendantsInstances = list
+	overlapParams.FilterDescendantsInstances = list
+end
+
+-- проверяем одну точку: есть ли пол и свободное место под ним
+local function probeBunker(x, z, topY, bottomY)
+	local down = workspace:Raycast(Vector3.new(x, topY, z), Vector3.new(0, bottomY - topY, 0), rayParams)
+	if not down then return nil end                           -- дыра в карте
+	if down.Instance == workspace.Terrain then return nil end -- под Terrain будем внутри земли
+	local floorTop = down.Position.Y
+
+	-- луч снизу вверх = нижняя грань пола (или того, что под ним)
+	local fromY = floorTop - CFG.bunkerScanDepth
+	local up = workspace:Raycast(Vector3.new(x, fromY, z), Vector3.new(0, floorTop - fromY + 0.1, 0), rayParams)
+	if up and up.Instance == workspace.Terrain then return nil end
+	local ceilY = up and up.Position.Y or floorTop
+
+	local pos = Vector3.new(x, ceilY - CFG.bunkerDepth, z)
+	if pos.Y < workspace.FallenPartsDestroyHeight + 60 then return nil end -- не в зону смерти
+
+	-- есть ли место для персонажа
+	local hits = workspace:GetPartBoundsInBox(CFrame.new(pos), Vector3.new(6, 9, 6), overlapParams)
+	if #hits > 0 then return nil end
+	return pos
+end
+
+local function scanBunkers()
+	local map = workspace:FindFirstChild("Map")
+	if not map then return end
+	refreshFilters()
+	local cf, size = map:GetBoundingBox()
+	local half = size / 2
+	local topY = cf.Position.Y + size.Magnitude / 2 + 20
+	local bottomY = cf.Position.Y - size.Magnitude / 2 - 50
+
+	local fresh = {}
+	for _ = 1, CFG.bunkerTries do
+		local w = cf:PointToWorldSpace(Vector3.new(
+			(math.random() * 2 - 1) * half.X * 0.9, 0,
+			(math.random() * 2 - 1) * half.Z * 0.9))
+		local pos = probeBunker(w.X, w.Z, topY, bottomY)
+		if pos then
+			table.insert(fresh, pos)
+			if #fresh >= CFG.bunkerSamples then break end
+		end
+	end
+	if #fresh > 0 then bunkers = fresh end
+	if CFG.bunkerDebug then print("[Bunker] найдено:", #fresh) end
+end
+
+-- насколько точка далеко от монстров (меньше = опаснее)
+local function npcDistance(pos)
+	local best = math.huge
+	local now = os.clock()
+	for _, n in ipairs(npcList) do
+		local future = n.pos + n.vel * (CFG.reactionTime + currentPing)
+		local d = math.min((n.pos - pos).Magnitude, (future - pos).Magnitude)
+		if n.jumpUntil > now then d = d * 0.5 end -- телепортящиеся считаются вдвое ближе
+		if d < best then best = d end
+	end
+	return best
+end
+
+local function findSafeCFrame()
+	local now = os.clock()
+	if CFG.useBunker then
+		if #bunkers == 0 or now - lastBunkerScan > CFG.bunkerRescan then
+			lastBunkerScan = now
+			pcall(scanBunkers)
+		end
+
+		-- сидим в текущем, пока он безопасен и не засиделись
+		if currentBunker
+			and npcDistance(currentBunker) > CFG.bunkerSwitchDist
+			and now - bunkerSince < CFG.bunkerMaxStay then
+			return CFrame.new(currentBunker)
+		end
+
+		-- выбираем самый далёкий от монстров (кроме текущего)
+		local best, bestScore = nil, -1
+		for _, p in ipairs(bunkers) do
+			if p ~= currentBunker then
+				local s = npcDistance(p)
+				if s > bestScore then best, bestScore = p, s end
+			end
+		end
+		if best and bestScore > CFG.bunkerMinDist then
+			currentBunker, bunkerSince = best, now
+			return CFrame.new(best)
+		end
+		if currentBunker and npcDistance(currentBunker) > CFG.bunkerMinDist then
+			bunkerSince = now
+			return CFrame.new(currentBunker)
+		end
+	end
+	currentBunker = nil
+	return findSkyCFrame() -- запасной вариант: небо
 end
 
 ----------------------------------------------------------------
@@ -622,6 +759,7 @@ local function onHeartbeat(dt)
 
 	-- каждый кадр обновляем монстров и Glorp
 	updateNPCs(now)
+	currentPing = getPing(now)
 	local gTarget = getGlorpTarget(now)
 	local scale = gTarget and CFG.glorpDangerScale or 1
 
@@ -772,6 +910,8 @@ table.insert(connections, LP.CharacterAdded:Connect(function()
 	wasFarming = false
 	atTicket = false
 	dangerUntil = 0
+	currentBunker = nil
+	table.clear(bunkers)
 end))
 
 _G.FarmUnload = function()
