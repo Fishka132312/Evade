@@ -1,4 +1,4 @@
-_G.XPFARMPV = _G.XPFARMPV or false  --12131222222222
+_G.XPFARMPV = _G.XPFARMPV or false  --1
 _G.XPFarmStop = false
 
 _G.XPFarmConfig = _G.XPFarmConfig or {}
@@ -39,14 +39,27 @@ local function log(...)
 	print(string.format("[XPFarm +%5.1fs]", os.clock() - cycleStart), ...)
 end
 
-local Events = RS:WaitForChild("Events", 10)
-if not Events then return log("Events не найден") end
-local Admin = Events:WaitForChild("Admin", 10)
-local AdminCommand = Admin and Admin:WaitForChild("Command", 10)
-local SetPlayerMode = Events:WaitForChild("SetPlayerMode", 10)
-if not (AdminCommand and SetPlayerMode) then return log("ремоуты не найдены") end
+-- ремоуты: сейчас лежат в ReplicatedStorage.Remotes (раньше были в Events)
+local Remotes, AdminCommand, SetPlayerMode
+
+local function findFolder()
+	return RS:FindFirstChild("Remotes") or RS:FindFirstChild("Events")
+end
+
+local function resolveRemotes()
+	if AdminCommand and AdminCommand.Parent then return true end
+	Remotes = findFolder()
+	local Admin = Remotes and Remotes:FindFirstChild("Admin")
+	AdminCommand  = Admin and Admin:FindFirstChild("Command")
+	SetPlayerMode = Remotes and Remotes:FindFirstChild("SetPlayerMode")
+	return AdminCommand ~= nil
+end
 
 local function cmd(text)
+	if not resolveRemotes() then
+		log("ОШИБКА: Admin.Command не найден, команда не отправлена:", text)
+		return false
+	end
 	log("-> команда:", text)
 	local ok, err = pcall(AdminCommand.FireServer, AdminCommand, text)
 	if not ok then log("ОШИБКА команды", text, err) end
@@ -229,13 +242,23 @@ _G.XPFarmThread = task.spawn(function()
 			wasActive = true
 		end
 
+		if not resolveRemotes() then
+			log("Admin.Command не найден, жду...")
+			task.wait(3)
+			continue
+		end
+
 		cycleStart = os.clock()
 		cycleNum += 1
 		log("=== цикл #" .. cycleNum .. " ===")
 
 		if not gameHud() then
 			log("HUD нет, включаю режим игрока")
-			pcall(SetPlayerMode.FireServer, SetPlayerMode, true)
+			if SetPlayerMode then
+				pcall(SetPlayerMode.FireServer, SetPlayerMode, true)
+			else
+				log("SetPlayerMode не найден, пропускаю")
+			end
 			if not sleep(2) then continue end
 		end
 
