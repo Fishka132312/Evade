@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Fishka132312/MeowlGui/refs/heads/main/source/library.lua"))() -----2
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Fishka132312/MeowlGui/refs/heads/main/source/library.lua"))() -----1
 local CheatName = "Evade"
 
 local Players = game:GetService("Players")
@@ -11,7 +11,6 @@ local scripts = {
   'Event/TicketESP.lua',
   'Event/AntiDev.lua',
   'Main/AvoidNPC.lua',
-  'Main/AutoRevive.lua',
   'Visual/EspNPC.lua',
 }
 
